@@ -1,0 +1,184 @@
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Pub Supply Game</h1>
+      <span class="tag">Prototype. One player, running the pub.</span>
+    </div>
+    <div class="top-stats" id="topStats" hidden>
+      <span>Week <b id="wk">1</b></span>
+      <span>Cost so far <b id="tot">£0</b></span>
+    </div>
+  </header>
+
+  <section id="intro">
+    <div class="panel brief">
+      <h2>You run a pub</h2>
+      <p>Each week customers come in for kegs of beer. You serve them from your cellar and order more from your wholesaler. One mug on screen is one keg.</p>
+      <ul class="rules">
+        <li>Your wholesaler gets your order at once and tells you what it can send. Delivery then takes time: kegs you order now reach you three weeks later, if the wholesaler has them.</li>
+        <li>A keg sitting in your cellar costs <b>£0.50</b> a week.</li>
+        <li>A keg you owe a customer costs <b>£1</b> a week, and you still have to supply it.</li>
+        <li>These are the only two costs. Placing an order is free, and so are the kegs themselves.</li>
+        <li>Your one decision each week is how many kegs to order. Keep your total cost low.</li>
+        <li>The game runs for up to 50 weeks.</li>
+      </ul>
+      <div class="order-row"><button class="btn" id="startBtn" type="button">Open the pub</button></div>
+    </div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button type="button" role="tab" id="tabPub" aria-selected="true" aria-controls="lane">Your pub</button>
+      <button type="button" role="tab" id="tabChain" aria-selected="false" aria-controls="chainPlay">The chain</button>
+    </div>
+    <div id="chainPlay" hidden></div>
+    <div class="lane" id="lane">
+      <div class="zone far" id="zWho">
+        <div class="zone-top"><span class="zone-name">Wholesaler</span><span aria-hidden="true">🚚</span></div>
+        <div class="zone-hint">You cannot see its stock.</div>
+        <div class="say" id="whoSay" aria-live="polite"></div>
+        <div class="tok" id="tWho"></div>
+      </div>
+      <div class="zone" id="zS2">
+        <div class="zone-top"><span class="zone-name">On the road</span><span class="zone-n num" id="nS2">0</span></div>
+        <div class="zone-hint">Arrives in 2 weeks</div>
+        <div class="tok" id="tS2"></div>
+      </div>
+      <div class="zone" id="zS1">
+        <div class="zone-top"><span class="zone-name">Nearly here</span><span class="zone-n num" id="nS1">0</span></div>
+        <div class="zone-hint">Arrives next week</div>
+        <div class="tok" id="tS1"></div>
+      </div>
+      <div class="zone mine" id="zCel">
+        <div class="zone-top"><span class="zone-name">Your cellar</span><span class="zone-n num" id="nCel">0</span></div>
+        <div class="zone-hint">Kegs in stock</div>
+        <div class="tok" id="tCel"></div>
+      </div>
+      <div class="zone cust" id="zCus">
+        <div class="zone-top"><span class="zone-name">Customers</span><span class="zone-n num owed-n" id="nCus">0</span></div>
+        <div class="zone-hint" id="hCus">Nobody is waiting</div>
+        <div class="tok" id="tCus"></div>
+      </div>
+    </div>
+
+    <div class="alert" id="alert" role="status" hidden></div>
+    <div class="desk">
+      <div class="panel">
+        <h3>This week</h3>
+        <dl class="facts">
+          <div><dt>Customers want</dt><dd id="fDem">0</dd></div>
+          <div><dt>In your cellar</dt><dd id="fSent">0</dd></div>
+          <div><dt>Owed from before</dt><dd id="fOwed">0</dd></div>
+          <div><dt>Delivered this week</dt><dd id="fArr">0</dd></div>
+          <div><dt>Cost last week</dt><dd id="fCost">£0</dd></div>
+          <div><dt>On its way to you</dt><dd id="fWay">0</dd></div>
+        </dl>
+        <div class="past" id="lastWk" aria-live="polite"></div>
+        <div class="costsum" id="costWk"></div>
+        <div class="rates" id="rates"></div>
+      </div>
+      <div class="panel">
+        <h3 id="orderHead">How many kegs do you order?</h3>
+        <div class="order-row">
+          <div class="stepper">
+            <button type="button" id="less" aria-label="One keg fewer">−</button>
+            <input id="order" type="number" min="0" max="99" step="1" value="4" inputmode="numeric" aria-labelledby="orderHead">
+            <button type="button" id="more" aria-label="One keg more">+</button>
+          </div>
+          <button class="btn" id="sendBtn" type="button">Send order</button>
+        </div>
+        <div class="past" id="past">Your recent orders: none yet</div>
+      </div>
+    </div>
+
+    <div class="panel logp">
+      <h3>Week by week</h3>
+      <div class="logwrap" tabindex="0" role="region" aria-label="Record of every week so far">
+        <table class="log">
+          <thead>
+            <tr><th rowspan="2">Week</th><th colspan="5" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler's answer</th><th colspan="2" class="grp">Cost</th></tr>
+            <tr><th>Customers wanted</th><th>Delivered to you</th><th>Served</th><th>Left waiting</th><th>Cellar at end</th><th>You ordered</th><th>Wholesaler sent</th><th>On back order with the wholesaler</th><th>Week's cost</th><th>Cost so far</th></tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <p class="note">Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.</p>
+    </div>
+
+    <div class="tools">
+      <label for="speed">Animation</label>
+      <select id="speed">
+        <option value="1">Normal</option>
+        <option value="0.45">Fast</option>
+        <option value="0">Off</option>
+      </select>
+      <button class="btn ghost" id="autoBtn" type="button">Play the rest automatically (for testing)</button>
+    </div>
+  </section>
+
+  <section id="commit" hidden>
+    <div class="panel">
+      <h2>The game has been stopped</h2>
+      <p>Before you see any results, answer in your own words.</p>
+      <label for="why"><b>What made it hard to keep your costs down?</b></label>
+      <textarea id="why" placeholder="Write what you think happened, and why."></textarea>
+      <div class="order-row"><button class="btn" id="seeBtn" type="button">Show me the results</button></div>
+    </div>
+  </section>
+
+  <section id="results" hidden>
+    <div class="panel">
+      <h2>Your pub</h2>
+      <dl class="kpis">
+        <div><dt>Your total cost</dt><dd id="kCost">£0</dd></div>
+        <div><dt>Most customers ever wanted in a week</dt><dd id="kDem">0</dd></div>
+        <div><dt>Most you ordered in a week</dt><dd id="kOrd">0</dd></div>
+      </dl>
+      <div class="pair">
+        <div>
+          <h3>Orders</h3>
+          <div class="legend"><span class="l-dem"><i></i>Customers wanted</span><span class="l-pub"><i></i>You ordered</span></div>
+          <div class="chart" id="cMineOrders"></div>
+        </div>
+        <div>
+          <h3>Stock</h3>
+          <div class="legend"><span class="l-pub"><i></i>Kegs in your cellar, minus kegs owed</span></div>
+          <div class="chart" id="cMineStock"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>The whole chain</h2>
+      <p>Your orders went to a wholesaler, who ordered from a distributor, who ordered from a brewery. Replay the game and watch all four.</p>
+      <div class="replay">
+        <button class="btn" id="playBtn" type="button">Play</button>
+        <input id="scrub" type="range" min="1" max="36" value="36" step="1" aria-label="Week">
+        <span class="num">Week <b id="rWk">36</b></span>
+      </div>
+      <div id="chainReplay"></div>
+      <h3>Orders placed each week</h3>
+      <div class="legend">
+        <span class="l-dem"><i></i>Customers</span><span class="l-pub"><i></i>Pub (you)</span>
+        <span class="l-who"><i></i>Wholesaler</span><span class="l-dis"><i></i>Distributor</span><span class="l-bre"><i></i>Brewery</span>
+      </div>
+      <div class="chart" id="cChain"></div>
+      <h3>Stock in the selected week</h3>
+      <p class="note">Right of the line is stock. Left of the line is kegs owed.</p>
+      <div class="bars" id="bars"></div>
+      <dl class="kpis">
+        <div><dt>Largest order by the brewery</dt><dd id="kBre">0</dd></div>
+        <div><dt>Cost of the whole chain</dt><dd id="kChain">£0</dd></div>
+        <div><dt>Times customer demand changed</dt><dd>1</dd></div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2>What you wrote before seeing this</h2>
+      <p class="quote" id="said"></p>
+      <p>The next step is to build a diagram that explains these charts. That step is not in this prototype.</p>
+      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button></div>
+    </div>
+  </section>
+</div>
+<div id="fx" aria-hidden="true"></div>

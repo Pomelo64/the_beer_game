@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Pub Supply Game</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one column. A lane of five zones reads left to right as the kegs travel:
+   wholesaler -> two delay slots -> your cellar -> customers. */
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --sunk:#e8eeeb; --line:#cdd8d2;
+  --fg:#16211c; --muted:#56655d;
+  --accent:#17705a; --accent-fg:#ffffff;
+  --owed:#b3392f; --hold:#17705a;
+  --c-pub:#17705a; --c-who:#b06a00; --c-dis:#6a4bb8; --c-bre:#c0366b; --c-dem:#56655d;
+  --font-head:"Space Grotesk",system-ui,sans-serif;
+  --font-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#101614; --surface:#19221f; --sunk:#141c19; --line:#2c3a35;
+    --fg:#e8efec; --muted:#9db0a7;
+    --accent:#4fc3a1; --accent-fg:#08130f;
+    --owed:#ff8b7e; --hold:#4fc3a1;
+    --c-pub:#4fc3a1; --c-who:#f0b04a; --c-dis:#b39bf5; --c-bre:#ff86b0; --c-dem:#9db0a7;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101614; --surface:#19221f; --sunk:#141c19; --line:#2c3a35;
+  --fg:#e8efec; --muted:#9db0a7;
+  --accent:#4fc3a1; --accent-fg:#08130f;
+  --owed:#ff8b7e; --hold:#4fc3a1;
+  --c-pub:#4fc3a1; --c-who:#f0b04a; --c-dis:#b39bf5; --c-bre:#ff86b0; --c-dem:#9db0a7;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:15px;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--font-head);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:1.5rem} h2{font-size:1.2rem} h3{font-size:1rem}
+p{margin:0;max-width:65ch}
+.num{font-variant-numeric:tabular-nums}
+.top{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px;
+  border-bottom:1px solid var(--line);padding-bottom:12px}
+.top .tag{color:var(--muted);font-size:.85rem}
+.top-stats{display:flex;gap:20px;color:var(--muted)}
+.top-stats b{color:var(--fg);font-family:var(--font-head);font-size:1.15rem;font-variant-numeric:tabular-nums}
+section{display:flex;flex-direction:column;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;
+  display:flex;flex-direction:column;gap:12px}
+.brief{gap:10px}
+.rules{margin:0;padding-left:1.1em;display:flex;flex-direction:column;gap:4px;max-width:65ch}
+
+/* the lane */
+.lane{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;align-items:stretch}
+.zone{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;
+  display:flex;flex-direction:column;gap:6px;min-width:0;min-height:150px}
+.zone.far{background:var(--sunk);border-style:dashed}
+.zone.mine{border-color:var(--accent);border-width:2px}
+.zone-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.zone-name{font-family:var(--font-head);font-weight:600;font-size:.9rem}
+.zone-n{font-family:var(--font-head);font-size:1.3rem;font-variant-numeric:tabular-nums}
+.zone-hint{color:var(--muted);font-size:.78rem;line-height:1.3}
+.tok{display:flex;flex-wrap:wrap;gap:1px;font-size:1.15rem;line-height:1.15;align-content:flex-start;flex:1}
+.tok span.more{font-size:.75rem;color:var(--muted);align-self:center;margin-left:4px;font-variant-numeric:tabular-nums}
+.tok .waiting{filter:grayscale(1);opacity:.9}
+.say{font-size:.85rem;line-height:1.35;color:var(--fg)}
+.say b{font-family:var(--font-head)}
+.say .short{color:var(--owed)}
+.zone.far .tok{flex:0 0 2px}
+.owed-n{color:var(--owed)}
+.arrow{display:none}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:20;overflow:hidden}
+.flyer{position:fixed;font-size:1.25rem;line-height:1;will-change:transform}
+
+/* tabs */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;border-bottom:3px solid transparent;background:transparent;color:var(--muted);
+  font:600 .95rem var(--font-body);padding:8px 14px;cursor:pointer;margin-bottom:-1px}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+/* the chain picture: brewery -> distributor -> wholesaler -> pub -> customers */
+.chain{display:flex;gap:4px;align-items:stretch}
+.node,.link,.cust{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:8px;
+  display:flex;flex-direction:column;gap:4px;min-width:0}
+.node{flex:1 1 0;align-items:center;text-align:center}
+.node.me{border-color:var(--accent);border-width:2px}
+.cust{flex:0 0 136px}
+.link{flex:0 0 140px;background:transparent;border-style:dashed;justify-content:center;gap:10px;padding:8px 6px}
+.link.hid{flex:0 0 64px;justify-content:center}
+.link.hid .node-note{text-align:center;font-size:.7rem}
+.hid{background:var(--sunk);border-style:dashed}
+.node-ico{font-size:1.9rem;line-height:1.1}
+.node-name{font-family:var(--font-head);font-weight:600;font-size:.82rem}
+.node-n{font-family:var(--font-head);font-size:1.15rem;font-variant-numeric:tabular-nums}
+.node-note{color:var(--muted);font-size:.74rem;line-height:1.3}
+.owes{color:var(--owed);font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-wrap:wrap-reverse;justify-content:center;gap:0;font-size:.95rem;line-height:1.1;min-height:1.2em}
+.stack .more,.people .more{font-size:.72rem;color:var(--muted);align-self:center;margin-left:3px;font-variant-numeric:tabular-nums}
+.lane-up,.lane-down{display:flex;flex-direction:column;gap:2px;font-size:.74rem;color:var(--muted)}
+.lane-up b,.slot b{color:var(--fg);font-family:var(--font-head);font-size:.95rem;font-variant-numeric:tabular-nums}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.slot{border:1px solid var(--line);border-radius:6px;padding:3px;background:var(--surface);display:flex;flex-direction:column;align-items:center;min-height:54px}
+.slot .mugs{font-size:.8rem;line-height:1.05;text-align:center}
+.slot .more{display:block;margin:0}
+.people{display:flex;flex-wrap:wrap;gap:0;font-size:1.15rem;line-height:1.2;min-height:1.3em}
+.cust h4{margin:0;font:600 .74rem var(--font-body);color:var(--muted)}
+.cust h4 b{color:var(--fg);font-family:var(--font-head);font-size:.9rem}
+.cust h4.late b{color:var(--owed)}
+@media (max-width:820px){
+  .chain{flex-direction:column}
+  .link,.link.hid{flex:0 0 auto;flex-direction:row;gap:10px;justify-content:space-between}
+  .cust{flex:0 0 auto}
+  .lane-up,.lane-down{flex:1 1 0}
+  .node{flex:0 0 auto}
+}
+.count{font-size:1.1rem;white-space:nowrap}
+.count b,.badge b,.faces b{font-family:var(--font-head);font-variant-numeric:tabular-nums}
+.badge{display:inline-flex;align-items:center;gap:3px;background:var(--surface);color:var(--fg);border:1px solid var(--line);
+  border-radius:999px;padding:2px 7px;font-size:.84rem;white-space:nowrap;line-height:1.3}
+.flyer.badge{font-size:.9rem;box-shadow:0 2px 8px rgb(0 0 0 / .18)}
+.lane-up{flex-direction:row;align-items:center;gap:6px;min-height:28px}
+.road{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:2px;
+  min-height:34px;border-bottom:2px dashed var(--line);padding-bottom:4px;color:var(--muted)}
+.stop{display:flex;justify-content:center;min-width:0}
+.faces{font-size:1.05rem;line-height:1.3;min-height:1.4em}
+.faces b{font-size:.95rem;white-space:nowrap}
+.faces .none{color:var(--muted);font-size:.9rem}
+.cust h4.late{color:var(--owed)}
+/* the chain on one grid: kegs lane above, positions, orders lane below */
+.chainwrap{overflow-x:auto}
+.chain3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr) 72px) minmax(0,1fr) 156px;gap:4px 0;min-width:740px}
+.chain3 .custs{grid-column:8;grid-row:2;margin-left:8px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cbox{flex:1 1 0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px 8px;
+  display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+.cbox.late{border:2px solid var(--owed)}
+.cbox h4{margin:0;font:600 .76rem var(--font-body);color:var(--muted)}
+.cbox.late h4{color:var(--owed)}
+.chain3 .node{margin:0 2px}
+/* each row is pinned, so the last column stays free for the customer boxes */
+.chain3 .lane.k{grid-row:1}
+.chain3 .node,.chain3 .gap{grid-row:2}
+.chain3 .lane.o{grid-row:3}
+.lane{display:flex;align-items:center;justify-content:center;min-height:38px;white-space:nowrap;color:var(--muted)}
+.lane.k.on{border-bottom:2px dashed var(--line);padding-bottom:4px}
+.lane.o.on{border-top:2px dashed var(--line);padding-top:4px}
+.gap{display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.tip{font-size:.9rem}
+/* week summary + order */
+.desk{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px;margin:0}
+.facts div{display:flex;flex-direction:column;min-width:0}
+.facts dt{color:var(--muted);font-size:.78rem}
+.facts dd{margin:0;font-family:var(--font-head);font-size:1.25rem;font-variant-numeric:tabular-nums}
+.order-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.stepper{display:flex;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.stepper input:focus-visible{outline-offset:-2px}
+.stepper button{border:0;background:transparent;color:var(--fg);width:40px;font-size:1.2rem;cursor:pointer}
+.stepper button:hover{background:var(--sunk)}
+.stepper input{width:64px;border:0;border-inline:1px solid var(--line);background:transparent;color:var(--fg);
+  text-align:center;font:600 1.15rem var(--font-head);font-variant-numeric:tabular-nums;padding:8px 0;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-fg);border-radius:8px;
+  padding:9px 16px;font:600 .95rem var(--font-body);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.past{color:var(--muted);font-size:.85rem;font-variant-numeric:tabular-nums}
+.tools{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;color:var(--muted);font-size:.85rem}
+select{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 6px;font:inherit}
+textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:1px solid var(--line);
+  border-radius:8px;padding:10px;font:inherit;resize:vertical;box-sizing:border-box}
+.note{color:var(--muted);font-size:.85rem}
+
+/* charts */
+.chart{width:100%;overflow-x:auto}
+.chart svg{display:block;width:100%;height:auto;min-width:320px}
+.axis{stroke:var(--line);stroke-width:1;fill:none}
+.grid{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4;fill:none}
+.tick{fill:var(--muted);font:11px var(--font-body)}
+.ser{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.s-pub{stroke:var(--c-pub)} .s-who{stroke:var(--c-who)} .s-dis{stroke:var(--c-dis)} .s-bre{stroke:var(--c-bre)}
+.s-dem{stroke:var(--c-dem);stroke-dasharray:5 4;stroke-width:1.8}
+.end{font:600 11px var(--font-body)}
+.f-pub{fill:var(--c-pub)} .f-who{fill:var(--c-who)} .f-dis{fill:var(--c-dis)} .f-bre{fill:var(--c-bre)} .f-dem{fill:var(--c-dem)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.legend .l-dem i{border-top-style:dashed;border-top-width:2px}
+.l-pub i{border-color:var(--c-pub)} .l-who i{border-color:var(--c-who)} .l-dis i{border-color:var(--c-dis)}
+.l-bre i{border-color:var(--c-bre)} .l-dem i{border-color:var(--c-dem)}
+.replay{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.replay input[type=range]{flex:1;min-width:140px;accent-color:var(--accent)}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:grid;grid-template-columns:92px minmax(0,1fr) 52px;gap:8px;align-items:center;font-size:.85rem}
+.bar-track{position:relative;height:16px;background:var(--sunk);border-radius:4px;overflow:hidden}
+.bar-track::after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--muted)}
+.bar-fill{position:absolute;top:0;bottom:0}
+.bar-fill.pos{left:50%;background:var(--hold)} .bar-fill.neg{right:50%;background:var(--owed)}
+.bar-val{text-align:right;font-variant-numeric:tabular-nums}
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.quote{border-left:3px solid var(--line);padding-left:12px;color:var(--fg);white-space:pre-wrap}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0}
+.kpis div{display:flex;flex-direction:column;min-width:0}
+.kpis dt{color:var(--muted);font-size:.8rem}
+.kpis dd{margin:0;font-family:var(--font-head);font-size:1.4rem;font-variant-numeric:tabular-nums}
+@media (max-width:720px){
+  .lane{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .zone{min-height:110px}
+  .zone.mine,.zone.cust,.zone.far{grid-column:span 2}
+  .zone.far{min-height:0}
+  .desk,.pair{grid-template-columns:minmax(0,1fr)}
+  .facts,.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (prefers-reduced-motion: reduce){ .flyer{display:none} }
+
+/* the week-by-week record */
+.logp{margin:16px 0}
+.logwrap{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:8px}
+.log{border-collapse:collapse;width:100%;min-width:780px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.log th,.log td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.log thead th{position:sticky;top:0;background:var(--sunk);color:var(--muted);font-weight:600;white-space:normal;vertical-align:bottom;line-height:1.25}
+.log thead tr:nth-child(2) th{top:31px}
+.log thead th.grp{text-align:center;color:var(--fg);border-left:1px solid var(--line)}
+.log tbody th{text-align:right;font-weight:600;color:var(--muted)}
+.log td:nth-child(2),.log td:nth-child(7),.log td:nth-child(10){border-left:1px solid var(--line)}
+.log td.bad{color:var(--owed);font-weight:600}
+.log tbody tr:last-child th,.log tbody tr:last-child td{border-bottom:0}
+
+/* the wholesaler has run short */
+.node.warn{position:relative;border:2px solid var(--owed);border-style:solid;background:color-mix(in srgb,var(--owed) 12%,var(--surface))}
+.node.warn .flag{position:absolute;top:-12px;right:-10px;font-size:1.35rem;line-height:1}
+.owes-you{margin-top:4px;padding:3px 10px;border-radius:999px;background:var(--owed);color:var(--surface);font-family:var(--font-head);font-weight:600;font-size:.9rem;font-variant-numeric:tabular-nums}
+.alert{display:flex;gap:12px;align-items:flex-start;margin:12px 0;padding:12px 14px;border:2px solid var(--owed);border-left-width:8px;border-radius:var(--r);
+  background:color-mix(in srgb,var(--owed) 10%,var(--surface));font-size:.92rem;line-height:1.45}
+.alert-ico{font-size:1.5rem;line-height:1.1}
+.alert b{font-variant-numeric:tabular-nums}
+
+/* three customer boxes */
+.chain3 .custs .cbox{padding:4px 8px}
+.cbox.glad{border-color:var(--hold)}
+.cbox.glad h4{color:var(--hold)}
+
+/* the costs written out */
+.costsum{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--sunk);font-size:.85rem;line-height:1.5;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:0 6px}
+.costsum:empty{display:none}
+.costsum span{white-space:nowrap}
+.costsum .sofar{flex-basis:100%;color:var(--muted)}
+.rates{margin-top:8px;color:var(--muted);font-size:.8rem;line-height:1.45}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Pub Supply Game</h1>
+      <span class="tag">Prototype. One player, running the pub.</span>
+    </div>
+    <div class="top-stats" id="topStats" hidden>
+      <span>Week <b id="wk">1</b></span>
+      <span>Cost so far <b id="tot">£0</b></span>
+    </div>
+  </header>
+
+  <section id="intro">
+    <div class="panel brief">
+      <h2>You run a pub</h2>
+      <p>Each week customers come in for kegs of beer. You serve them from your cellar and order more from your wholesaler. One mug on screen is one keg.</p>
+      <ul class="rules">
+        <li>Your wholesaler gets your order at once and tells you what it can send. Delivery then takes time: kegs you order now reach you three weeks later, if the wholesaler has them.</li>
+        <li>A keg sitting in your cellar costs <b>£0.50</b> a week.</li>
+        <li>A keg you owe a customer costs <b>£1</b> a week, and you still have to supply it.</li>
+        <li>These are the only two costs. Placing an order is free, and so are the kegs themselves.</li>
+        <li>Your one decision each week is how many kegs to order. Keep your total cost low.</li>
+        <li>The game runs for up to 50 weeks.</li>
+      </ul>
+      <div class="order-row"><button class="btn" id="startBtn" type="button">Open the pub</button></div>
+    </div>
+  </section>
+
+  <section id="play" hidden>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button type="button" role="tab" id="tabPub" aria-selected="true" aria-controls="lane">Your pub</button>
+      <button type="button" role="tab" id="tabChain" aria-selected="false" aria-controls="chainPlay">The chain</button>
+    </div>
+    <div id="chainPlay" hidden></div>
+    <div class="lane" id="lane">
+      <div class="zone far" id="zWho">
+        <div class="zone-top"><span class="zone-name">Wholesaler</span><span aria-hidden="true">🚚</span></div>
+        <div class="zone-hint">You cannot see its stock.</div>
+        <div class="say" id="whoSay" aria-live="polite"></div>
+        <div class="tok" id="tWho"></div>
+      </div>
+      <div class="zone" id="zS2">
+        <div class="zone-top"><span class="zone-name">On the road</span><span class="zone-n num" id="nS2">0</span></div>
+        <div class="zone-hint">Arrives in 2 weeks</div>
+        <div class="tok" id="tS2"></div>
+      </div>
+      <div class="zone" id="zS1">
+        <div class="zone-top"><span class="zone-name">Nearly here</span><span class="zone-n num" id="nS1">0</span></div>
+        <div class="zone-hint">Arrives next week</div>
+        <div class="tok" id="tS1"></div>
+      </div>
+      <div class="zone mine" id="zCel">
+        <div class="zone-top"><span class="zone-name">Your cellar</span><span class="zone-n num" id="nCel">0</span></div>
+        <div class="zone-hint">Kegs in stock</div>
+        <div class="tok" id="tCel"></div>
+      </div>
+      <div class="zone cust" id="zCus">
+        <div class="zone-top"><span class="zone-name">Customers</span><span class="zone-n num owed-n" id="nCus">0</span></div>
+        <div class="zone-hint" id="hCus">Nobody is waiting</div>
+        <div class="tok" id="tCus"></div>
+      </div>
+    </div>
+
+    <div class="alert" id="alert" role="status" hidden></div>
+    <div class="desk">
+      <div class="panel">
+        <h3>This week</h3>
+        <dl class="facts">
+          <div><dt>Customers want</dt><dd id="fDem">0</dd></div>
+          <div><dt>In your cellar</dt><dd id="fSent">0</dd></div>
+          <div><dt>Owed from before</dt><dd id="fOwed">0</dd></div>
+          <div><dt>Delivered this week</dt><dd id="fArr">0</dd></div>
+          <div><dt>Cost last week</dt><dd id="fCost">£0</dd></div>
+          <div><dt>On its way to you</dt><dd id="fWay">0</dd></div>
+        </dl>
+        <div class="past" id="lastWk" aria-live="polite"></div>
+        <div class="costsum" id="costWk"></div>
+        <div class="rates" id="rates"></div>
+      </div>
+      <div class="panel">
+        <h3 id="orderHead">How many kegs do you order?</h3>
+        <div class="order-row">
+          <div class="stepper">
+            <button type="button" id="less" aria-label="One keg fewer">−</button>
+            <input id="order" type="number" min="0" max="99" step="1" value="4" inputmode="numeric" aria-labelledby="orderHead">
+            <button type="button" id="more" aria-label="One keg more">+</button>
+          </div>
+          <button class="btn" id="sendBtn" type="button">Send order</button>
+        </div>
+        <div class="past" id="past">Your recent orders: none yet</div>
+      </div>
+    </div>
+
+    <div class="panel logp">
+      <h3>Week by week</h3>
+      <div class="logwrap" tabindex="0" role="region" aria-label="Record of every week so far">
+        <table class="log">
+          <thead>
+            <tr><th rowspan="2">Week</th><th colspan="5" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler's answer</th><th colspan="2" class="grp">Cost</th></tr>
+            <tr><th>Customers wanted</th><th>Delivered to you</th><th>Served</th><th>Left waiting</th><th>Cellar at end</th><th>You ordered</th><th>Wholesaler sent</th><th>On back order with the wholesaler</th><th>Week's cost</th><th>Cost so far</th></tr>
+          </thead>
+          <tbody id="logBody"></tbody>
+        </table>
+      </div>
+      <p class="note">Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.</p>
+    </div>
+
+    <div class="tools">
+      <label for="speed">Animation</label>
+      <select id="speed">
+        <option value="1">Normal</option>
+        <option value="0.45">Fast</option>
+        <option value="0">Off</option>
+      </select>
+      <button class="btn ghost" id="autoBtn" type="button">Play the rest automatically (for testing)</button>
+    </div>
+  </section>
+
+  <section id="commit" hidden>
+    <div class="panel">
+      <h2>The game has been stopped</h2>
+      <p>Before you see any results, answer in your own words.</p>
+      <label for="why"><b>What made it hard to keep your costs down?</b></label>
+      <textarea id="why" placeholder="Write what you think happened, and why."></textarea>
+      <div class="order-row"><button class="btn" id="seeBtn" type="button">Show me the results</button></div>
+    </div>
+  </section>
+
+  <section id="results" hidden>
+    <div class="panel">
+      <h2>Your pub</h2>
+      <dl class="kpis">
+        <div><dt>Your total cost</dt><dd id="kCost">£0</dd></div>
+        <div><dt>Most customers ever wanted in a week</dt><dd id="kDem">0</dd></div>
+        <div><dt>Most you ordered in a week</dt><dd id="kOrd">0</dd></div>
+      </dl>
+      <div class="pair">
+        <div>
+          <h3>Orders</h3>
+          <div class="legend"><span class="l-dem"><i></i>Customers wanted</span><span class="l-pub"><i></i>You ordered</span></div>
+          <div class="chart" id="cMineOrders"></div>
+        </div>
+        <div>
+          <h3>Stock</h3>
+          <div class="legend"><span class="l-pub"><i></i>Kegs in your cellar, minus kegs owed</span></div>
+          <div class="chart" id="cMineStock"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>The whole chain</h2>
+      <p>Your orders went to a wholesaler, who ordered from a distributor, who ordered from a brewery. Replay the game and watch all four.</p>
+      <div class="replay">
+        <button class="btn" id="playBtn" type="button">Play</button>
+        <input id="scrub" type="range" min="1" max="36" value="36" step="1" aria-label="Week">
+        <span class="num">Week <b id="rWk">36</b></span>
+      </div>
+      <div id="chainReplay"></div>
+      <h3>Orders placed each week</h3>
+      <div class="legend">
+        <span class="l-dem"><i></i>Customers</span><span class="l-pub"><i></i>Pub (you)</span>
+        <span class="l-who"><i></i>Wholesaler</span><span class="l-dis"><i></i>Distributor</span><span class="l-bre"><i></i>Brewery</span>
+      </div>
+      <div class="chart" id="cChain"></div>
+      <h3>Stock in the selected week</h3>
+      <p class="note">Right of the line is stock. Left of the line is kegs owed.</p>
+      <div class="bars" id="bars"></div>
+      <dl class="kpis">
+        <div><dt>Largest order by the brewery</dt><dd id="kBre">0</dd></div>
+        <div><dt>Cost of the whole chain</dt><dd id="kChain">£0</dd></div>
+        <div><dt>Times customer demand changed</dt><dd>1</dd></div>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h2>What you wrote before seeing this</h2>
+      <p class="quote" id="said"></p>
+      <p>The next step is to build a diagram that explains these charts. That step is not in this prototype.</p>
+      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button></div>
+    </div>
+  </section>
+</div>
+<div id="fx" aria-hidden="true"></div>
+<script>
+/* Game engine. No drawing here: the same engine runs the player's pub,
+   the three simulated positions, the replay, and any later variants.
+   Adapted from the Beer Game as described in Sterman (1989), "Modeling
+   managerial behavior", Management Science 35(3).
+   Changes from the original: (1) units renamed, case -> keg, factory -> brewery,
+   retailer -> pub; (2) the order delay is removed. An order reaches the
+   supplier at once and is acted on in the following week, so delivery takes
+   three weeks from ordering (it took four). The brewing delay is unchanged. */
+const Engine = (function () {
+  const CFG = {
+    weeksPlayed: 36,          // the game is stopped here
+    weeksAnnounced: 50,       // what the player is told
+    startStock: 12,
+    startFlow: 4,             // kegs in each delay slot and on each order slip
+    holdCost: 0.5,            // per keg in stock, per week
+    backlogCost: 1.0,         // per keg owed, per week
+    demand: function (week) { return week < 5 ? 4 : 8; },   // one step, in week 5
+    names: ['Pub', 'Wholesaler', 'Distributor', 'Brewery'],
+    // Ordering rule of the simulated positions: mean estimates over 44 players
+    // (Sterman 1989, Table 4). S' is set per position so that the chain starts
+    // in balance; the paper's mean is 17.
+    rule: { theta: 0.36, alphaS: 0.26, beta: 0.34 }
+  };
+
+  function newGame(seat) {
+    const pos = [];
+    for (let i = 0; i < 4; i++) {
+      pos.push({
+        stock: CFG.startStock, owed: 0,
+        inbound: [CFG.startFlow, CFG.startFlow],  // [arrives next week, the week after]
+        placed: CFG.startFlow,                    // last order, read by the supplier next week
+        expected: CFG.startFlow,                  // expected demand (adaptive)
+        cost: 0
+      });
+    }
+    const g = { week: 0, seat: seat || 0, pos: pos, log: [] };
+    // Desired stock that keeps the starting position in balance.
+    for (let i = 0; i < 4; i++) {
+      const sl0 = 2 * CFG.startFlow;
+      pos[i].desired = CFG.startStock + CFG.rule.beta * sl0;
+    }
+    return g;
+  }
+
+  /* A week up to the ordering decision: deliveries arrive, each position
+     reads the order its customer placed last week and sends what it can,
+     costs are counted, and the brewery starts brewing. */
+  function beginWeek(g) {
+    g.week += 1;
+    const P = g.pos, rec = { week: g.week, demand: CFG.demand(g.week), pos: [] };
+    const arrived = [];
+    for (let i = 0; i < 4; i++) {
+      const p = P[i];
+      arrived[i] = p.inbound[0];
+      p.stock += p.inbound[0];
+      p.inbound[0] = p.inbound[1];
+      p.inbound[1] = 0;
+    }
+    for (let i = 0; i < 4; i++) {
+      const p = P[i];
+      const asked = i === 0 ? rec.demand : P[i - 1].placed;
+      const want = p.owed + asked;
+      const sent = Math.min(p.stock, want);
+      p.stock -= sent;
+      p.owed = want - sent;
+      if (i > 0) P[i - 1].inbound[1] += sent;
+      p.expected = CFG.rule.theta * asked + (1 - CFG.rule.theta) * p.expected;
+      p.cost += CFG.holdCost * p.stock + CFG.backlogCost * p.owed;
+      rec.pos.push({
+        asked: asked, sent: sent, arrived: arrived[i],
+        stock: p.stock, owed: p.owed, net: p.stock - p.owed,
+        weekCost: CFG.holdCost * p.stock + CFG.backlogCost * p.owed,
+        cost: p.cost, order: null
+      });
+    }
+    P[3].inbound[1] = P[3].placed;   // the brewery starts brewing what it decided last week
+    for (let i = 0; i < 4; i++) rec.pos[i].way = [P[i].inbound[0], P[i].inbound[1]];
+    g.log.push(rec);
+    return rec;
+  }
+
+  /* Everything a position has asked for and not yet received. */
+  function onOrder(g, i) {
+    const P = g.pos, p = P[i];
+    const inTransit = p.inbound[0] + p.inbound[1];
+    if (i === 3) return inTransit;
+    return P[i + 1].owed + inTransit;
+  }
+
+  /* Ordering rule of a simulated position (anchoring and adjustment). */
+  function decide(g, i) {
+    const p = g.pos[i], r = CFG.rule;
+    const net = p.stock - p.owed;
+    const order = p.expected + r.alphaS * (p.desired - net - r.beta * onOrder(g, i));
+    return Math.max(0, Math.round(order));
+  }
+
+  /* Step 5: every position writes its order. `orders` maps seat -> amount
+     for human players; the rest follow the rule. */
+  function endWeek(g, orders) {
+    const rec = g.log[g.log.length - 1];
+    for (let i = 0; i < 4; i++) {
+      const o = orders && orders[i] != null ? Math.max(0, Math.round(orders[i])) : decide(g, i);
+      g.pos[i].placed = o;
+      rec.pos[i].order = o;
+    }
+    return rec;
+  }
+
+  function finished(g) { return g.week >= CFG.weeksPlayed; }
+
+  return { CFG: CFG, newGame: newGame, beginWeek: beginWeek, endWeek: endWeek,
+           decide: decide, onOrder: onOrder, finished: finished };
+})();
+if (typeof module !== 'undefined') module.exports = Engine;
+
+/* Drawing and interaction. Reads the engine's state; never changes the rules. */
+(function () {
+  const $ = function (id) { return document.getElementById(id); };
+  const CFG = Engine.CFG, KEG = '🍺', SLIP = '🧾', PERSON = '🧍';
+  const MAXTOK = 30;
+  let G = null, V = null, busy = false, timer = null, ANS = null;   // ANS: the wholesaler's latest answer
+  const money = function (x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); };
+
+  function show(id) {
+    ['intro', 'play', 'commit', 'results'].forEach(function (s) { $(s).hidden = s !== id; });
+    $('topStats').hidden = id === 'intro';
+  }
+  function speed() {
+    const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return reduce ? 0 : parseFloat($('speed').value);
+  }
+  const wait = function (ms) { return ms > 0 ? new Promise(function (r) { setTimeout(r, ms); }) : Promise.resolve(); };
+
+  /* ---------- counts and faces ---------- */
+  const TIMES = ' <b>× ';
+  function kegs(n) { return KEG + TIMES + n + '</b>'; }
+  function orderFor(n) { return SLIP + KEG + TIMES + n + '</b>'; }
+  const FACES = {
+    ask: ['\u{1F642}', '\u{1F600}', '\u{1F60A}', '\u{1F603}'],      // on the way in
+    glad: ['\u{1F60B}', '\u{1F604}', '\u{1F974}', '\u{1F60C}'],     // got a keg
+    late: ['\u{1F620}', '\u{1F61E}', '\u{1F622}', '\u{1F641}']      // still waiting for one
+  };
+  /* Up to three different faces, then the number. The faces change from week to week. */
+  function faces(kind, n, week) {
+    if (n <= 0) return '<span class="none">–</span>';
+    const set = FACES[kind]; let h = '';
+    for (let i = 0; i < Math.min(n, 3); i++) h += set[(week + i) % set.length];
+    return h + TIMES + n + '</b>';
+  }
+  function sumTo(w, f) { let s = 0; for (let i = 0; i < w && i < G.log.length; i++) s += f(G.log[i]); return s; }
+
+  /* ---------- the chain picture ---------- */
+  const ICON = ['\u{1F37B}', '\u{1F69B}', '\u{1F3EC}', '\u{1F3ED}'];
+  const NAME = ['Pub', 'Wholesaler', 'Distributor', 'Brewery'];
+  /* f = { reveal, week, pos:[{stock,owed,order,way:[one week away, two weeks away]}],
+           cust:{stage, asking, glad, late}, say } */
+  function badge(html, label) { return '<span class="badge"' + (label ? ' aria-label="' + label + '"' : '') + '>' + html + '</span>'; }
+  /* Three rows on one grid. Top: kegs on their way, one step to the right each week.
+     Middle: the four positions. Bottom: orders, which travel left and arrive at once.
+     A shipment two weeks from its customer sits above the supplier; one week away,
+     above the gap between the two; then it drops into the customer's stock. */
+  function chainHTML(f) {
+    let top = '', mid = '', bot = '';
+    for (let i = 3; i >= 0; i--) {
+      const p = f.pos[i], hide = !f.reveal && i > 0;
+      const c = i - 1, open = i > 0 && (f.reveal || c === 0);   // is the road to customer c shown?
+      const cust = open ? f.pos[c] : null;
+      // top lane, above position i
+      if (i === 0) top += '<div class="lane k on" data-k="arr"><span class="tip" aria-hidden="true">↓</span></div>';
+      else top += '<div class="lane k' + (open ? ' on' : '') + '" data-k="r2_' + c + '">' +
+        (open && cust.way[1] > 0 ? badge(kegs(cust.way[1]), cust.way[1] + ' kegs, two weeks away') : '') + '</div>';
+      // the position itself
+      const warn = hide && i === 1 && f.short && f.short.owed > 0;
+      mid += '<div class="node' + (hide ? ' hid' : '') + (i === 0 ? ' me' : '') + (warn ? ' warn' : '') + '" data-k="n' + i + '">' +
+        (warn ? '<span class="flag" aria-hidden="true">\u26A0\uFE0F</span>' : '') +
+        '<div class="node-ico" aria-hidden="true">' + ICON[i] + '</div><div class="node-name">' + NAME[i] + (i === 0 ? ' (you)' : '') + '</div>';
+      if (warn) mid += '<div class="owes-you">On back order: <b>' + f.short.owed + '</b></div>' +
+        '<div class="node-note">You ordered ' + f.short.asked + '. It sent <b>' + f.short.sent + '</b>.</div>';
+      else if (hide) mid += '<div class="node-note">' + (i === 1 && f.say ? f.say : 'Hidden while you play') + '</div>';
+      else mid += '<div class="count" data-k="st' + i + '" aria-label="' + p.stock + ' kegs in stock">' + kegs(p.stock) + '</div>' +
+        (p.owed > 0 && i > 0 ? '<div class="owes">owes ' + p.owed + '</div>' : '') +
+        (i === 3 ? '<div class="node-note">Brewing ' + p.way[1] + ', then ' + p.way[0] + '</div>' : '');
+      mid += '</div>';
+      // bottom lane, under position i: the order it has received from its customer
+      bot += '<div class="lane o' + (open || i === 0 ? ' on' : '') + '" data-k="un' + i + '">' +
+        (open && cust.order != null ? badge(orderFor(cust.order), 'order for ' + cust.order + ' kegs') : '') + '</div>';
+      if (i > 0) {   // the gap between position i and its customer
+        top += '<div class="lane k' + (open ? ' on' : '') + '" data-k="r1_' + c + '">' +
+          (open && cust.way[0] > 0 ? badge(kegs(cust.way[0]), cust.way[0] + ' kegs, one week away') : '') + '</div>';
+        mid += '<div class="gap" aria-hidden="true">→</div>';
+        bot += '<div class="lane o' + (open ? ' on' : '') + '"><span class="tip" aria-hidden="true">←</span></div>';
+      }
+    }
+    const q = f.cust;
+    // three boxes beside the pub: customers come in at the top, then move to "served" or "still waiting"
+    const cb = function (cls, k, title, html) { return '<div class="cbox' + cls + '" data-k="' + k + '"><h4>' + title + '</h4><div class="faces">' + html + '</div></div>'; };
+    const cu = '<div class="custs">' + cb('', 'cin', 'Coming in', faces('ask', q.coming, f.week)) +
+      cb(' glad', 'cserved', 'Leaving served', faces('glad', q.glad, q.gw || f.week)) +
+      cb(' late', 'cwait', 'Still waiting', faces('late', q.late, f.week)) + '</div>';
+    return '<div class="chainwrap"><div class="chain3">' + cu + top + mid + bot + '</div></div>' +
+      '<p class="note">Above the chain: kegs on their way, moving one step towards the customer each week. Below it: orders, which arrive at once.</p>';
+  }
+  /* The picture for a finished week, with every position shown. */
+  function frameAt(w) {
+    const r = G.log[w - 1];
+    return { reveal: true, week: w,
+      pos: r.pos.map(function (p) { return { stock: p.stock, owed: p.owed, order: p.order, way: p.way }; }),
+      cust: { coming: 0, glad: r.pos[0].sent, late: r.pos[0].owed } };
+  }
+  /* The picture during play: only what the pub can see, following the animation step by step. */
+  function drawChainPlay() {
+    const rec = G.log[G.log.length - 1], last = G.log.length > 1 ? G.log[G.log.length - 2].pos[0].order : null;
+    const pos = G.pos.map(function (p) { return { stock: p.stock, owed: p.owed, order: null, way: p.inbound }; });
+    pos[0] = { stock: V.cellar, owed: 0, order: last, way: [V.s1, V.s2] };
+    const me = rec.pos[0];
+    const cust = { coming: V.coming, glad: V.glad, late: V.late, gw: V.gladWeek };
+    // On a narrow screen the chain scrolls sideways: start at the pub's end, and keep the player's place between redraws.
+    const old = $('chainPlay').querySelector('.chainwrap'), keep = old && old.scrollWidth > old.clientWidth ? old.scrollLeft : null;
+    $('chainPlay').innerHTML = chainHTML({ reveal: false, week: rec.week, pos: pos, cust: cust, say: $('whoSay').innerHTML, short: ANS });
+    const wrap = $('chainPlay').querySelector('.chainwrap');
+    wrap.scrollLeft = keep == null ? wrap.scrollWidth : keep;
+  }
+  /* Where a flying token starts or ends, in whichever tab is open. */
+  function at(key) {
+    if ($('chainPlay').hidden) return $({ who: 'tWho', s2: 'tS2', s1: 'tS1', cel: 'tCel', cus: 'tCus', ofrom: 'tCel', oto: 'tWho' }[key]);
+    return $('chainPlay').querySelector('[data-k="' + { who: 'n1', s2: 'r2_0', s1: 'r1_0', cel: 'st0', cus: 'cserved', cin: 'cin', cserved: 'cserved', cwait: 'cwait', ofrom: 'un0', oto: 'un1' }[key] + '"]');
+  }
+  function tab(chain) {
+    $('chainPlay').hidden = !chain; $('lane').hidden = chain;
+    if (chain) { const w = $('chainPlay').querySelector('.chainwrap'); if (w) w.scrollLeft = w.scrollWidth; }
+    $('tabPub').setAttribute('aria-selected', String(!chain)); $('tabChain').setAttribute('aria-selected', String(chain));
+    try { localStorage.setItem('pubgame.tab', chain ? 'chain' : 'pub'); } catch (e) {}
+  }
+
+  /* ---------- the lane ---------- */
+  function tokens(el, sym, n, cls) {
+    el.textContent = '';
+    const k = Math.min(n, MAXTOK);
+    for (let i = 0; i < k; i++) {
+      const s = document.createElement('span');
+      s.textContent = sym; if (cls) s.className = cls;
+      el.appendChild(s);
+    }
+    if (n > k) { const m = document.createElement('span'); m.className = 'more'; m.textContent = '+' + (n - k); el.appendChild(m); }
+  }
+  /* One row a week, newest first. A row fills in as the week goes on: customers and the
+     delivery when it opens, the serving once the player has ordered, and the wholesaler's
+     answer to that order straight after. */
+  function drawTable() {
+    const cell = function (v, cls) { return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + (v == null ? '–' : v) + '</td>'; };
+    let h = '';
+    for (let k = G.log.length - 1; k >= 0; k--) {
+      const r = G.log[k], me = r.pos[G.seat], nxt = G.log[k + 1], sup = nxt ? nxt.pos[G.seat + 1] : null;
+      const served = k < G.log.length - 1 || (V && V.stage === 'done' && V.gladWeek === r.week);
+      h += '<tr><th scope="row">' + r.week + '</th>' + cell(me.asked) + cell(me.arrived) +
+        cell(served ? me.sent : null) + cell(served ? me.owed : null, served && me.owed > 0 ? 'bad' : '') + cell(served ? me.stock : null) +
+        cell(me.order) + cell(sup ? sup.sent : null, sup && sup.sent < me.order ? 'bad' : '') + cell(sup ? sup.owed : null, sup && sup.owed > 0 ? 'bad' : '') +
+        cell(served ? money(me.weekCost) : null) + cell(served ? money(me.cost) : null) + '</tr>';
+    }
+    $('logBody').innerHTML = h;
+  }
+  function drawLane() {
+    tokens($('tS2'), KEG, V.s2); $('nS2').textContent = V.s2;
+    tokens($('tS1'), KEG, V.s1); $('nS1').textContent = V.s1;
+    tokens($('tCel'), KEG, V.cellar); $('nCel').textContent = V.cellar;
+    tokens($('tCus'), PERSON, V.waiting, 'waiting'); $('nCus').textContent = V.waiting;
+    $('hCus').textContent = V.waiting === 0 ? 'Nobody is waiting'
+      : V.settled ? 'Waiting for kegs you owe them' : 'Asking for kegs';
+    drawChainPlay(); drawTable();
+  }
+  function fly(sym, from, to, n, ms, label) {
+    if (!ms || n <= 0) return Promise.resolve();
+    if (!$('chainPlay').hidden) {
+      const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), s = document.createElement('span');
+      s.className = 'flyer badge'; s.innerHTML = label || kegs(n);
+      s.style.left = (a.left + a.width / 2) + 'px'; s.style.top = (a.top + a.height / 2) + 'px';
+      $('fx').appendChild(s);
+      const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+      return s.animate([{ transform: 'translate(-50%,-50%)' }, { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))' }],
+        { duration: ms, easing: 'ease-in-out', fill: 'forwards' }).finished.then(function () { s.remove(); }, function () { s.remove(); });
+    }
+    const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), k = Math.min(n, 6), jobs = [];
+    for (let i = 0; i < k; i++) {
+      const s = document.createElement('span');
+      s.className = 'flyer'; s.textContent = sym;
+      const jx = (i % 3 - 1) * 16, jy = (Math.floor(i / 3) - 0.5) * 18;
+      const x0 = a.left + a.width / 2 + jx, y0 = a.top + a.height / 2 + jy;
+      const dx = b.left + b.width / 2 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+      s.style.left = x0 + 'px'; s.style.top = y0 + 'px';
+      $('fx').appendChild(s);
+      const anim = s.animate(
+        [{ transform: 'translate(-50%,-50%)' }, { transform: 'translate(calc(-50% + ' + dx + 'px), calc(-50% + ' + dy + 'px))' }],
+        { duration: ms, delay: i * 45, easing: 'ease-in-out', fill: 'forwards' });
+      jobs.push(anim.finished.then(function () { s.remove(); }, function () { s.remove(); }));
+    }
+    return Promise.all(jobs);
+  }
+
+  /* ---------- the week ---------- */
+  /* What the wholesaler tells the pub about the order it has just received. */
+  function reply(rec) {
+    const s = rec.pos[G.seat + 1], kegs = function (n) { return n + (n === 1 ? ' keg' : ' kegs'); };
+    let t = s.asked === 0 ? 'No new order from you. ' : 'Order received: <b>' + kegs(s.asked) + '</b>. ';
+    if (s.owed > 0) t += 'Sending <b>' + s.sent + '</b> this week. <span class="short">On back order for you: <b>' + s.owed + '</b>.</span>';
+    else if (s.sent > s.asked) t += 'Sending <b>' + s.sent + '</b> this week, which clears your back order.';
+    else if (s.sent > 0) t += 'Sending all of them this week.';
+    else t += 'Nothing to send.';
+    $('whoSay').innerHTML = t;
+    ANS = { asked: s.asked, sent: s.sent, owed: s.owed };
+    const al = $('alert');
+    al.hidden = s.owed <= 0;
+    if (s.owed > 0) al.innerHTML = '<span class="alert-ico" aria-hidden="true">\u26A0\uFE0F</span><div><b>The wholesaler has run short.</b> ' +
+      (s.asked > 0 ? 'You ordered ' + kegs(s.asked) + '. It sent ' + s.sent + ' and put the rest on back order. ' : 'It could send only ' + s.sent + ' this week. ') +
+      '<b>' + kegs(s.owed) + '</b> ' + (s.owed === 1 ? 'is' : 'are') + ' now on back order for you. They are not lost: they will be sent as soon as the wholesaler has them, on top of anything you order from now on.</div>';
+  }
+  /* The panel at the moment the player orders: this week's delivery is in, this week's
+     customers are waiting, nobody has been served yet. */
+  function drawFacts(rec) {
+    const me = rec.pos[G.seat], p = G.pos[G.seat];
+    const prev = G.log.length > 1 ? G.log[G.log.length - 2].pos[G.seat] : null;
+    $('wk').textContent = rec.week;
+    $('fDem').textContent = me.asked;
+    $('fSent').textContent = p.stock + me.sent;
+    $('fOwed').textContent = p.owed + me.sent - me.asked;
+    $('fArr').textContent = me.arrived;
+    $('fCost').textContent = prev ? money(prev.weekCost) : '–';
+    $('fWay').textContent = p.inbound[0] + p.inbound[1];
+    if (prev) { $('tot').textContent = money(p.cost - me.weekCost); drawLast(G.log[G.log.length - 2]); }
+    else { $('tot').textContent = money(0); $('lastWk').textContent = ''; $('costWk').textContent = ''; }
+    $('rates').innerHTML = 'Rates: <b>' + money(CFG.holdCost) + '</b> a week for each keg in the cellar \u00B7 <b>' + money(CFG.backlogCost) + '</b> a week for each keg owed to a customer \u00B7 ordering and the kegs themselves are free.';
+    const past = G.log.filter(function (r) { return r.pos[G.seat].order != null; }).slice(-4)
+      .map(function (r) { return 'week ' + r.week + ': ' + r.pos[G.seat].order; });
+    $('past').textContent = 'Your recent orders: ' + (past.length ? past.join(', ') : 'none yet');
+  }
+  /* What came of a week once its customers were served. */
+  function drawLast(rec) {
+    const me = rec.pos[G.seat];
+    $('lastWk').textContent = 'Week ' + rec.week + ': you served ' + me.sent + (me.owed > 0 ? ' and still owe ' + me.owed : ', nobody left waiting') + '.';
+    // the week's cost written out from its two parts
+    $('costWk').innerHTML = '<b>Week ' + rec.week + ' cost</b> <span>cellar ' + me.stock + ' \u00D7 ' + money(CFG.holdCost) + ' = ' + money(me.stock * CFG.holdCost) + '</span> <span>+ waiting ' + me.owed + ' \u00D7 ' + money(CFG.backlogCost) + ' = ' + money(me.owed * CFG.backlogCost) + '</span> <span>= <b>' + money(me.weekCost) + '</b></span> <span class="sofar">Cost so far ' + money(me.cost - me.weekCost) + ' + ' + money(me.weekCost) + ' = <b>' + money(me.cost) + '</b></span>';
+    $('tot').textContent = money(me.cost);
+  }
+  /* served = false: the view before this week's customers get their kegs. */
+  function syncView(rec, served) {
+    const p = G.pos[G.seat], hold = served ? 0 : rec.pos[G.seat].sent;
+    const asked = rec.pos[G.seat].asked;
+    V = { s2: p.inbound[1], s1: p.inbound[0], cellar: p.stock + hold, waiting: p.owed + hold,
+      coming: served ? 0 : asked, late: served ? p.owed : p.owed + hold - asked, glad: served ? rec.pos[G.seat].sent : 0,
+      gladWeek: rec.week, settled: served, stage: served ? 'done' : 'asking' };
+  }
+  function lock(on) {
+    busy = on;
+    ['sendBtn', 'less', 'more', 'order', 'autoBtn'].forEach(function (id) { $(id).disabled = on; });
+  }
+
+  function start() {
+    clearInterval(timer);
+    G = Engine.newGame(0);
+    const rec = Engine.beginWeek(G);
+    syncView(rec, false); reply(rec); drawLane(); drawFacts(rec);
+    $('order').value = 4; $('why').value = '';
+    show('play'); lock(false);
+  }
+  /* This week's customers get their kegs from the cellar. */
+  async function serve(rec, step) {
+    const me = rec.pos[G.seat], p = G.pos[G.seat];
+    // Longest wait first: kegs go to those already waiting, then to this week's customers.
+    const fromOld = Math.min(me.sent, V.late), fromNew = me.sent - fromOld, turned = V.coming - fromNew;
+    await fly(KEG, at('cel'), at('cus'), me.sent, step);
+    if (!$('chainPlay').hidden && step > 0) {
+      V.cellar -= me.sent; V.coming = 0; V.late -= fromOld; V.gladWeek = rec.week; drawChainPlay();
+      await Promise.all([
+        fly('', at('cwait'), at('cserved'), fromOld, step, faces('glad', fromOld, rec.week)),
+        fly('', at('cin'), at('cserved'), fromNew, step, faces('glad', fromNew, rec.week)),
+        fly('', at('cin'), at('cwait'), turned, step, faces('late', turned, rec.week))]);
+      V.cellar += me.sent; V.late += fromOld;
+    }
+    V.cellar -= me.sent; V.waiting -= me.sent; V.coming = 0; V.late = V.late - fromOld + turned;
+    V.glad = me.sent; V.gladWeek = rec.week; V.settled = true; V.stage = 'done'; drawLane();
+    console.assert(V.cellar === p.stock && V.waiting === p.owed && V.late === p.owed && V.s1 === p.inbound[0] && V.s2 === p.inbound[1], 'view out of step with engine');
+    drawLast(rec);
+  }
+
+  /* The game waits with the week's customers standing in the pub. On the player's order:
+     they are served, the order goes out, the kegs on the road move a step, and next
+     week's customers come in. */
+  async function send() {
+    if (busy) return;
+    let o = parseInt($('order').value, 10);
+    if (isNaN(o) || o < 0) o = 0; if (o > 99) o = 99;
+    $('order').value = o;
+    lock(true);
+    const sp = speed(), step = 520 * sp;
+    // 1. this week's customers are served
+    await serve(G.log[G.log.length - 1], step);
+    await wait(step * 0.7);
+    // 2. the order goes to the wholesaler
+    await fly(SLIP, at('ofrom'), at('oto'), 1, $('chainPlay').hidden ? step : step * 0.6, orderFor(o));
+    const orders = {}; orders[G.seat] = o;
+    Engine.endWeek(G, orders);
+    const before = { s1: V.s1, s2: V.s2 };
+    const rec = Engine.beginWeek(G), me = rec.pos[G.seat], p = G.pos[G.seat];
+    $('wk').textContent = rec.week;
+    reply(rec);
+    drawLane();
+    // 3. the nearest lot reaches the cellar
+    await fly(KEG, at('s1'), at('cel'), before.s1, step);
+    V.cellar += before.s1; V.s1 = 0; drawLane();
+    // 4. the next lot moves one slot closer
+    await fly(KEG, at('s2'), at('s1'), before.s2, step);
+    V.s1 = before.s2; V.s2 = 0; drawLane();
+    // 5. the wholesaler sends what it can
+    await fly(KEG, at('who'), at('s2'), p.inbound[1], step);
+    V.s2 = p.inbound[1]; drawLane();
+    // 6. next week's customers come in, and the game waits for the order
+    V.glad = 0; drawLane(); await wait(step * 0.5);   // the served customers have left
+    V.waiting += me.asked; V.coming = me.asked; V.settled = false; V.stage = 'asking'; drawLane();
+    drawFacts(rec);
+    if (Engine.finished(G)) {   // the last week: no order left to place
+      await wait(step); await serve(rec, step); await wait(step);
+      show('commit'); $('why').focus(); return;
+    }
+    lock(false);
+    $('order').focus(); $('order').select();
+  }
+
+  function autoplay() {
+    if (busy) return;
+    let rec = null;
+    while (!Engine.finished(G)) { Engine.endWeek(G, {}); rec = Engine.beginWeek(G); }
+    if (rec) { syncView(rec, true); reply(rec); drawLane(); drawFacts(rec); }
+    show('commit');
+  }
+
+  /* ---------- charts ---------- */
+  function lineChart(el, series, upto, yMin, yMax, W, H) {
+    W = W || 440; H = H || 240;
+    const L = 34, R = 84, T = 10, B = 26, n = CFG.weeksPlayed;
+    const x = function (w) { return L + (w - 1) / (n - 1) * (W - L - R); };
+    const y = function (v) { return T + (yMax - v) / (yMax - yMin) * (H - T - B); };
+    const span = yMax - yMin, stepY = span <= 20 ? 4 : span <= 50 ? 10 : span <= 120 ? 20 : 40;
+    let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + el.getAttribute('data-label') + '">';
+    for (let v = Math.ceil(yMin / stepY) * stepY; v <= yMax; v += stepY) {
+      s += '<line class="' + (v === 0 ? 'axis' : 'grid') + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
+      s += '<text class="tick" x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v + '</text>';
+    }
+    for (let w = 5; w <= n; w += 5) s += '<text class="tick" x="' + x(w) + '" y="' + (H - 8) + '" text-anchor="middle">' + w + '</text>';
+    const ends = [];
+    series.forEach(function (se) {
+      const pts = [];
+      for (let w = 1; w <= upto; w++) { const v = se.vals[w - 1]; if (v != null) pts.push(x(w) + ',' + y(v)); }
+      if (!pts.length) return;
+      s += '<polyline class="ser s-' + se.key + '" points="' + pts.join(' ') + '"/>';
+      const last = pts[pts.length - 1].split(',');
+      ends.push({ key: se.key, label: se.label, x: +last[0], y: +last[1] });
+    });
+    ends.sort(function (a, b) { return a.y - b.y; });
+    for (let i = 1; i < ends.length; i++) if (ends[i].y - ends[i - 1].y < 14) ends[i].y = ends[i - 1].y + 14;
+    const floor = H - B - 2;
+    if (ends.length && ends[ends.length - 1].y > floor) {
+      ends[ends.length - 1].y = floor;
+      for (let i = ends.length - 2; i >= 0; i--) if (ends[i + 1].y - ends[i].y < 14) ends[i].y = ends[i + 1].y - 14;
+    }
+    ends.forEach(function (e) { s += '<text class="end f-' + e.key + '" x="' + (e.x + 6) + '" y="' + (e.y + 4) + '">' + e.label + '</text>'; });
+    el.innerHTML = s + '</svg>';
+  }
+  const col = function (i, f) { return G.log.map(function (r) { return r.pos[i][f]; }); };
+  const nice = function (v, step) { return Math.ceil(v / step) * step; };
+
+  function drawChain(w) {
+    $('rWk').textContent = w; $('scrub').value = w;
+    $('chainReplay').innerHTML = chainHTML(frameAt(w));
+    const demand = G.log.map(function (r) { return r.demand; });
+    const keys = ['pub', 'who', 'dis', 'bre'], labels = ['Pub', 'Wholesaler', 'Distributor', 'Brewery'];
+    let top = 8; const ser = [{ key: 'dem', label: 'Customers', vals: demand }];
+    for (let i = 0; i < 4; i++) { const v = col(i, 'order'); top = Math.max(top, Math.max.apply(null, v.filter(function (q) { return q != null; }))); ser.push({ key: keys[i], label: labels[i], vals: v }); }
+    lineChart($('cChain'), ser, w, 0, nice(top, top > 50 ? 20 : 10), 900, 320);
+    let big = 1; G.log.forEach(function (r) { r.pos.forEach(function (p) { big = Math.max(big, Math.abs(p.net)); }); });
+    const rec = G.log[w - 1], order = [3, 2, 1, 0];
+    $('bars').innerHTML = order.map(function (i) {
+      const net = rec.pos[i].net, pct = Math.abs(net) / big * 50;
+      return '<div class="bar-row"><span>' + labels[i] + (i === 0 ? ' (you)' : '') + '</span>' +
+        '<div class="bar-track"><div class="bar-fill ' + (net >= 0 ? 'pos' : 'neg') + '" style="width:' + pct + '%"></div></div>' +
+        '<span class="bar-val' + (net < 0 ? ' owed-n' : '') + '">' + (net < 0 ? 'owes ' + (-net) : net) + '</span></div>';
+    }).join('');
+  }
+
+  function results() {
+    show('results');
+    const n = CFG.weeksPlayed, demand = G.log.map(function (r) { return r.demand; });
+    const myOrders = col(0, 'order'), myNet = col(0, 'net');
+    const peak = function (a) { return Math.max.apply(null, a.filter(function (q) { return q != null; })); };
+    $('kCost').textContent = money(G.pos[0].cost);
+    $('kDem').textContent = peak(demand);
+    $('kOrd').textContent = peak(myOrders);
+    $('kBre').textContent = peak(col(3, 'order'));
+    $('kChain').textContent = money(G.pos.reduce(function (s, p) { return s + p.cost; }, 0));
+    lineChart($('cMineOrders'), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(Math.max(8, peak(myOrders)), 4));
+    const lo = Math.min(0, Math.min.apply(null, myNet)), hi = Math.max(12, Math.max.apply(null, myNet));
+    const st = hi - lo > 50 ? 20 : 10;
+    lineChart($('cMineStock'), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
+    const said = $('why').value.trim();
+    $('said').textContent = said || 'You left this blank.';
+    drawChain(n);
+  }
+  function replay() {
+    clearInterval(timer);
+    let w = 1; drawChain(w); $('playBtn').textContent = 'Playing';
+    timer = setInterval(function () {
+      w += 1; drawChain(w);
+      if (w >= CFG.weeksPlayed) { clearInterval(timer); $('playBtn').textContent = 'Play again'; }
+    }, 520);
+  }
+
+  /* ---------- wiring ---------- */
+  $('cMineOrders').setAttribute('data-label', 'Customer demand and your orders by week');
+  $('cMineStock').setAttribute('data-label', 'Your stock by week');
+  $('cChain').setAttribute('data-label', 'Orders placed each week by all four positions');
+  $('startBtn').addEventListener('click', start);
+  $('sendBtn').addEventListener('click', send);
+  $('order').addEventListener('keydown', function (e) { if (e.key === 'Enter') send(); });
+  $('less').addEventListener('click', function () { $('order').value = Math.max(0, (parseInt($('order').value, 10) || 0) - 1); });
+  $('more').addEventListener('click', function () { $('order').value = Math.min(99, (parseInt($('order').value, 10) || 0) + 1); });
+  $('autoBtn').addEventListener('click', autoplay);
+  $('seeBtn').addEventListener('click', results);
+  $('playBtn').addEventListener('click', replay);
+  $('scrub').addEventListener('input', function () { clearInterval(timer); $('playBtn').textContent = 'Play'; drawChain(parseInt($('scrub').value, 10)); });
+  $('againBtn').addEventListener('click', start);
+  $('tabPub').addEventListener('click', function () { tab(false); });
+  $('tabChain').addEventListener('click', function () { tab(true); });
+  try { if (localStorage.getItem('pubgame.tab') === 'chain') tab(true); } catch (e) {}
+  try { const s = localStorage.getItem('pubgame.speed'); if (s != null) $('speed').value = s; } catch (e) {}
+  $('speed').addEventListener('change', function () { try { localStorage.setItem('pubgame.speed', $('speed').value); } catch (e) {} });
+})();
+</script>
+</body>
+</html>
