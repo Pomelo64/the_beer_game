@@ -221,13 +221,13 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 /* the week-by-week record */
 .logp{margin:16px 0}
 .logwrap{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:8px}
-.log{border-collapse:collapse;width:100%;min-width:780px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.log{border-collapse:collapse;width:100%;min-width:820px;font-size:.85rem;font-variant-numeric:tabular-nums}
 .log th,.log td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
 .log thead th{position:sticky;top:0;background:var(--sunk);color:var(--muted);font-weight:600;white-space:normal;vertical-align:bottom;line-height:1.25}
 .log thead tr:nth-child(2) th{top:31px}
 .log thead th.grp{text-align:center;color:var(--fg);border-left:1px solid var(--line)}
 .log tbody th{text-align:right;font-weight:600;color:var(--muted)}
-.log td:nth-child(2),.log td:nth-child(7),.log td:nth-child(10){border-left:1px solid var(--line)}
+.log td:nth-child(2),.log-wom td:nth-child(8),.log-wom td:nth-child(11),.log-plain td:nth-child(7),.log-plain td:nth-child(10){border-left:1px solid var(--line)}
 .log td.bad{color:var(--owed);font-weight:600}
 .log tbody tr:last-child th,.log tbody tr:last-child td{border-bottom:0}
 
@@ -251,6 +251,23 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .costsum span{white-space:nowrap}
 .costsum .sofar{flex-basis:100%;color:var(--muted)}
 .rates{margin-top:8px;color:var(--muted);font-size:.8rem;line-height:1.45}
+
+/* cellar limit */
+.cap{color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums}
+.cap.full{color:var(--owed);font-weight:600}
+.top-stats{flex-wrap:wrap;row-gap:2px}
+
+/* opening screen: assumed knowledge and the choice of game */
+.before{margin:12px 0;padding:10px 12px;border-left:4px solid var(--accent, var(--hold));background:var(--sunk);border-radius:0 8px 8px 0;font-size:.92rem;line-height:1.5}
+.pick{border:0;padding:0;margin:16px 0 8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pick legend{padding:0;margin-bottom:6px;font-family:var(--font-head);font-weight:600}
+.pick label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer;background:var(--surface)}
+.pick label:has(input:checked){border:2px solid var(--hold);padding:9px 11px}
+.pick input{margin-top:4px;accent-color:var(--hold)}
+.pick b{display:block}
+.pick small{display:block;color:var(--muted);font-size:.85rem;line-height:1.4}
+@media (max-width:560px){.pick{grid-template-columns:1fr}}
+.order-row .btn + .btn{margin-left:8px}
 </style>
 </head>
 <body>
@@ -258,24 +275,41 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
   <header class="top">
     <div>
       <h1>Pub Supply Game</h1>
-      <span class="tag">Prototype. One player, running the pub.</span>
+      <span class="tag" id="tag">Prototype. One player, running the pub.</span>
     </div>
     <div class="top-stats" id="topStats" hidden>
       <span>Week <b id="wk">1</b></span>
-      <span>Cost so far <b id="tot">£0</b></span>
+      <span class="st-plain">Cost so far <b id="totC">£0</b></span>
+      <span class="st-wom" hidden>Customers served <b id="tot">0</b></span>
+      <span class="st-wom" hidden>Turned away <b id="totT">0</b></span>
+      <span class="st-wom" hidden>Kegs sent back <b id="totW">0</b></span>
     </div>
   </header>
 
   <section id="intro">
     <div class="panel brief">
       <h2>You run a pub</h2>
-      <p>Each week customers come in for kegs of beer. You serve them from your cellar and order more from your wholesaler. One mug on screen is one keg.</p>
-      <ul class="rules">
+      <p>Each week customers come in, and each wants one keg of beer. You serve them from your cellar and order more from your wholesaler. One mug on screen is one keg.</p>
+      <p class="before"><b>Before you start.</b> Anyone can play the game. To do the exercise that follows it, you need the basics of stock-and-flow diagrams: what a stock is, what a flow is, and how information links connect them. This app gives you practice in using them. It does not teach them from the beginning.</p>
+      <fieldset class="pick">
+        <legend>Choose a game</legend>
+        <label><input type="radio" name="mode" value="plain" checked> <span><b>The supply game</b><small>Customers wait for their beer. Keep your costs low.</small></span></label>
+        <label><input type="radio" name="mode" value="wom"> <span><b>Word of mouth</b><small>Customers do not wait, and they talk. Serve as many as you can.</small></span></label>
+      </fieldset>
+      <ul class="rules" id="rulesPlain">
         <li>Your wholesaler gets your order at once and tells you what it can send. Delivery then takes time: kegs you order now reach you three weeks later, if the wholesaler has them.</li>
         <li>A keg sitting in your cellar costs <b>£0.50</b> a week.</li>
-        <li>A keg you owe a customer costs <b>£1</b> a week, and you still have to supply it.</li>
+        <li>A customer you cannot serve waits. Each keg you owe a customer costs <b>£1</b> a week, and you still have to supply it.</li>
         <li>These are the only two costs. Placing an order is free, and so are the kegs themselves.</li>
-        <li>Your one decision each week is how many kegs to order. Keep your total cost low.</li>
+        <li>Your one decision each week is how many kegs to order. <b>Keep your total cost low.</b></li>
+        <li>The game runs for up to 50 weeks.</li>
+      </ul>
+      <ul class="rules" id="rulesWom" hidden>
+        <li>Your wholesaler gets your order at once and tells you what it can send. Delivery then takes time: kegs you order now reach you three weeks later, if the wholesaler has them.</li>
+        <li>Your cellar holds <b>20 kegs</b>. Kegs from a delivery that do not fit are sent back.</li>
+        <li>A customer you cannot serve does not wait. They leave, and they tell others.</li>
+        <li>Word gets around. A pub that serves everyone draws a bigger crowd. A pub that turns people away draws a smaller one.</li>
+        <li>There is no money in this game. Your one decision each week is how many kegs to order. <b>Serve as many customers as you can.</b></li>
         <li>The game runs for up to 50 weeks.</li>
       </ul>
       <div class="order-row"><button class="btn" id="startBtn" type="button">Open the pub</button></div>
@@ -307,30 +341,24 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
       </div>
       <div class="zone mine" id="zCel">
         <div class="zone-top"><span class="zone-name">Your cellar</span><span class="zone-n num" id="nCel">0</span></div>
-        <div class="zone-hint">Kegs in stock</div>
+        <div class="zone-hint">Kegs in stock, of the most it holds</div>
         <div class="tok" id="tCel"></div>
       </div>
       <div class="zone cust" id="zCus">
         <div class="zone-top"><span class="zone-name">Customers</span><span class="zone-n num owed-n" id="nCus">0</span></div>
-        <div class="zone-hint" id="hCus">Nobody is waiting</div>
+        <div class="zone-hint" id="hCus">Nobody here yet</div>
         <div class="tok" id="tCus"></div>
       </div>
     </div>
 
     <div class="alert" id="alert" role="status" hidden></div>
+    <div class="alert" id="alert2" role="status" hidden></div>
     <div class="desk">
       <div class="panel">
         <h3>This week</h3>
-        <dl class="facts">
-          <div><dt>Customers want</dt><dd id="fDem">0</dd></div>
-          <div><dt>In your cellar</dt><dd id="fSent">0</dd></div>
-          <div><dt>Owed from before</dt><dd id="fOwed">0</dd></div>
-          <div><dt>Delivered this week</dt><dd id="fArr">0</dd></div>
-          <div><dt>Cost last week</dt><dd id="fCost">£0</dd></div>
-          <div><dt>On its way to you</dt><dd id="fWay">0</dd></div>
-        </dl>
+        <dl class="facts" id="facts"></dl>
         <div class="past" id="lastWk" aria-live="polite"></div>
-        <div class="costsum" id="costWk"></div>
+        <div class="costsum" id="sumWk"></div>
         <div class="rates" id="rates"></div>
       </div>
       <div class="panel">
@@ -351,14 +379,11 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
       <h3>Week by week</h3>
       <div class="logwrap" tabindex="0" role="region" aria-label="Record of every week so far">
         <table class="log">
-          <thead>
-            <tr><th rowspan="2">Week</th><th colspan="5" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler's answer</th><th colspan="2" class="grp">Cost</th></tr>
-            <tr><th>Customers wanted</th><th>Delivered to you</th><th>Served</th><th>Left waiting</th><th>Cellar at end</th><th>You ordered</th><th>Wholesaler sent</th><th>On back order with the wholesaler</th><th>Week's cost</th><th>Cost so far</th></tr>
-          </thead>
+          <thead id="logHead"></thead>
           <tbody id="logBody"></tbody>
         </table>
       </div>
-      <p class="note">Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.</p>
+      <p class="note" id="logNote"></p>
     </div>
 
     <div class="tools">
@@ -376,7 +401,7 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
     <div class="panel">
       <h2>The game has been stopped</h2>
       <p>Before you see any results, answer in your own words.</p>
-      <label for="why"><b>What made it hard to keep your costs down?</b></label>
+      <label for="why"><b id="whyLabel">What made it hard to keep your costs down?</b></label>
       <textarea id="why" placeholder="Write what you think happened, and why."></textarea>
       <div class="order-row"><button class="btn" id="seeBtn" type="button">Show me the results</button></div>
     </div>
@@ -385,20 +410,16 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
   <section id="results" hidden>
     <div class="panel">
       <h2>Your pub</h2>
-      <dl class="kpis">
-        <div><dt>Your total cost</dt><dd id="kCost">£0</dd></div>
-        <div><dt>Most customers ever wanted in a week</dt><dd id="kDem">0</dd></div>
-        <div><dt>Most you ordered in a week</dt><dd id="kOrd">0</dd></div>
-      </dl>
+      <dl class="kpis" id="kTop"></dl>
       <div class="pair">
         <div>
-          <h3>Orders</h3>
-          <div class="legend"><span class="l-dem"><i></i>Customers wanted</span><span class="l-pub"><i></i>You ordered</span></div>
+          <h3>Customers and orders</h3>
+          <div class="legend"><span class="l-dem"><i></i>Customers who came</span><span class="l-pub"><i></i>You ordered</span></div>
           <div class="chart" id="cMineOrders"></div>
         </div>
         <div>
-          <h3>Stock</h3>
-          <div class="legend"><span class="l-pub"><i></i>Kegs in your cellar, minus kegs owed</span></div>
+          <h3 id="hStock">Stock</h3>
+          <div class="legend"><span class="l-pub"><i></i><span id="lStock"></span></span></div>
           <div class="chart" id="cMineStock"></div>
         </div>
       </div>
@@ -420,42 +441,63 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
       </div>
       <div class="chart" id="cChain"></div>
       <h3>Stock in the selected week</h3>
-      <p class="note">Right of the line is stock. Left of the line is kegs owed.</p>
+      <p class="note" id="barsNote"></p>
       <div class="bars" id="bars"></div>
-      <dl class="kpis">
-        <div><dt>Largest order by the brewery</dt><dd id="kBre">0</dd></div>
-        <div><dt>Cost of the whole chain</dt><dd id="kChain">£0</dd></div>
-        <div><dt>Times customer demand changed</dt><dd>1</dd></div>
-      </dl>
+      <dl class="kpis" id="kBottom"></dl>
     </div>
 
     <div class="panel">
       <h2>What you wrote before seeing this</h2>
       <p class="quote" id="said"></p>
       <p>The next step is to build a diagram that explains these charts. That step is not in this prototype.</p>
-      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button></div>
+      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
     </div>
   </section>
 </div>
 <div id="fx" aria-hidden="true"></div>
 <script>
 /* Game engine. No drawing here: the same engine runs the player's pub,
-   the three simulated positions, the replay, and any later variants.
-   Adapted from the Beer Game as described in Sterman (1989), "Modeling
-   managerial behavior", Management Science 35(3).
-   Changes from the original: (1) units renamed, case -> keg, factory -> brewery,
-   retailer -> pub; (2) the order delay is removed. An order reaches the
-   supplier at once and is acted on in the following week, so delivery takes
-   three weeks from ordering (it took four). The brewing delay is unchanged. */
+   the three simulated positions and the replay.
+
+   The supply chain is that of the Beer Game as described in Sterman (1989),
+   "Modeling managerial behavior", Management Science 35(3), and the three
+   simulated positions use the ordering rule estimated in that paper.
+
+   Two scenarios share this engine.
+
+   'plain' (the default) follows that game, with two changes:
+   (1) units renamed: case -> keg, factory -> brewery, retailer -> pub;
+   (2) the order delay is removed. An order reaches the supplier at once and is
+       acted on in the following week, so delivery takes three weeks from
+       ordering (it took four). The brewing delay is unchanged.
+   Customer demand steps once, from 4 to 8 a week, and the score is cost.
+
+   'wom' (word of mouth) adds four more changes:
+   (3) the pub's customers do not wait. One who cannot be served leaves;
+   (4) the number of customers depends on how the pub served them. It grows
+       after a week in which everyone was served, and falls with each customer
+       turned away;
+   (5) the pub's cellar has a limit. Kegs that do not fit are sent back;
+   (6) there is no money. The score is the number of customers served.
+   The numbers behind (4) and (5) are design choices of this game, not
+   estimates from any source. They are all in CFG below. */
 const Engine = (function () {
   const CFG = {
     weeksPlayed: 36,          // the game is stopped here
     weeksAnnounced: 50,       // what the player is told
     startStock: 12,
     startFlow: 4,             // kegs in each delay slot and on each order slip
+    // --- plain scenario ---
     holdCost: 0.5,            // per keg in stock, per week
     backlogCost: 1.0,         // per keg owed, per week
     demand: function (week) { return week < 5 ? 4 : 8; },   // one step, in week 5
+    // --- word-of-mouth scenario: design choices of this game ---
+    cellar: 20,               // most kegs the pub's cellar can hold
+    crowdStart: 4,            // customers a week at the start
+    crowdGrowth: 0.08,        // growth of the crowd after a week in which everyone was served
+    putOff: 2,                // customers who stay away for each customer turned away
+    crowdFloor: 1,            // the crowd never falls below this
+    // ------------------------------------
     names: ['Pub', 'Wholesaler', 'Distributor', 'Brewery'],
     // Ordering rule of the simulated positions: mean estimates over 44 players
     // (Sterman 1989, Table 4). S' is set per position so that the chain starts
@@ -463,7 +505,7 @@ const Engine = (function () {
     rule: { theta: 0.36, alphaS: 0.26, beta: 0.34 }
   };
 
-  function newGame(seat) {
+  function newGame(seat, mode) {
     const pos = [];
     for (let i = 0; i < 4; i++) {
       pos.push({
@@ -474,7 +516,9 @@ const Engine = (function () {
         cost: 0
       });
     }
-    const g = { week: 0, seat: seat || 0, pos: pos, log: [] };
+    const g = { week: 0, seat: seat || 0, mode: mode === 'wom' ? 'wom' : 'plain', pos: pos, log: [],
+                crowd: CFG.crowdStart,            // the crowd, kept as a fraction; whole customers come in
+                served: 0, turned: 0, wasted: 0 };
     // Desired stock that keeps the starting position in balance.
     for (let i = 0; i < 4; i++) {
       const sl0 = 2 * CFG.startFlow;
@@ -485,35 +529,53 @@ const Engine = (function () {
 
   /* A week up to the ordering decision: deliveries arrive, each position
      reads the order its customer placed last week and sends what it can,
-     costs are counted, and the brewery starts brewing. */
+     the crowd reacts to how it was served, and the brewery starts brewing. */
   function beginWeek(g) {
     g.week += 1;
-    const P = g.pos, rec = { week: g.week, demand: CFG.demand(g.week), pos: [] };
-    const arrived = [];
+    const P = g.pos, wom = g.mode === 'wom';
+    const came = wom ? Math.max(CFG.crowdFloor, Math.round(g.crowd)) : CFG.demand(g.week);
+    const rec = { week: g.week, demand: came, pos: [] };
+    const arrived = [], back = [];
     for (let i = 0; i < 4; i++) {
       const p = P[i];
-      arrived[i] = p.inbound[0];
-      p.stock += p.inbound[0];
+      let a = p.inbound[0]; back[i] = 0;
+      if (wom && i === 0) {                       // the pub's cellar takes only what fits
+        const room = Math.max(0, CFG.cellar - p.stock);
+        if (a > room) { back[i] = a - room; a = room; }
+      }
+      arrived[i] = a;
+      p.stock += a;
       p.inbound[0] = p.inbound[1];
       p.inbound[1] = 0;
     }
+    g.wasted += back[0];
     for (let i = 0; i < 4; i++) {
       const p = P[i];
-      const asked = i === 0 ? rec.demand : P[i - 1].placed;
+      const asked = i === 0 ? came : P[i - 1].placed;
+      const leave = wom && i === 0;               // in 'wom' the pub's customers do not wait
       const want = p.owed + asked;
       const sent = Math.min(p.stock, want);
+      const turned = leave ? want - sent : 0;     // customers who leave without a keg
       p.stock -= sent;
-      p.owed = want - sent;
+      p.owed = leave ? 0 : want - sent;
       if (i > 0) P[i - 1].inbound[1] += sent;
       p.expected = CFG.rule.theta * asked + (1 - CFG.rule.theta) * p.expected;
-      p.cost += CFG.holdCost * p.stock + CFG.backlogCost * p.owed;
+      const weekCost = wom ? 0 : CFG.holdCost * p.stock + CFG.backlogCost * p.owed;
+      p.cost += weekCost;
       rec.pos.push({
-        asked: asked, sent: sent, arrived: arrived[i],
+        asked: asked, sent: sent, turned: turned, arrived: arrived[i], back: back[i],
         stock: p.stock, owed: p.owed, net: p.stock - p.owed,
-        weekCost: CFG.holdCost * p.stock + CFG.backlogCost * p.owed,
-        cost: p.cost, order: null
+        weekCost: weekCost, cost: p.cost, order: null
       });
     }
+    const me = rec.pos[0];
+    g.served += me.sent; g.turned += me.turned;
+    if (wom) {   // word of mouth
+      if (me.turned > 0) g.crowd = Math.max(CFG.crowdFloor, g.crowd - CFG.putOff * me.turned);
+      else g.crowd = g.crowd * (1 + CFG.crowdGrowth);
+    }
+    me.served = g.served; me.turnedAll = g.turned; me.wasted = g.wasted;
+
     P[3].inbound[1] = P[3].placed;   // the brewery starts brewing what it decided last week
     for (let i = 0; i < 4; i++) rec.pos[i].way = [P[i].inbound[0], P[i].inbound[1]];
     g.log.push(rec);
@@ -536,7 +598,7 @@ const Engine = (function () {
     return Math.max(0, Math.round(order));
   }
 
-  /* Step 5: every position writes its order. `orders` maps seat -> amount
+  /* Every position writes its order. `orders` maps seat -> amount
      for human players; the rest follow the rule. */
   function endWeek(g, orders) {
     const rec = g.log[g.log.length - 1];
@@ -561,6 +623,9 @@ if (typeof module !== 'undefined') module.exports = Engine;
   const CFG = Engine.CFG, KEG = '🍺', SLIP = '🧾', PERSON = '🧍';
   const MAXTOK = 30;
   let G = null, V = null, busy = false, timer = null, ANS = null;   // ANS: the wholesaler's latest answer
+  const CAP = CFG.cellar;
+  let MODE = 'plain';                                   // the scenario picked on the opening screen
+  const wom = function () { return G ? G.mode === 'wom' : MODE === 'wom'; };
   const money = function (x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); };
 
   function show(id) {
@@ -580,7 +645,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
   const FACES = {
     ask: ['\u{1F642}', '\u{1F600}', '\u{1F60A}', '\u{1F603}'],      // on the way in
     glad: ['\u{1F60B}', '\u{1F604}', '\u{1F974}', '\u{1F60C}'],     // got a keg
-    late: ['\u{1F620}', '\u{1F61E}', '\u{1F622}', '\u{1F641}']      // still waiting for one
+    late: ['\u{1F620}', '\u{1F61E}', '\u{1F622}', '\u{1F641}']      // left without one: still waiting, or turned away
   };
   /* Up to three different faces, then the number. The faces change from week to week. */
   function faces(kind, n, week) {
@@ -595,7 +660,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
   const ICON = ['\u{1F37B}', '\u{1F69B}', '\u{1F3EC}', '\u{1F3ED}'];
   const NAME = ['Pub', 'Wholesaler', 'Distributor', 'Brewery'];
   /* f = { reveal, week, pos:[{stock,owed,order,way:[one week away, two weeks away]}],
-           cust:{stage, asking, glad, late}, say } */
+           cust:{coming, glad, red}, say, wom }. cust.red: still waiting (plain) or turned away (wom) */
   function badge(html, label) { return '<span class="badge"' + (label ? ' aria-label="' + label + '"' : '') + '>' + html + '</span>'; }
   /* Three rows on one grid. Top: kegs on their way, one step to the right each week.
      Middle: the four positions. Bottom: orders, which travel left and arrive at once.
@@ -620,6 +685,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
         '<div class="node-note">You ordered ' + f.short.asked + '. It sent <b>' + f.short.sent + '</b>.</div>';
       else if (hide) mid += '<div class="node-note">' + (i === 1 && f.say ? f.say : 'Hidden while you play') + '</div>';
       else mid += '<div class="count" data-k="st' + i + '" aria-label="' + p.stock + ' kegs in stock">' + kegs(p.stock) + '</div>' +
+        (i === 0 && f.wom ? '<div class="cap' + (p.stock >= CAP ? ' full' : '') + '">cellar holds ' + CAP + '</div>' + (p.back > 0 ? '<div class="owes">' + p.back + ' sent back</div>' : '') : '') +
         (p.owed > 0 && i > 0 ? '<div class="owes">owes ' + p.owed + '</div>' : '') +
         (i === 3 ? '<div class="node-note">Brewing ' + p.way[1] + ', then ' + p.way[0] + '</div>' : '');
       mid += '</div>';
@@ -634,38 +700,37 @@ if (typeof module !== 'undefined') module.exports = Engine;
       }
     }
     const q = f.cust;
-    // three boxes beside the pub: customers come in at the top, then move to "served" or "still waiting"
+    // three boxes beside the pub: customers come in at the top, then leave served, or are left without a keg
     const cb = function (cls, k, title, html) { return '<div class="cbox' + cls + '" data-k="' + k + '"><h4>' + title + '</h4><div class="faces">' + html + '</div></div>'; };
     const cu = '<div class="custs">' + cb('', 'cin', 'Coming in', faces('ask', q.coming, f.week)) +
       cb(' glad', 'cserved', 'Leaving served', faces('glad', q.glad, q.gw || f.week)) +
-      cb(' late', 'cwait', 'Still waiting', faces('late', q.late, f.week)) + '</div>';
+      cb(' late', 'cout', f.wom ? 'Turned away' : 'Still waiting', faces('late', q.red, f.wom ? q.gw || f.week : f.week)) + '</div>';
     return '<div class="chainwrap"><div class="chain3">' + cu + top + mid + bot + '</div></div>' +
       '<p class="note">Above the chain: kegs on their way, moving one step towards the customer each week. Below it: orders, which arrive at once.</p>';
   }
   /* The picture for a finished week, with every position shown. */
   function frameAt(w) {
     const r = G.log[w - 1];
-    return { reveal: true, week: w,
-      pos: r.pos.map(function (p) { return { stock: p.stock, owed: p.owed, order: p.order, way: p.way }; }),
-      cust: { coming: 0, glad: r.pos[0].sent, late: r.pos[0].owed } };
+    return { reveal: true, week: w, wom: wom(),
+      pos: r.pos.map(function (p) { return { stock: p.stock, owed: p.owed, order: p.order, way: p.way, back: p.back }; }),
+      cust: { coming: 0, glad: r.pos[0].sent, red: wom() ? r.pos[0].turned : r.pos[0].owed } };
   }
   /* The picture during play: only what the pub can see, following the animation step by step. */
   function drawChainPlay() {
     const rec = G.log[G.log.length - 1], last = G.log.length > 1 ? G.log[G.log.length - 2].pos[0].order : null;
     const pos = G.pos.map(function (p) { return { stock: p.stock, owed: p.owed, order: null, way: p.inbound }; });
-    pos[0] = { stock: V.cellar, owed: 0, order: last, way: [V.s1, V.s2] };
-    const me = rec.pos[0];
-    const cust = { coming: V.coming, glad: V.glad, late: V.late, gw: V.gladWeek };
+    pos[0] = { stock: V.cellar, owed: 0, order: last, way: [V.s1, V.s2], back: V.back };
+    const cust = { coming: V.coming, glad: V.glad, red: V.red, gw: V.gladWeek };
     // On a narrow screen the chain scrolls sideways: start at the pub's end, and keep the player's place between redraws.
     const old = $('chainPlay').querySelector('.chainwrap'), keep = old && old.scrollWidth > old.clientWidth ? old.scrollLeft : null;
-    $('chainPlay').innerHTML = chainHTML({ reveal: false, week: rec.week, pos: pos, cust: cust, say: $('whoSay').innerHTML, short: ANS });
+    $('chainPlay').innerHTML = chainHTML({ reveal: false, wom: wom(), week: rec.week, pos: pos, cust: cust, say: $('whoSay').innerHTML, short: ANS });
     const wrap = $('chainPlay').querySelector('.chainwrap');
     wrap.scrollLeft = keep == null ? wrap.scrollWidth : keep;
   }
   /* Where a flying token starts or ends, in whichever tab is open. */
   function at(key) {
     if ($('chainPlay').hidden) return $({ who: 'tWho', s2: 'tS2', s1: 'tS1', cel: 'tCel', cus: 'tCus', ofrom: 'tCel', oto: 'tWho' }[key]);
-    return $('chainPlay').querySelector('[data-k="' + { who: 'n1', s2: 'r2_0', s1: 'r1_0', cel: 'st0', cus: 'cserved', cin: 'cin', cserved: 'cserved', cwait: 'cwait', ofrom: 'un0', oto: 'un1' }[key] + '"]');
+    return $('chainPlay').querySelector('[data-k="' + { who: 'n1', s2: 'r2_0', s1: 'r1_0', cel: 'st0', cus: 'cserved', cin: 'cin', cserved: 'cserved', cout: 'cout', ofrom: 'un0', oto: 'un1' }[key] + '"]');
   }
   function tab(chain) {
     $('chainPlay').hidden = !chain; $('lane').hidden = chain;
@@ -685,29 +750,53 @@ if (typeof module !== 'undefined') module.exports = Engine;
     }
     if (n > k) { const m = document.createElement('span'); m.className = 'more'; m.textContent = '+' + (n - k); el.appendChild(m); }
   }
+  /* Words and columns that differ between the two scenarios. */
+  function setMode() {
+    const w = wom();
+    document.querySelectorAll('.st-plain').forEach(function (e) { e.hidden = w; });
+    document.querySelectorAll('.st-wom').forEach(function (e) { e.hidden = !w; });
+    $('tag').textContent = 'Prototype. ' + (w ? 'Word of mouth.' : 'The supply game.') + ' One player, running the pub.';
+    $('whyLabel').textContent = w ? 'What made it hard to serve every customer?' : 'What made it hard to keep your costs down?';
+    $('logHead').innerHTML = w
+      ? '<tr><th rowspan="2">Week</th><th colspan="6" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler\'s answer</th><th class="grp">Score</th></tr>' +
+        '<tr><th>Customers came</th><th>Delivered to you</th><th>Sent back</th><th>Served</th><th>Turned away</th><th>Cellar at end</th><th>You ordered</th><th>Wholesaler sent</th><th>On back order with the wholesaler</th><th>Served so far</th></tr>'
+      : '<tr><th rowspan="2">Week</th><th colspan="5" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler\'s answer</th><th colspan="2" class="grp">Cost</th></tr>' +
+        '<tr><th>Customers wanted</th><th>Delivered to you</th><th>Served</th><th>Left waiting</th><th>Cellar at end</th><th>You ordered</th><th>Wholesaler sent</th><th>On back order with the wholesaler</th><th>Week\'s cost</th><th>Cost so far</th></tr>';
+    $('logBody').parentNode.className = 'log ' + (w ? 'log-wom' : 'log-plain');
+    $('logNote').textContent = 'Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.' +
+      (w ? ' "Sent back" counts kegs that did not fit in your cellar.' : '');
+    $('hStock').textContent = w ? 'Cellar' : 'Stock';
+    $('lStock').textContent = w ? 'Kegs in your cellar at the end of each week. It holds ' + CAP + '.' : 'Kegs in your cellar, minus kegs owed';
+    $('barsNote').textContent = w ? 'Right of the line is stock. Left of the line is kegs on back order to the next position.' : 'Right of the line is stock. Left of the line is kegs owed.';
+  }
   /* One row a week, newest first. A row fills in as the week goes on: customers and the
      delivery when it opens, the serving once the player has ordered, and the wholesaler's
      answer to that order straight after. */
   function drawTable() {
     const cell = function (v, cls) { return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + (v == null ? '–' : v) + '</td>'; };
-    let h = '';
+    const w = wom(); let h = '';
     for (let k = G.log.length - 1; k >= 0; k--) {
       const r = G.log[k], me = r.pos[G.seat], nxt = G.log[k + 1], sup = nxt ? nxt.pos[G.seat + 1] : null;
       const served = k < G.log.length - 1 || (V && V.stage === 'done' && V.gladWeek === r.week);
-      h += '<tr><th scope="row">' + r.week + '</th>' + cell(me.asked) + cell(me.arrived) +
-        cell(served ? me.sent : null) + cell(served ? me.owed : null, served && me.owed > 0 ? 'bad' : '') + cell(served ? me.stock : null) +
-        cell(me.order) + cell(sup ? sup.sent : null, sup && sup.sent < me.order ? 'bad' : '') + cell(sup ? sup.owed : null, sup && sup.owed > 0 ? 'bad' : '') +
-        cell(served ? money(me.weekCost) : null) + cell(served ? money(me.cost) : null) + '</tr>';
+      const answer = cell(me.order) + cell(sup ? sup.sent : null, sup && sup.sent < me.order ? 'bad' : '') + cell(sup ? sup.owed : null, sup && sup.owed > 0 ? 'bad' : '');
+      h += '<tr><th scope="row">' + r.week + '</th>' + cell(me.asked) + cell(me.arrived);
+      if (w) h += cell(me.back, me.back > 0 ? 'bad' : '') + cell(served ? me.sent : null) + cell(served ? me.turned : null, served && me.turned > 0 ? 'bad' : '') +
+        cell(served ? me.stock : null) + answer + cell(served ? me.served : null);
+      else h += cell(served ? me.sent : null) + cell(served ? me.owed : null, served && me.owed > 0 ? 'bad' : '') + cell(served ? me.stock : null) +
+        answer + cell(served ? money(me.weekCost) : null) + cell(served ? money(me.cost) : null);
+      h += '</tr>';
     }
     $('logBody').innerHTML = h;
   }
   function drawLane() {
+    const w = wom(), there = V.coming + (w ? 0 : V.red);
     tokens($('tS2'), KEG, V.s2); $('nS2').textContent = V.s2;
     tokens($('tS1'), KEG, V.s1); $('nS1').textContent = V.s1;
-    tokens($('tCel'), KEG, V.cellar); $('nCel').textContent = V.cellar;
-    tokens($('tCus'), PERSON, V.waiting, 'waiting'); $('nCus').textContent = V.waiting;
-    $('hCus').textContent = V.waiting === 0 ? 'Nobody is waiting'
-      : V.settled ? 'Waiting for kegs you owe them' : 'Asking for kegs';
+    tokens($('tCel'), KEG, V.cellar); $('nCel').textContent = w ? V.cellar + ' / ' + CAP : V.cellar;
+    tokens($('tCus'), PERSON, there, 'waiting'); $('nCus').textContent = there;
+    if (w) $('hCus').textContent = V.coming > 0 ? 'Asking for kegs'
+      : V.red > 0 ? V.red + ' turned away, ' + V.glad + ' served' : V.glad > 0 ? 'All ' + V.glad + ' served' : 'Nobody here yet';
+    else $('hCus').textContent = there === 0 ? 'Nobody is waiting' : V.stage === 'done' ? 'Waiting for kegs you owe them' : 'Asking for kegs';
     drawChainPlay(); drawTable();
   }
   function fly(sym, from, to, n, ms, label) {
@@ -755,40 +844,68 @@ if (typeof module !== 'undefined') module.exports = Engine;
       (s.asked > 0 ? 'You ordered ' + kegs(s.asked) + '. It sent ' + s.sent + ' and put the rest on back order. ' : 'It could send only ' + s.sent + ' this week. ') +
       '<b>' + kegs(s.owed) + '</b> ' + (s.owed === 1 ? 'is' : 'are') + ' now on back order for you. They are not lost: they will be sent as soon as the wholesaler has them, on top of anything you order from now on.</div>';
   }
+  /* Kegs that did not fit in the cellar. */
+  function wasteAlert(n) {
+    const al = $('alert2');
+    al.hidden = n <= 0;
+    if (n > 0) al.innerHTML = '<span class="alert-ico" aria-hidden="true">⚠️</span><div><b>Your cellar is full.</b> It holds ' + CAP + ' kegs. ' +
+      (n === 1 ? '<b>1 keg</b> of this week\'s delivery did not fit and was' : '<b>' + n + ' kegs</b> of this week\'s delivery did not fit and were') + ' sent back.</div>';
+  }
+  function totals(served, turned, wasted) {
+    $('tot').textContent = served; $('totT').textContent = turned; $('totW').textContent = wasted;
+  }
+  function facts(list) {
+    $('facts').innerHTML = list.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
+  }
   /* The panel at the moment the player orders: this week's delivery is in, this week's
      customers are waiting, nobody has been served yet. */
   function drawFacts(rec) {
-    const me = rec.pos[G.seat], p = G.pos[G.seat];
-    const prev = G.log.length > 1 ? G.log[G.log.length - 2].pos[G.seat] : null;
+    const me = rec.pos[G.seat], p = G.pos[G.seat], inCellar = p.stock + me.sent;
+    const prev = G.log.length > 1 ? G.log[G.log.length - 2] : null;
     $('wk').textContent = rec.week;
-    $('fDem').textContent = me.asked;
-    $('fSent').textContent = p.stock + me.sent;
-    $('fOwed').textContent = p.owed + me.sent - me.asked;
-    $('fArr').textContent = me.arrived;
-    $('fCost').textContent = prev ? money(prev.weekCost) : '–';
-    $('fWay').textContent = p.inbound[0] + p.inbound[1];
-    if (prev) { $('tot').textContent = money(p.cost - me.weekCost); drawLast(G.log[G.log.length - 2]); }
-    else { $('tot').textContent = money(0); $('lastWk').textContent = ''; $('costWk').textContent = ''; }
-    $('rates').innerHTML = 'Rates: <b>' + money(CFG.holdCost) + '</b> a week for each keg in the cellar \u00B7 <b>' + money(CFG.backlogCost) + '</b> a week for each keg owed to a customer \u00B7 ordering and the kegs themselves are free.';
+    if (wom()) {
+      facts([['Customers want', me.asked], ['In your cellar', inCellar + ' of ' + CAP], ['Room left in the cellar', CAP - inCellar],
+        ['Delivered this week', me.arrived + (me.back > 0 ? ' (' + me.back + ' sent back)' : '')],
+        ['On its way to you', p.inbound[0] + p.inbound[1]], ['On back order for you', ANS ? ANS.owed : 0]]);
+      totals(me.served - me.sent, me.turnedAll - me.turned, me.wasted);
+      $('rates').innerHTML = 'Your cellar holds <b>' + CAP + '</b> kegs. A delivery that does not fit is sent back. A customer you cannot serve leaves.';
+    } else {
+      facts([['Customers want', me.asked], ['In your cellar', inCellar], ['Owed from before', p.owed + me.sent - me.asked],
+        ['Delivered this week', me.arrived], ['Cost last week', prev ? money(prev.pos[G.seat].weekCost) : '–'],
+        ['On its way to you', p.inbound[0] + p.inbound[1]]]);
+      $('totC').textContent = money(p.cost - me.weekCost);
+      $('rates').innerHTML = 'Rates: <b>' + money(CFG.holdCost) + '</b> a week for each keg in the cellar · <b>' + money(CFG.backlogCost) + '</b> a week for each keg owed to a customer · ordering and the kegs themselves are free.';
+    }
+    if (prev) drawLast(prev, true);
+    else { $('lastWk').textContent = ''; $('sumWk').textContent = ''; }
     const past = G.log.filter(function (r) { return r.pos[G.seat].order != null; }).slice(-4)
       .map(function (r) { return 'week ' + r.week + ': ' + r.pos[G.seat].order; });
     $('past').textContent = 'Your recent orders: ' + (past.length ? past.join(', ') : 'none yet');
   }
   /* What came of a week once its customers were served. */
-  function drawLast(rec) {
+  function drawLast(rec, keepTotals) {
     const me = rec.pos[G.seat];
-    $('lastWk').textContent = 'Week ' + rec.week + ': you served ' + me.sent + (me.owed > 0 ? ' and still owe ' + me.owed : ', nobody left waiting') + '.';
-    // the week's cost written out from its two parts
-    $('costWk').innerHTML = '<b>Week ' + rec.week + ' cost</b> <span>cellar ' + me.stock + ' \u00D7 ' + money(CFG.holdCost) + ' = ' + money(me.stock * CFG.holdCost) + '</span> <span>+ waiting ' + me.owed + ' \u00D7 ' + money(CFG.backlogCost) + ' = ' + money(me.owed * CFG.backlogCost) + '</span> <span>= <b>' + money(me.weekCost) + '</b></span> <span class="sofar">Cost so far ' + money(me.cost - me.weekCost) + ' + ' + money(me.weekCost) + ' = <b>' + money(me.cost) + '</b></span>';
-    $('tot').textContent = money(me.cost);
+    if (wom()) {
+      $('lastWk').textContent = 'Week ' + rec.week + ': ' + me.asked + (me.asked === 1 ? ' customer came' : ' customers came') + '. You served ' + me.sent +
+        (me.turned > 0 ? ' and turned ' + me.turned + ' away.' : me.asked > 0 ? ', all of them.' : '.');
+      $('sumWk').innerHTML = '<b>Customers served so far</b> <span>' + (me.served - me.sent) + ' + ' + me.sent + ' = <b>' + me.served + '</b></span>' +
+        '<span class="sofar">' + (me.turned > 0 ? 'People who left without a keg tell others. Expect a smaller crowd.' : 'Everyone was served. Word gets around, and the crowd grows.') + '</span>';
+      if (!keepTotals) totals(me.served, me.turnedAll, me.wasted);
+    } else {
+      $('lastWk').textContent = 'Week ' + rec.week + ': you served ' + me.sent + (me.owed > 0 ? ' and still owe ' + me.owed : ', nobody left waiting') + '.';
+      // the week's cost written out from its two parts
+      $('sumWk').innerHTML = '<b>Week ' + rec.week + ' cost</b> <span>cellar ' + me.stock + ' × ' + money(CFG.holdCost) + ' = ' + money(me.stock * CFG.holdCost) + '</span> <span>+ waiting ' + me.owed + ' × ' + money(CFG.backlogCost) + ' = ' + money(me.owed * CFG.backlogCost) + '</span> <span>= <b>' + money(me.weekCost) + '</b></span> <span class="sofar">Cost so far ' + money(me.cost - me.weekCost) + ' + ' + money(me.weekCost) + ' = <b>' + money(me.cost) + '</b></span>';
+      if (!keepTotals) $('totC').textContent = money(me.cost);
+    }
   }
-  /* served = false: the view before this week's customers get their kegs. */
+  /* served = false: the view before this week's customers get their kegs.
+     V.red is the red box: customers still waiting (plain) or turned away this week (wom). */
   function syncView(rec, served) {
-    const p = G.pos[G.seat], hold = served ? 0 : rec.pos[G.seat].sent;
-    const asked = rec.pos[G.seat].asked;
-    V = { s2: p.inbound[1], s1: p.inbound[0], cellar: p.stock + hold, waiting: p.owed + hold,
-      coming: served ? 0 : asked, late: served ? p.owed : p.owed + hold - asked, glad: served ? rec.pos[G.seat].sent : 0,
-      gladWeek: rec.week, settled: served, stage: served ? 'done' : 'asking' };
+    const p = G.pos[G.seat], me = rec.pos[G.seat], hold = served ? 0 : me.sent;
+    const red = wom() ? (served ? me.turned : 0) : (served ? p.owed : p.owed + me.sent - me.asked);
+    V = { s2: p.inbound[1], s1: p.inbound[0], cellar: p.stock + hold,
+      coming: served ? 0 : me.asked, glad: served ? me.sent : 0, red: red, back: me.back,
+      gladWeek: rec.week, stage: served ? 'done' : 'asking' };
   }
   function lock(on) {
     busy = on;
@@ -797,35 +914,37 @@ if (typeof module !== 'undefined') module.exports = Engine;
 
   function start() {
     clearInterval(timer);
-    G = Engine.newGame(0);
+    G = Engine.newGame(0, MODE);
+    setMode();
     const rec = Engine.beginWeek(G);
-    syncView(rec, false); reply(rec); drawLane(); drawFacts(rec);
-    $('order').value = 4; $('why').value = '';
+    syncView(rec, false); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec);
+    $('order').value = CFG.startFlow; $('why').value = '';
     show('play'); lock(false);
   }
-  /* This week's customers get their kegs from the cellar. */
+  function home() { clearInterval(timer); G = null; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
+  /* This week's customers get their kegs from the cellar. Where customers wait (plain), the
+     longest wait comes first: kegs go to those already waiting, then to this week's customers.
+     Where they do not (wom), nobody is waiting, and those left without a keg are turned away. */
   async function serve(rec, step) {
     const me = rec.pos[G.seat], p = G.pos[G.seat];
-    // Longest wait first: kegs go to those already waiting, then to this week's customers.
-    const fromOld = Math.min(me.sent, V.late), fromNew = me.sent - fromOld, turned = V.coming - fromNew;
+    const fromOld = Math.min(me.sent, V.red), fromNew = me.sent - fromOld, left = V.coming - fromNew;
     await fly(KEG, at('cel'), at('cus'), me.sent, step);
+    V.cellar -= me.sent; V.coming = 0; V.red -= fromOld; V.gladWeek = rec.week;
     if (!$('chainPlay').hidden && step > 0) {
-      V.cellar -= me.sent; V.coming = 0; V.late -= fromOld; V.gladWeek = rec.week; drawChainPlay();
+      drawChainPlay();
       await Promise.all([
-        fly('', at('cwait'), at('cserved'), fromOld, step, faces('glad', fromOld, rec.week)),
+        fly('', at('cout'), at('cserved'), fromOld, step, faces('glad', fromOld, rec.week)),
         fly('', at('cin'), at('cserved'), fromNew, step, faces('glad', fromNew, rec.week)),
-        fly('', at('cin'), at('cwait'), turned, step, faces('late', turned, rec.week))]);
-      V.cellar += me.sent; V.late += fromOld;
+        fly('', at('cin'), at('cout'), left, step, faces('late', left, rec.week))]);
     }
-    V.cellar -= me.sent; V.waiting -= me.sent; V.coming = 0; V.late = V.late - fromOld + turned;
-    V.glad = me.sent; V.gladWeek = rec.week; V.settled = true; V.stage = 'done'; drawLane();
-    console.assert(V.cellar === p.stock && V.waiting === p.owed && V.late === p.owed && V.s1 === p.inbound[0] && V.s2 === p.inbound[1], 'view out of step with engine');
+    V.red += left; V.glad = me.sent; V.stage = 'done'; drawLane();
+    console.assert(V.cellar === p.stock && V.s1 === p.inbound[0] && V.s2 === p.inbound[1] && V.red === (wom() ? me.turned : p.owed), 'view out of step with engine');
     drawLast(rec);
   }
 
   /* The game waits with the week's customers standing in the pub. On the player's order:
-     they are served, the order goes out, the kegs on the road move a step, and next
-     week's customers come in. */
+     they are served (or not), the order goes out, the kegs on the road move a step,
+     and next week's customers come in. */
   async function send() {
     if (busy) return;
     let o = parseInt($('order').value, 10);
@@ -844,19 +963,23 @@ if (typeof module !== 'undefined') module.exports = Engine;
     const rec = Engine.beginWeek(G), me = rec.pos[G.seat], p = G.pos[G.seat];
     $('wk').textContent = rec.week;
     reply(rec);
-    drawLane();
-    // 3. the nearest lot reaches the cellar
+    V.back = 0; wasteAlert(0); drawLane();
+    // 3. the nearest lot reaches the cellar, which takes only what fits
     await fly(KEG, at('s1'), at('cel'), before.s1, step);
-    V.cellar += before.s1; V.s1 = 0; drawLane();
+    V.cellar += me.arrived; V.s1 = 0; V.back = me.back; drawLane();
+    if (me.back > 0) {
+      wasteAlert(me.back); $('totW').textContent = me.wasted;
+      await fly(KEG, at('cel'), at('who'), me.back, step, '↩ ' + kegs(me.back));
+    }
     // 4. the next lot moves one slot closer
     await fly(KEG, at('s2'), at('s1'), before.s2, step);
     V.s1 = before.s2; V.s2 = 0; drawLane();
     // 5. the wholesaler sends what it can
     await fly(KEG, at('who'), at('s2'), p.inbound[1], step);
     V.s2 = p.inbound[1]; drawLane();
-    // 6. next week's customers come in, and the game waits for the order
-    V.glad = 0; drawLane(); await wait(step * 0.5);   // the served customers have left
-    V.waiting += me.asked; V.coming = me.asked; V.settled = false; V.stage = 'asking'; drawLane();
+    // 6. last week's customers have gone; this week's come in, and the game waits for the order
+    V.glad = 0; if (wom()) V.red = 0; drawLane(); await wait(step * 0.5);
+    V.coming = me.asked; V.stage = 'asking'; drawLane();
     drawFacts(rec);
     if (Engine.finished(G)) {   // the last week: no order left to place
       await wait(step); await serve(rec, step); await wait(step);
@@ -870,7 +993,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
     if (busy) return;
     let rec = null;
     while (!Engine.finished(G)) { Engine.endWeek(G, {}); rec = Engine.beginWeek(G); }
-    if (rec) { syncView(rec, true); reply(rec); drawLane(); drawFacts(rec); }
+    if (rec) { syncView(rec, true); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec); drawLast(rec); }
     show('commit');
   }
 
@@ -927,20 +1050,28 @@ if (typeof module !== 'undefined') module.exports = Engine;
     }).join('');
   }
 
+  function kpis(id, list) {
+    $(id).innerHTML = list.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
+  }
   function results() {
     show('results');
     const n = CFG.weeksPlayed, demand = G.log.map(function (r) { return r.demand; });
-    const myOrders = col(0, 'order'), myNet = col(0, 'net');
+    const myOrders = col(0, 'order');
     const peak = function (a) { return Math.max.apply(null, a.filter(function (q) { return q != null; })); };
-    $('kCost').textContent = money(G.pos[0].cost);
-    $('kDem').textContent = peak(demand);
-    $('kOrd').textContent = peak(myOrders);
-    $('kBre').textContent = peak(col(3, 'order'));
-    $('kChain').textContent = money(G.pos.reduce(function (s, p) { return s + p.cost; }, 0));
-    lineChart($('cMineOrders'), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(Math.max(8, peak(myOrders)), 4));
-    const lo = Math.min(0, Math.min.apply(null, myNet)), hi = Math.max(12, Math.max.apply(null, myNet));
-    const st = hi - lo > 50 ? 20 : 10;
-    lineChart($('cMineStock'), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
+    const top = Math.max(8, peak(myOrders), peak(demand));
+    lineChart($('cMineOrders'), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(top, top > 40 ? 20 : top > 20 ? 10 : 4));
+    if (wom()) {
+      const myStock = col(0, 'stock');
+      kpis('kTop', [['Customers served', G.served], ['Customers turned away', G.turned], ['Kegs sent back', G.wasted]]);
+      kpis('kBottom', [['Biggest crowd in a week', peak(demand)], ['Smallest crowd in a week', Math.min.apply(null, demand)], ['Largest order by the brewery', peak(col(3, 'order'))]]);
+      lineChart($('cMineStock'), [{ key: 'pub', label: 'Cellar', vals: myStock }], n, 0, nice(Math.max(CAP, peak(myStock)), 4));
+    } else {
+      const myNet = col(0, 'net');
+      kpis('kTop', [['Your total cost', money(G.pos[0].cost)], ['Most customers ever wanted in a week', peak(demand)], ['Most you ordered in a week', peak(myOrders)]]);
+      kpis('kBottom', [['Largest order by the brewery', peak(col(3, 'order'))], ['Cost of the whole chain', money(G.pos.reduce(function (s, p) { return s + p.cost; }, 0))], ['Times customer demand changed', 1]]);
+      const lo = Math.min(0, Math.min.apply(null, myNet)), hi = Math.max(12, Math.max.apply(null, myNet)), st = hi - lo > 50 ? 20 : 10;
+      lineChart($('cMineStock'), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
+    }
     const said = $('why').value.trim();
     $('said').textContent = said || 'You left this blank.';
     drawChain(n);
@@ -968,6 +1099,12 @@ if (typeof module !== 'undefined') module.exports = Engine;
   $('playBtn').addEventListener('click', replay);
   $('scrub').addEventListener('input', function () { clearInterval(timer); $('playBtn').textContent = 'Play'; drawChain(parseInt($('scrub').value, 10)); });
   $('againBtn').addEventListener('click', start);
+  $('homeBtn').addEventListener('click', home);
+  document.querySelectorAll('input[name="mode"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      MODE = r.value; $('rulesPlain').hidden = MODE === 'wom'; $('rulesWom').hidden = MODE !== 'wom';
+    });
+  });
   $('tabPub').addEventListener('click', function () { tab(false); });
   $('tabChain').addEventListener('click', function () { tab(true); });
   try { if (localStorage.getItem('pubgame.tab') === 'chain') tab(true); } catch (e) {}

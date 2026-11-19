@@ -211,13 +211,13 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 /* the week-by-week record */
 .logp{margin:16px 0}
 .logwrap{overflow:auto;max-height:340px;border:1px solid var(--line);border-radius:8px}
-.log{border-collapse:collapse;width:100%;min-width:780px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.log{border-collapse:collapse;width:100%;min-width:820px;font-size:.85rem;font-variant-numeric:tabular-nums}
 .log th,.log td{padding:6px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
 .log thead th{position:sticky;top:0;background:var(--sunk);color:var(--muted);font-weight:600;white-space:normal;vertical-align:bottom;line-height:1.25}
 .log thead tr:nth-child(2) th{top:31px}
 .log thead th.grp{text-align:center;color:var(--fg);border-left:1px solid var(--line)}
 .log tbody th{text-align:right;font-weight:600;color:var(--muted)}
-.log td:nth-child(2),.log td:nth-child(7),.log td:nth-child(10){border-left:1px solid var(--line)}
+.log td:nth-child(2),.log-wom td:nth-child(8),.log-wom td:nth-child(11),.log-plain td:nth-child(7),.log-plain td:nth-child(10){border-left:1px solid var(--line)}
 .log td.bad{color:var(--owed);font-weight:600}
 .log tbody tr:last-child th,.log tbody tr:last-child td{border-bottom:0}
 
@@ -241,3 +241,20 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .costsum span{white-space:nowrap}
 .costsum .sofar{flex-basis:100%;color:var(--muted)}
 .rates{margin-top:8px;color:var(--muted);font-size:.8rem;line-height:1.45}
+
+/* cellar limit */
+.cap{color:var(--muted);font-size:.75rem;font-variant-numeric:tabular-nums}
+.cap.full{color:var(--owed);font-weight:600}
+.top-stats{flex-wrap:wrap;row-gap:2px}
+
+/* opening screen: assumed knowledge and the choice of game */
+.before{margin:12px 0;padding:10px 12px;border-left:4px solid var(--accent, var(--hold));background:var(--sunk);border-radius:0 8px 8px 0;font-size:.92rem;line-height:1.5}
+.pick{border:0;padding:0;margin:16px 0 8px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pick legend{padding:0;margin-bottom:6px;font-family:var(--font-head);font-weight:600}
+.pick label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer;background:var(--surface)}
+.pick label:has(input:checked){border:2px solid var(--hold);padding:9px 11px}
+.pick input{margin-top:4px;accent-color:var(--hold)}
+.pick b{display:block}
+.pick small{display:block;color:var(--muted);font-size:.85rem;line-height:1.4}
+@media (max-width:560px){.pick{grid-template-columns:1fr}}
+.order-row .btn + .btn{margin-left:8px}

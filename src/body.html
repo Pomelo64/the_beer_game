@@ -2,24 +2,41 @@
   <header class="top">
     <div>
       <h1>Pub Supply Game</h1>
-      <span class="tag">Prototype. One player, running the pub.</span>
+      <span class="tag" id="tag">Prototype. One player, running the pub.</span>
     </div>
     <div class="top-stats" id="topStats" hidden>
       <span>Week <b id="wk">1</b></span>
-      <span>Cost so far <b id="tot">£0</b></span>
+      <span class="st-plain">Cost so far <b id="totC">£0</b></span>
+      <span class="st-wom" hidden>Customers served <b id="tot">0</b></span>
+      <span class="st-wom" hidden>Turned away <b id="totT">0</b></span>
+      <span class="st-wom" hidden>Kegs sent back <b id="totW">0</b></span>
     </div>
   </header>
 
   <section id="intro">
     <div class="panel brief">
       <h2>You run a pub</h2>
-      <p>Each week customers come in for kegs of beer. You serve them from your cellar and order more from your wholesaler. One mug on screen is one keg.</p>
-      <ul class="rules">
+      <p>Each week customers come in, and each wants one keg of beer. You serve them from your cellar and order more from your wholesaler. One mug on screen is one keg.</p>
+      <p class="before"><b>Before you start.</b> Anyone can play the game. To do the exercise that follows it, you need the basics of stock-and-flow diagrams: what a stock is, what a flow is, and how information links connect them. This app gives you practice in using them. It does not teach them from the beginning.</p>
+      <fieldset class="pick">
+        <legend>Choose a game</legend>
+        <label><input type="radio" name="mode" value="plain" checked> <span><b>The supply game</b><small>Customers wait for their beer. Keep your costs low.</small></span></label>
+        <label><input type="radio" name="mode" value="wom"> <span><b>Word of mouth</b><small>Customers do not wait, and they talk. Serve as many as you can.</small></span></label>
+      </fieldset>
+      <ul class="rules" id="rulesPlain">
         <li>Your wholesaler gets your order at once and tells you what it can send. Delivery then takes time: kegs you order now reach you three weeks later, if the wholesaler has them.</li>
         <li>A keg sitting in your cellar costs <b>£0.50</b> a week.</li>
-        <li>A keg you owe a customer costs <b>£1</b> a week, and you still have to supply it.</li>
+        <li>A customer you cannot serve waits. Each keg you owe a customer costs <b>£1</b> a week, and you still have to supply it.</li>
         <li>These are the only two costs. Placing an order is free, and so are the kegs themselves.</li>
-        <li>Your one decision each week is how many kegs to order. Keep your total cost low.</li>
+        <li>Your one decision each week is how many kegs to order. <b>Keep your total cost low.</b></li>
+        <li>The game runs for up to 50 weeks.</li>
+      </ul>
+      <ul class="rules" id="rulesWom" hidden>
+        <li>Your wholesaler gets your order at once and tells you what it can send. Delivery then takes time: kegs you order now reach you three weeks later, if the wholesaler has them.</li>
+        <li>Your cellar holds <b>20 kegs</b>. Kegs from a delivery that do not fit are sent back.</li>
+        <li>A customer you cannot serve does not wait. They leave, and they tell others.</li>
+        <li>Word gets around. A pub that serves everyone draws a bigger crowd. A pub that turns people away draws a smaller one.</li>
+        <li>There is no money in this game. Your one decision each week is how many kegs to order. <b>Serve as many customers as you can.</b></li>
         <li>The game runs for up to 50 weeks.</li>
       </ul>
       <div class="order-row"><button class="btn" id="startBtn" type="button">Open the pub</button></div>
@@ -51,30 +68,24 @@
       </div>
       <div class="zone mine" id="zCel">
         <div class="zone-top"><span class="zone-name">Your cellar</span><span class="zone-n num" id="nCel">0</span></div>
-        <div class="zone-hint">Kegs in stock</div>
+        <div class="zone-hint">Kegs in stock, of the most it holds</div>
         <div class="tok" id="tCel"></div>
       </div>
       <div class="zone cust" id="zCus">
         <div class="zone-top"><span class="zone-name">Customers</span><span class="zone-n num owed-n" id="nCus">0</span></div>
-        <div class="zone-hint" id="hCus">Nobody is waiting</div>
+        <div class="zone-hint" id="hCus">Nobody here yet</div>
         <div class="tok" id="tCus"></div>
       </div>
     </div>
 
     <div class="alert" id="alert" role="status" hidden></div>
+    <div class="alert" id="alert2" role="status" hidden></div>
     <div class="desk">
       <div class="panel">
         <h3>This week</h3>
-        <dl class="facts">
-          <div><dt>Customers want</dt><dd id="fDem">0</dd></div>
-          <div><dt>In your cellar</dt><dd id="fSent">0</dd></div>
-          <div><dt>Owed from before</dt><dd id="fOwed">0</dd></div>
-          <div><dt>Delivered this week</dt><dd id="fArr">0</dd></div>
-          <div><dt>Cost last week</dt><dd id="fCost">£0</dd></div>
-          <div><dt>On its way to you</dt><dd id="fWay">0</dd></div>
-        </dl>
+        <dl class="facts" id="facts"></dl>
         <div class="past" id="lastWk" aria-live="polite"></div>
-        <div class="costsum" id="costWk"></div>
+        <div class="costsum" id="sumWk"></div>
         <div class="rates" id="rates"></div>
       </div>
       <div class="panel">
@@ -95,14 +106,11 @@
       <h3>Week by week</h3>
       <div class="logwrap" tabindex="0" role="region" aria-label="Record of every week so far">
         <table class="log">
-          <thead>
-            <tr><th rowspan="2">Week</th><th colspan="5" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler's answer</th><th colspan="2" class="grp">Cost</th></tr>
-            <tr><th>Customers wanted</th><th>Delivered to you</th><th>Served</th><th>Left waiting</th><th>Cellar at end</th><th>You ordered</th><th>Wholesaler sent</th><th>On back order with the wholesaler</th><th>Week's cost</th><th>Cost so far</th></tr>
-          </thead>
+          <thead id="logHead"></thead>
           <tbody id="logBody"></tbody>
         </table>
       </div>
-      <p class="note">Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.</p>
+      <p class="note" id="logNote"></p>
     </div>
 
     <div class="tools">
@@ -120,7 +128,7 @@
     <div class="panel">
       <h2>The game has been stopped</h2>
       <p>Before you see any results, answer in your own words.</p>
-      <label for="why"><b>What made it hard to keep your costs down?</b></label>
+      <label for="why"><b id="whyLabel">What made it hard to keep your costs down?</b></label>
       <textarea id="why" placeholder="Write what you think happened, and why."></textarea>
       <div class="order-row"><button class="btn" id="seeBtn" type="button">Show me the results</button></div>
     </div>
@@ -129,20 +137,16 @@
   <section id="results" hidden>
     <div class="panel">
       <h2>Your pub</h2>
-      <dl class="kpis">
-        <div><dt>Your total cost</dt><dd id="kCost">£0</dd></div>
-        <div><dt>Most customers ever wanted in a week</dt><dd id="kDem">0</dd></div>
-        <div><dt>Most you ordered in a week</dt><dd id="kOrd">0</dd></div>
-      </dl>
+      <dl class="kpis" id="kTop"></dl>
       <div class="pair">
         <div>
-          <h3>Orders</h3>
-          <div class="legend"><span class="l-dem"><i></i>Customers wanted</span><span class="l-pub"><i></i>You ordered</span></div>
+          <h3>Customers and orders</h3>
+          <div class="legend"><span class="l-dem"><i></i>Customers who came</span><span class="l-pub"><i></i>You ordered</span></div>
           <div class="chart" id="cMineOrders"></div>
         </div>
         <div>
-          <h3>Stock</h3>
-          <div class="legend"><span class="l-pub"><i></i>Kegs in your cellar, minus kegs owed</span></div>
+          <h3 id="hStock">Stock</h3>
+          <div class="legend"><span class="l-pub"><i></i><span id="lStock"></span></span></div>
           <div class="chart" id="cMineStock"></div>
         </div>
       </div>
@@ -164,20 +168,16 @@
       </div>
       <div class="chart" id="cChain"></div>
       <h3>Stock in the selected week</h3>
-      <p class="note">Right of the line is stock. Left of the line is kegs owed.</p>
+      <p class="note" id="barsNote"></p>
       <div class="bars" id="bars"></div>
-      <dl class="kpis">
-        <div><dt>Largest order by the brewery</dt><dd id="kBre">0</dd></div>
-        <div><dt>Cost of the whole chain</dt><dd id="kChain">£0</dd></div>
-        <div><dt>Times customer demand changed</dt><dd>1</dd></div>
-      </dl>
+      <dl class="kpis" id="kBottom"></dl>
     </div>
 
     <div class="panel">
       <h2>What you wrote before seeing this</h2>
       <p class="quote" id="said"></p>
       <p>The next step is to build a diagram that explains these charts. That step is not in this prototype.</p>
-      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button></div>
+      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
     </div>
   </section>
 </div>
