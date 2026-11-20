@@ -289,6 +289,40 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 #bubble.bubble-above .tail{bottom:-10px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent)}
 #bubble.bubble-over .tail{display:none}
 @media (prefers-reduced-motion:reduce){#spot{transition:none}}
+
+/* the modelling step */
+.canvas-frame{display:block;width:100%;height:520px;border:0;margin:12px 0 0;background:#fbfaf7;border-radius:var(--r)}
+.why{margin:8px 0 16px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:.92rem}
+.why.asking{border:2px solid var(--accent);padding:9px 11px}
+.why label{display:block;margin-bottom:6px}
+.why-in,.ask-in{display:flex;gap:8px}
+.why-in input,.ask-in textarea,.aibox input,.aibox select,.rec-row input{flex:1;min-width:0;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:7px 9px}
+.ask-in textarea{resize:vertical}
+.muted{color:var(--muted)} .small{font-size:.82rem}
+.howto summary,.aibox summary{cursor:pointer;font-weight:600}
+.howto p{font-size:.9rem;margin:6px 0 0}
+.aibox{margin:6px 0 12px;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.aibox label{display:flex;flex-direction:column;gap:3px;margin:8px 0;font-size:.85rem;color:var(--muted)}
+.ai-state{margin:8px 0 0;font-size:.88rem}
+.ai-state.ok{color:var(--hold)} .ai-state.warn{color:#9a6200} .ai-state.err{color:var(--owed)}
+.mark-msg{color:var(--owed);margin:10px 0 0}
+.mark-score{font-size:1.05rem;margin:12px 0 4px}
+.verdicts,.extras{list-style:none;padding:0;margin:8px 0}
+.verdicts li{display:flex;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:.9rem;line-height:1.45}
+.verdicts li.v-missing,.verdicts li.v-wrong{background:color-mix(in srgb,var(--owed) 6%,transparent)}
+.v-ico{flex:none;width:1.4em;text-align:center}
+.chip{display:inline-block;padding:0 7px;border-radius:999px;background:var(--sunk);font-size:.82rem}
+.extras li{font-size:.9rem;padding:4px 0}
+.mark-next{padding:8px 10px;border-left:4px solid var(--accent);background:var(--sunk);border-radius:0 8px 8px 0}
+#markOut h4{margin:12px 0 0;font-family:var(--font-head)}
+.chat{max-height:380px;overflow:auto;display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.msg{padding:8px 10px;border-radius:10px;font-size:.92rem;line-height:1.45;max-width:92%}
+.msg .who{display:block;font-size:.75rem;color:var(--muted);margin-bottom:2px}
+.msg.me{align-self:flex-end;background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.msg.ai{align-self:flex-start;background:var(--sunk)}
+.msg.failed{color:var(--owed)}
+.rec-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0}
+.rec-row label{display:flex;flex-direction:column;gap:3px;font-size:.85rem;color:var(--muted);flex:1;min-width:180px}
 </style>
 </head>
 <body>
@@ -419,6 +453,59 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
     </div>
   </section>
 
+  <section id="model" hidden>
+    <div class="playbar">
+      <h2>Model what you played</h2>
+      <button class="btn ghost small" id="backBtn" type="button">← Back to your results</button>
+    </div>
+    <div class="panel">
+      <p id="taskText"></p>
+      <p class="note" id="keyNote">Prototype: the answer key is a provisional draft, to be replaced by the course's own.</p>
+      <p class="note" id="noKey" hidden>The answer key for this game has not been written yet. You can draw and record your model, but it cannot be marked.</p>
+      <details class="howto">
+        <summary>How to draw</summary>
+        <p>Pick a tool in the toolbar, then click the canvas to place a stock, auxiliary or cloud. For a flow or a link, click where it starts, then where it ends. To feed a flow with information, end the link on the flow's valve (the diamond). Double-click to rename, right-click to delete.</p>
+      </details>
+    </div>
+    <iframe id="canvasFrame" title="Stock-and-flow drawing canvas" class="canvas-frame"></iframe>
+    <div class="why" id="whyRow">
+      <label for="whyIn" id="whyQ">Your last move: why? <span class="muted">(optional)</span></label>
+      <div class="why-in"><input id="whyIn" type="text" placeholder="A sentence is enough"><button class="btn ghost small" id="whySave" type="button">Save</button></div>
+    </div>
+
+    <div class="desk">
+      <div class="panel">
+        <h3>Check your diagram</h3>
+        <details class="aibox" id="aiBox">
+          <summary>AI settings <span class="muted">(<span id="aiSum">no key</span>)</span></summary>
+          <label>Provider <select id="aiProv"></select></label>
+          <label>API key <input id="aiKey" type="password" autocomplete="off" spellcheck="false"></label>
+          <label>Model <input id="aiModel" type="text" spellcheck="false"></label>
+          <button class="btn ghost small" id="aiTest" type="button">Test the connection</button>
+          <p class="ai-state" id="aiState" role="status"></p>
+          <p class="note">The key stays in this page's memory and is sent only to the provider you choose. Nothing is stored: it is gone when you close or reload the page.</p>
+        </details>
+        <div class="order-row"><button class="btn" id="markBtn" type="button">Check my diagram</button></div>
+        <div id="markOut" aria-live="polite"></div>
+      </div>
+      <div class="panel" id="askPanel" hidden>
+        <h3>Ask about your diagram</h3>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="ask-in"><textarea id="askIn" rows="2" placeholder="For example: why does the supply line matter?"></textarea><button class="btn" id="askBtn" type="button">Ask</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Your modelling process</h3>
+      <p id="recState" class="note"></p>
+      <p class="note">Every change to your diagram, every exchange with the AI and every reason you give is recorded, with your game. The file opens in SFD Studio, which replays it step by step.</p>
+      <div class="rec-row"><label><span>Your name <span class="muted">(optional)</span></span> <input id="recName" type="text" autocomplete="name"></label>
+        <button class="btn" id="recBtn" type="button">Download my modelling process</button>
+        <button class="btn ghost small" id="jsonBtn" type="button">Download the diagram (JSON)</button></div>
+      <p class="note">The record lives only in this page until you download it. Download it before you close or reload the page. The canvas's SVG button downloads a picture of the diagram.</p>
+    </div>
+  </section>
+
   <!-- speech bubbles -->
   <div id="spot" hidden></div>
   <div id="bubble" role="dialog" aria-labelledby="bubbleHead" hidden>
@@ -485,13 +572,14 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
     <div class="panel">
       <h2>What you wrote before seeing this</h2>
       <p class="quote" id="said"></p>
-      <p>The next step is to build a diagram that explains these charts. That step is not in this prototype.</p>
-      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
+      <p>Next, explain what you saw: draw a stock-and-flow diagram of your pub, and have it checked.</p>
+      <div class="order-row"><button class="btn" id="modelBtn" type="button">Draw the model</button><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
     </div>
   </section>
 </div>
 <div id="fx" aria-hidden="true"></div>
 <script>
+const CANVAS_HTML = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>SFD Canvas<\/title>\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js\"><\/script>\n<script src=\"https://cdn.jsdelivr.net/npm/cytoscape-svg@0.4.0/cytoscape-svg.js\"><\/script>\n<style>\n  :root {\n    --stock:  #2563eb;   /* blue   */\n    --flow:   #059669;   /* green  */\n    --aux:    #d97706;   /* amber  */\n    --cloud:  #94a3b8;   /* grey   */\n    --conn:   #6b7280;   /* grey info arrow */\n    --ink:    #1e293b;\n    --paper:  #fbfaf7;\n    --line:   #d8d4cc;\n  }\n  html, body { margin: 0; padding: 0; font-family: Georgia, 'Times New Roman', serif; }\n  #toolbar {\n    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;\n    padding: 8px 10px; background: #f3f1ec;\n    border: 1px solid var(--line); border-bottom: none;\n    font-size: 13px; color: var(--ink);\n  }\n  .tool {\n    font-family: inherit; font-size: 12px; cursor: pointer;\n    border: 1px solid var(--line); background: #fff; color: var(--ink);\n    padding: 5px 9px; border-radius: 2px;\n    display: inline-flex; align-items: center; gap: 5px;\n  }\n  .tool .swatch {\n    width: 11px; height: 11px; border-radius: 2px; display: inline-block;\n    border: 1px solid rgba(0,0,0,.25);\n  }\n  .tool.active { border-color: var(--ink); border-width: 2px; font-weight: bold;\n                 background: #fffdf8; }\n  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }\n  .act {\n    font-family: inherit; font-size: 12px; cursor: pointer;\n    border: 1px solid var(--ink); background: #fff; color: var(--ink);\n    padding: 5px 11px; border-radius: 2px;\n  }\n  .act.primary { background: var(--ink); color: #fff; }\n  .act:active, .tool:active { transform: translateY(1px); }\n  #cy {\n    width: 100%; height: 430px; background: var(--paper);\n    background-image: radial-gradient(var(--line) 0.8px, transparent 0.8px);\n    background-size: 22px 22px;\n    border: 1px solid var(--line); box-sizing: border-box;\n    position: relative;\n  }\n  /* overlay holding the bend-point circles for the active link */\n  #wpLayer { position: absolute; left: 0; top: 0; right: 0; bottom: 0;\n             pointer-events: none; z-index: 5; overflow: visible; }\n  .wphandle { position: absolute; width: 13px; height: 13px;\n              transform: translate(-50%, -50%); border-radius: 50%;\n              background: #fff; border: 2px solid #2563eb;\n              box-shadow: 0 1px 2px rgba(0,0,0,.3);\n              pointer-events: auto; cursor: grab; z-index: 6; }\n  .wphandle:hover { border-color: #1e293b; }\n  .wphandle:active { cursor: grabbing; border-color: #1e293b; }\n  #status { font-size: 12px; color: #767067; padding: 5px 10px;\n            border: 1px solid var(--line); border-top: none; min-height: 1.1em;\n            background: #f3f1ec; font-style: italic; }\n  #footer {\n    display: flex; justify-content: flex-end;\n    padding: 8px 10px; background: #f3f1ec;\n    border: 1px solid var(--line); border-top: none;\n  }\n  /* Draw / Edit mode toggle on the left side of the toolbar */\n  .mode {\n    display: inline-flex; border: 1px solid var(--ink); border-radius: 2px;\n    overflow: hidden; margin-right: 6px;\n  }\n  .mode button {\n    font-family: inherit; font-size: 12px; cursor: pointer;\n    background: #fff; color: var(--ink);\n    padding: 5px 10px; border: none;\n  }\n  .mode button.active { background: var(--ink); color: #fff; font-weight: bold; }\n  .mode button + button { border-left: 1px solid var(--ink); }\n  /* visual cue while in edit mode: dim the tool buttons */\n  body.edit-mode .tool, body.edit-mode #clearBtn { opacity: 0.4; pointer-events: none; }\n<\/style>\n<style>/* added by the Pub Supply Game: no equations in this exercise */ #modeToggle{display:none!important}<\/style>\n<\/head>\n<body>\n  <div id=\"toolbar\">\n    <span class=\"mode\" id=\"modeToggle\">\n      <button data-mode=\"draw\" class=\"active\">Draw<\/button>\n      <button data-mode=\"edit\">Edit<\/button>\n    <\/span>\n    <button class=\"tool active\" data-tool=\"stock\">\n      <span class=\"swatch\" style=\"background:#2563eb\"><\/span>Stock<\/button>\n    <button class=\"tool\" data-tool=\"aux\">\n      <span class=\"swatch\" style=\"background:#d97706;border-radius:50%\"><\/span>Auxiliary<\/button>\n    <button class=\"tool\" data-tool=\"cloud\">\n      <span class=\"swatch\" style=\"background:#94a3b8\"><\/span>Cloud<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"tool\" data-tool=\"flow\">\n      <span class=\"swatch\" style=\"background:#059669\"><\/span>Flow<\/button>\n    <button class=\"tool\" data-tool=\"connector\">\n      <span class=\"swatch\" style=\"background:#6b7280\"><\/span>Connector<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"act\" id=\"clearBtn\">Clear<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"act\" id=\"untangleBtn\" title=\"Auto-arrange the whole diagram: keep the stock-flow backbone in the centre, spread the auxiliaries onto a ring around it, and remove overlaps. Then use &ldquo;Tidy flows&rdquo; to square up the pipes.\">Untangle<\/button>\n    <button class=\"act\" id=\"tidyBtn\" title=\"Straighten every flow: square up pipes to horizontal/vertical and center each valve. A stock's inflow and outflow share one axis, so cloud&rarr;inflow&rarr;stock&rarr;outflow&rarr;cloud comes out fully horizontal (or fully vertical).\">Tidy flows<\/button>\n    <button class=\"act\" id=\"hideBendsBtn\" title=\"Hide the bend-point circles on links (the link shapes are kept)\">Hide bend points<\/button>\n    <button class=\"act\" id=\"mergeBtn\" title=\"Merge information links that share a source: they leave the source as one trunk and fork near their targets (links heading opposite ways stay separate). Press again to un-merge. Drag a bend to fine-tune; right-click a bend to unmerge just one link.\">Merge links<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"act\" id=\"zoomOutBtn\" title=\"Zoom out 10%\">&minus;<\/button>\n    <button class=\"act\" id=\"zoomInBtn\"  title=\"Zoom in 10%\">+<\/button>\n    <button class=\"act\" id=\"fitBtn\"     title=\"Fit diagram to canvas\">Center<\/button>\n    <button class=\"act\" id=\"fadeBtn\"    title=\"Storytelling: dim everything, then click elements to reveal them (click again to re-hide) for a screenshot. Click a flow to reveal the whole flow. Press again to restore.\">Fade<\/button>\n    <button class=\"act\" id=\"svgBtn\"     title=\"Export the diagram as an SVG image\">SVG<\/button>\n  <\/div>\n  <div id=\"cy\"><\/div>\n  <div id=\"status\">Stock tool active \u2014 click the canvas to place a stock.<\/div>\n\n<script>\n/* ====================================================================\n   Streamlit component protocol (vanilla, no build step)\n   ==================================================================== */\nconst Streamlit = {\n  _renderHandler: null,\n  _ready: false,            // becomes true once Streamlit sends first render\n  _pending: null,           // a value emitted before we were ready\n  _readyTimer: null,\n  setComponentReady() {\n    window.parent.postMessage(\n      { isStreamlitMessage: true, type: \"streamlit:componentReady\",\n        apiVersion: 1 }, \"*\");\n  },\n  setFrameHeight(h) {\n    window.parent.postMessage(\n      { isStreamlitMessage: true, type: \"streamlit:setFrameHeight\",\n        height: h || document.body.scrollHeight }, \"*\");\n  },\n  setComponentValue(v) {\n    // Streamlit's handler reads BOTH `value` and `dataType`; omitting\n    // dataType makes the value silently fail to register. Use \"json\".\n    if (!this._ready) { this._pending = v; return; }   // queue until ready\n    window.parent.postMessage(\n      { isStreamlitMessage: true, type: \"streamlit:setComponentValue\",\n        dataType: \"json\", value: v }, \"*\");\n  },\n  onRender(fn) { this._renderHandler = fn; }\n};\nwindow.addEventListener(\"message\", (e) => {\n  if (!e.data || e.data.type !== \"streamlit:render\") return;\n  // The first render means Streamlit has registered us as ready. Stop the\n  // re-announce loop and flush any value queued before this point.\n  if (!Streamlit._ready) {\n    Streamlit._ready = true;\n    if (Streamlit._readyTimer) {\n      clearInterval(Streamlit._readyTimer);\n      Streamlit._readyTimer = null;\n    }\n  }\n  if (Streamlit._renderHandler) {\n    Streamlit._renderHandler(e.data.args || {});\n  }\n  if (Streamlit._pending !== null) {\n    const v = Streamlit._pending;\n    Streamlit._pending = null;\n    Streamlit.setComponentValue(v);\n  }\n});\n\nconst C = {\n  stock: \"#2563eb\", flow: \"#059669\", aux: \"#d97706\",\n  cloud: \"#94a3b8\", conn: \"#6b7280\"\n};\n\n/* A real cloud glyph (classic SFD source/sink marker), drawn as an inline\n   SVG and used as the cloud node's background image. Encoded so the '#' in\n   the colours is safe inside a data URI. */\nconst CLOUD_SVG =\n  '<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"11 15 76.8 38.5\" ' +\n  'width=\"153.6\" height=\"77\">' +\n  '<path d=\"M24,50 C12,50 8,38 18,34 C13,22 30,16 37,26 C42,13 64,13 68,27 ' +\n  'C82,22 93,34 82,40 C90,46 82,52 72,50 C60,53 36,53 24,50 Z\" ' +\n  'fill=\"#eef0f2\" stroke=\"' + C.cloud + '\" stroke-width=\"2.6\" ' +\n  'stroke-linejoin=\"round\"/><\/svg>';\nconst CLOUD_URI =\n  'data:image/svg+xml;utf8,' + encodeURIComponent(CLOUD_SVG);\n\n/* ====================================================================\n   Cytoscape editor \u2014 typed SFD elements\n   ==================================================================== */\nconst cy = cytoscape({\n  container: document.getElementById('cy'),\n  minZoom: 0.4, maxZoom: 2.5,\n  style: [\n    /* --- STOCK : blue rectangle --------------------------------------- */\n    { selector: 'node[type=\"stock\"]', style: {\n        'label': 'data(label)', 'shape': 'rectangle',\n        'background-color': '#eef3ff', 'border-color': C.stock,\n        'border-width': 2.5,\n        'width': 96, 'height': 46,\n        'text-valign': 'center', 'text-halign': 'center',\n        'font-family': 'Georgia, serif', 'font-size': 12,\n        'color': '#1e3a8a', 'text-wrap': 'wrap', 'text-max-width': 88\n    }},\n    /* --- AUXILIARY : amber circle ------------------------------------- */\n    { selector: 'node[type=\"aux\"]', style: {\n        'label': 'data(label)', 'shape': 'ellipse',\n        'background-color': '#fef3e2', 'border-color': C.aux,\n        'border-width': 2,\n        'width': 62, 'height': 62,\n        'text-valign': 'center', 'text-halign': 'center',\n        'font-family': 'Georgia, serif', 'font-size': 11,\n        'color': '#92400e', 'text-wrap': 'wrap', 'text-max-width': 56\n    }},\n    /* --- CLOUD : real cloud glyph (boundary source / sink) ------------ */\n    /* The glyph is scaled to 112% of the node box and allowed to overflow\n       it (background-clip:none), so a flow connecting to the node boundary\n       always meets the cloud with no gap, from any angle. */\n    { selector: 'node[type=\"cloud\"]', style: {\n        'label': '',                       /* clouds carry no visible text */\n        'shape': 'round-rectangle',        /* invisible body; image shows */\n        'background-opacity': 0, 'border-width': 0,\n        'background-image': CLOUD_URI,\n        'background-fit': 'none', 'background-clip': 'none',\n        'background-width': '112%', 'background-height': '112%',\n        'background-position-x': '50%', 'background-position-y': '50%',\n        'width': 62, 'height': 31\n    }},\n    /* keep the cloud free of a rectangular border when selected --------- */\n    { selector: 'node[type=\"cloud\"]:selected', style: {\n        'border-width': 0\n    }},\n    /* --- selected highlight ------------------------------------------- */\n    { selector: 'node:selected', style: {\n        'border-width': 4, 'overlay-color': '#1e293b', 'overlay-opacity': 0.06\n    }},\n    /* --- FLOW : two thick green pipe segments meeting at a valve node - */\n    { selector: 'edge[type=\"flowseg\"]', style: {\n        'curve-style': 'bezier',\n        'width': 7,\n        'line-color': C.flow, 'line-style': 'double',\n        'target-arrow-color': C.flow,\n        'target-arrow-shape': 'data(arrow)',   /* 'triangle' or 'none' */\n        'arrow-scale': 1.6\n    }},\n    /* the VALVE : the small symbol sitting on the flow pipe ------------- */\n    { selector: 'node[type=\"valve\"]', style: {\n        'label': 'data(label)', 'shape': 'diamond',\n        'background-color': '#fffdf8', 'border-color': C.flow,\n        'border-width': 2.5,\n        'width': 22, 'height': 22,\n        'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': -3,\n        'font-family': 'Georgia, serif', 'font-size': 11, 'font-weight': 'bold',\n        'color': '#065f46',\n        'text-background-color': '#fbfaf7',\n        'text-background-opacity': 1, 'text-background-padding': 2\n    }},\n    /* --- CONNECTOR : thin grey curved information arrow --------------- */\n    { selector: 'edge[type=\"connector\"]', style: {\n        'curve-style': 'unbundled-bezier',\n        'control-point-distances': [38], 'control-point-weights': [0.5],\n        'width': 1.6,\n        'line-color': C.conn, 'line-style': 'solid',\n        'target-arrow-color': C.conn, 'target-arrow-shape': 'vee',\n        'arrow-scale': 1.0\n    }},\n    /* --- JUNCTION : tiny split-point where merged links fork ---------- */\n    { selector: 'node[type=\"junction\"]', style: {\n        'label': '', 'shape': 'ellipse',\n        'background-color': '#fffdf8', 'border-color': '#334155',\n        'border-width': 2, 'width': 15, 'height': 15\n    }},\n    { selector: 'node[type=\"junction\"]:selected', style: {\n        'border-width': 3, 'border-color': '#2563eb' }},\n    /* the trunk segment running into a junction carries no arrowhead */\n    { selector: 'edge[type=\"connector\"][trunk]', style: {\n        'target-arrow-shape': 'none' }},\n    { selector: 'edge:selected', style: { 'overlay-color': '#1e293b',\n        'overlay-opacity': 0.12, 'overlay-padding': 4 }},\n    /* the link currently being bent (its circles are showing) */\n    { selector: 'edge[type=\"connector\"].wpActive', style: {\n        'line-color': '#2563eb', 'target-arrow-color': '#2563eb',\n        'width': 2.4 }},\n    /* fade / storytelling: dimmed elements recede so the revealed ones pop */\n    { selector: 'node.dim', style: { 'opacity': 0.11, 'text-opacity': 0.11 }},\n    { selector: 'edge.dim', style: { 'opacity': 0.09 }},\n    /* hover glow \u2014 signals \"this element is clickable\".\n       Border + width changes always render, unlike overlay-*. */\n    { selector: 'node.hovered', style: {\n        'border-width': 5, 'border-color': '#1e293b' }},\n    { selector: 'edge[type=\"flowseg\"].hovered', style: {\n        'width': 10, 'line-color': '#065f46' }},\n    { selector: 'edge[type=\"connector\"].hovered', style: {\n        'width': 3.5, 'line-color': '#1e293b',\n        'target-arrow-color': '#1e293b' }},\n    /* Completion badges in edit mode \u2014 a ring around the element.\n       Amber = unconfirmed, green = user has saved the equation.    */\n    { selector: 'node.unconfirmed', style: {\n        'underlay-color': '#d97706', 'underlay-opacity': 0.18,\n        'underlay-padding': 7, 'underlay-shape': 'round-rectangle' }},\n    { selector: 'node.confirmed', style: {\n        'underlay-color': '#059669', 'underlay-opacity': 0.20,\n        'underlay-padding': 7, 'underlay-shape': 'round-rectangle' }}\n  ],\n  layout: { name: 'preset' }\n});\n\n/* --- mode + tool state ----------------------------------------------- */\nlet mode = 'draw';        // 'draw' or 'edit'\nlet fadeMode = false;     // storytelling: dim everything, click to reveal\nlet tool = 'stock';\n\n/* Track confirmation status per element label (pushed from Python via\n   args.confirmed). The Set holds labels of confirmed elements. */\nlet confirmedLabels = new Set();\n\nconst TOOL_HINT = {\n  stock:     'Stock tool \u2014 click the canvas to place a stock.',\n  aux:       'Auxiliary tool \u2014 click the canvas to place an auxiliary.',\n  cloud:     'Cloud tool \u2014 click the canvas to place a boundary cloud.',\n  flow:      'Flow tool \u2014 click a source element, then a target, to draw a flow.',\n  connector: 'Connector tool \u2014 click a source, then a target, to draw an info link.'\n};\nconst EDIT_HINT = 'Edit mode \u2014 click any stock, flow valve, or auxiliary to edit its equation.';\n\ndocument.querySelectorAll('.tool').forEach(btn => {\n  btn.onclick = () => {\n    tool = btn.dataset.tool;\n    document.querySelectorAll('.tool').forEach(b =>\n      b.classList.toggle('active', b === btn));\n    linkSource = null; cy.elements().unselect();\n    flash(TOOL_HINT[tool]);\n  };\n});\n\n/* Mode toggle: Draw lets you build the diagram; Edit lets you click an\n   element to edit its equation. The two are exclusive.                  */\ndocument.querySelectorAll('#modeToggle button').forEach(btn => {\n  btn.onclick = () => {\n    mode = btn.dataset.mode;\n    console.log('[SFD] mode ->', mode);\n    document.querySelectorAll('#modeToggle button').forEach(b =>\n      b.classList.toggle('active', b === btn));\n    document.body.classList.toggle('edit-mode', mode === 'edit');\n    linkSource = null; cy.elements().unselect();\n    refreshBadges();\n    flash(mode === 'edit' ? EDIT_HINT : TOOL_HINT[tool]);\n  };\n});\n\n/* Apply or clear completion-badge classes on every editable element.\n   Elements with equations are: stocks, auxiliaries, and flow valves\n   (their label is the flow's name). Clouds and pipe segments are\n   excluded \u2014 they don't carry equations.                                */\nfunction refreshBadges() {\n  cy.nodes().forEach(n => {\n    n.removeClass('confirmed').removeClass('unconfirmed');\n    if (mode !== 'edit') return;\n    const t = n.data('type');\n    if (t === 'cloud') return;\n    const label = (t === 'valve') ? n.data('label') : n.data('label');\n    if (confirmedLabels.has(label)) n.addClass('confirmed');\n    else                            n.addClass('unconfirmed');\n  });\n}\n\nlet seq = 0;\nconst newId = () => 'x' + (++seq);\n\n/* --- name validation -------------------------------------------------- */\n/* A component name must start with a letter (any language), so it can't be */\n/* mistaken for a number or an operator in an equation. E.g. naming flows   */\n/* \"1\" and \"2\" would make a stock's net flow read \"1 - 2\", which looks like */\n/* arithmetic. Names may contain letters, digits, spaces and underscores    */\n/* after the first character.                                               */\nfunction validName(s) {\n  if (!s) return false;\n  const t = s.trim();\n  if (!t) return false;\n  // first character must be a letter in any language (Unicode property)\n  return /^\\p{L}/u.test(t);\n}\n/* Prompt for a name, re-prompting while the entry is invalid. Returns the  */\n/* trimmed name, or null if the user cancels.                               */\nfunction promptName(message, initial) {\n  let val = window.prompt(message, initial || '');\n  while (val !== null) {                       // null = user cancelled\n    if (validName(val)) return val.trim();\n    val = window.prompt(\n      'Name must start with a letter (not a number or symbol). ' +\n      'Try again:', val);\n  }\n  return null;\n}\n\n/* --- click empty canvas: place a node-type element ------------------- */\ncy.on('tap', (evt) => {\n  if (fadeMode) return;                    // fade mode: clicks only reveal\n  if (mode !== 'draw') return;              // edit mode: no creation\n  if (evt.target !== cy) return;            // only background clicks\n  if (tool === 'flow' || tool === 'connector') {\n    flash('That tool draws arrows \u2014 click an element, not empty space.');\n    return;\n  }\n  let label;\n  if (tool === 'cloud') {\n    label = 'cloud';                        // clouds need no name\n  } else {\n    label = promptName(\n      tool === 'stock' ? 'Stock name:' : 'Auxiliary name:');\n    if (!label) return;                      // cancelled or never valid\n  }\n  cy.add({ group: 'nodes',\n           data: { id: newId(), label: label, type: tool },\n           position: { x: evt.position.x, y: evt.position.y } });\n  flash('Added ' + tool + (tool === 'cloud' ? '' : ' \"' + label + '\"'));\n});\n\n/* --- flow construction: source --[seg]--> valve --[seg]--> target ----- */\n/* A flow is a valve node plus two pipe segments sharing a `flow` id.     */\n/* This lets connectors attach to the valve, exactly as in real SFD tools.*/\nlet flowSeq = 0;\n\nfunction makeFlow(srcNode, tgtNode, label) {\n  const fid = 'flow' + (++flowSeq);\n  // valve sits at the midpoint of the two endpoints\n  const vx = (srcNode.position('x') + tgtNode.position('x')) / 2;\n  const vy = (srcNode.position('y') + tgtNode.position('y')) / 2;\n  const valveId = newId();\n  cy.add({ group: 'nodes',\n           data: { id: valveId, type: 'valve', label: label, flow: fid },\n           position: { x: vx, y: vy } });\n  // segment 1: source -> valve, no arrowhead\n  cy.add({ group: 'edges', data: {\n    id: 'e' + newId(), source: srcNode.id(), target: valveId,\n    type: 'flowseg', flow: fid, arrow: 'none' } });\n  // segment 2: valve -> target, carries the arrowhead\n  cy.add({ group: 'edges', data: {\n    id: 'e' + newId(), source: valveId, target: tgtNode.id(),\n    type: 'flowseg', flow: fid, arrow: 'triangle' } });\n}\n\n/* removing any part of a flow removes the whole flow ------------------- */\nfunction removeFlow(fid) {\n  cy.elements(`[flow = \"${fid}\"]`).remove();\n}\n\n/* --- click two elements: draw a flow or a connector ------------------ */\nlet linkSource = null;\ncy.on('tap', 'node', (evt) => {\n  if (fadeMode) return;                    // fade mode: handled by fade tap\n  // In edit mode, clicking an editable element sends an \"edit-this\"\n  // event to Python; drawing logic is suspended.\n  if (mode === 'edit') {\n    const n = evt.target;\n    const t = n.data('type');\n    console.log('[SFD] edit-click on', t, n.data('label'));\n    if (t === 'cloud') {\n      flash('Clouds have no equation.');\n      return;\n    }\n    // kind to emit: 'stock', 'aux', or 'flow' (via the valve)\n    let kind;\n    if (t === 'valve')      kind = 'flow';\n    else if (t === 'stock') kind = 'stock';\n    else if (t === 'aux')   kind = 'auxiliary';\n    else                    return;\n    const payload = {\n      event: 'edit_request',\n      label: n.data('label'),\n      kind: kind,\n      ts: Date.now()\n    };\n    console.log('[SFD] sending edit_request', payload);\n    Streamlit.setComponentValue(payload);\n    flash('Sent edit request for \"' + n.data('label') + '\" \u2014 '\n          + 'editor should appear above. (If not, see browser console.)');\n    return;\n  }\n\n  if (tool !== 'flow' && tool !== 'connector') return;   // selection only\n  const node = evt.target;\n\n  // A flow must run between stocks/clouds (or a valve isn't a sensible\n  // flow endpoint) \u2014 but we impose no hard restriction; we only skip\n  // using a valve as a *flow* endpoint, which would be meaningless.\n  if (linkSource === null) {\n    linkSource = node; node.select();\n    flash(tool + ' from \"' + node.data('label') + '\" \u2014 click the target.');\n  } else if (linkSource.id() === node.id()) {\n    linkSource.unselect(); linkSource = null;\n    flash(tool + ' cancelled.');\n  } else {\n    if (tool === 'flow') {\n      const fl = promptName('Flow name:');\n      if (!fl) { linkSource.unselect(); linkSource = null;\n                 flash('Flow cancelled.'); return; }\n      makeFlow(linkSource, node, fl);\n    } else {\n      cy.add({ group: 'edges', data: {\n        id: 'e' + newId(), source: linkSource.id(), target: node.id(),\n        type: 'connector' } });\n    }\n    flash(tool + ' drawn: \"' + linkSource.data('label') +\n          '\" \\u2192 \"' + node.data('label') + '\"');\n    linkSource.unselect(); linkSource = null;\n  }\n});\n\n/* --- double-click a node to rename ----------------------------------- */\ncy.on('dbltap', 'node', (evt) => {\n  if (fadeMode) return;\n  if (mode !== 'draw') return;             // edit mode: no rename\n  const n = evt.target;\n  if (n.data('type') === 'cloud') return;\n  const what = n.data('type') === 'valve' ? 'Rename flow:' : 'Rename:';\n  const name = promptName(what, n.data('label'));\n  if (name) n.data('label', name);\n});\n\n/* --- right-click deletes ---------------------------------------------- */\n/* Deleting a valve or a pipe segment removes the entire flow.           */\ncy.on('cxttap', 'node', (evt) => {\n  if (fadeMode) return;\n  if (mode !== 'draw') return;             // edit mode: no deletion\n  const n = evt.target;\n  if (n.data('type') === 'valve') removeFlow(n.data('flow'));\n  else n.remove();\n});\ncy.on('cxttap', 'edge', (evt) => {\n  if (fadeMode) return;\n  if (mode !== 'draw') return;\n  const e = evt.target;\n  if (e.data('type') === 'flowseg') removeFlow(e.data('flow'));\n  else e.remove();\n});\n\n/* --- hover glow: highlight the element under the cursor -------------- */\n/* Makes it clear when a click lands ON an element (select it / link it) */\n/* versus on empty canvas (place a new element).                         */\ncy.on('mouseover', 'node', (evt) => {\n  evt.target.addClass('hovered');\n  cy.container().style.cursor = 'pointer';\n});\ncy.on('mouseout', 'node', (evt) => {\n  evt.target.removeClass('hovered');\n  cy.container().style.cursor = 'default';\n});\ncy.on('mouseover', 'edge', (evt) => {\n  evt.target.addClass('hovered');\n  cy.container().style.cursor = 'pointer';\n});\ncy.on('mouseout', 'edge', (evt) => {\n  evt.target.removeClass('hovered');\n  cy.container().style.cursor = 'default';\n});\n\n/* --- toolbar actions -------------------------------------------------- */\ndocument.getElementById('clearBtn').onclick = () => {\n  if (window.confirm('Clear the whole diagram?')) {\n    if (fadeMode) setFadeMode(false);\n    cy.elements().remove(); linkSource = null; flash('Cleared.');\n  }\n};\n\n/* --- Tidy flows: square up every pipe and center every valve ---------- */\n/* For each flow (source --[seg]--> valve --[seg]--> target) we:          */\n/*   1. make the pipe axis-aligned by snapping the lower-priority endpoint */\n/*      onto the higher-priority endpoint's row (horizontal) or column    */\n/*      (vertical). Priority: stock > auxiliary > cloud, so stocks stay    */\n/*      put and clouds line up to them; ties (stock-stock) anchor on the   */\n/*      flow's source.                                                     */\n/*   2. drop the valve exactly on the midpoint of the straightened pipe,   */\n/*      removing the \"down to the valve then back up\" kink.                */\n/* Stocks only ever move to align another stock; auxiliaries never move.   */\n/* Connectors feeding a valve follow it automatically.                     */\nfunction flowEndpoints(valve) {\n  const fid = valve.data('flow');\n  let srcId = null, tgtId = null;\n  cy.edges(`[flow = \"${fid}\"]`).forEach(seg => {\n    if (seg.data('target') === valve.id()) srcId = seg.data('source');\n    if (seg.data('source') === valve.id()) tgtId = seg.data('target');\n  });\n  return { srcId, tgtId };\n}\n\nfunction tidyFlows() {\n  const valves = cy.nodes('[type = \"valve\"]');\n  if (valves.empty()) { flash('No flows to straighten yet.'); return; }\n\n  // Collect well-formed flows.\n  const flows = [];\n  valves.forEach(valve => {\n    const { srcId, tgtId } = flowEndpoints(valve);\n    const src = cy.getElementById(srcId), tgt = cy.getElementById(tgtId);\n    if (src.nonempty() && tgt.nonempty()) flows.push({ valve, src, tgt });\n  });\n  if (!flows.length) { flash('No flows to straighten yet.'); return; }\n\n  // Work on a scratch copy of positions so passes compose cleanly.\n  const pos = {};\n  cy.nodes().forEach(n => { pos[n.id()] = { x: n.position('x'), y: n.position('y') }; });\n  const typeOf = n => n.data('type');\n  const prio = n => { const t = typeOf(n);\n                      return t === 'stock' ? 3 : (t === 'aux' ? 2 : 1); };\n\n  // --- chain axis: pick ONE orientation per stock from its boundary (cloud)\n  //     flows so the whole cloud->inflow->stock->outflow->cloud chain ends up\n  //     collinear. The inflow decides; if a stock has no cloud-inflow, its\n  //     cloud-outflow decides. (Stocks with no cloud flows are left to the\n  //     generic per-flow alignment below.)                                  */\n  const stockAxis = {};                       // stock id -> 'h' | 'v'\n  cy.nodes('[type = \"stock\"]').forEach(s => {\n    const sp = pos[s.id()];\n    let inH = 0, inV = 0, outH = 0, outV = 0, hasIn = false, hasOut = false;\n    flows.forEach(f => {\n      if (f.src.id() === s.id() && typeOf(f.tgt) === 'cloud') {\n        const cp = pos[f.tgt.id()]; hasOut = true;\n        outH += Math.abs(cp.x - sp.x); outV += Math.abs(cp.y - sp.y);\n      } else if (f.tgt.id() === s.id() && typeOf(f.src) === 'cloud') {\n        const cp = pos[f.src.id()]; hasIn = true;\n        inH += Math.abs(cp.x - sp.x); inV += Math.abs(cp.y - sp.y);\n      }\n    });\n    if (!hasIn && !hasOut) return;\n    const H = hasIn ? inH : outH, V = hasIn ? inV : outV;\n    stockAxis[s.id()] = (H >= V) ? 'h' : 'v';\n  });\n\n  const align = f => {\n    const sp = pos[f.src.id()], tp = pos[f.tgt.id()];\n    const horizontal = Math.abs(tp.x - sp.x) >= Math.abs(tp.y - sp.y);\n    // higher priority is the anchor; on a tie the source anchors.\n    const srcAnchors = prio(f.src) >= prio(f.tgt);\n    const ap = srcAnchors ? sp : tp;          // anchor position (stays)\n    const mp = srcAnchors ? tp : sp;          // mover position (snaps)\n    if (horizontal) mp.y = ap.y; else mp.x = ap.x;\n  };\n\n  // Pass 1: stock-to-stock flows first, to settle the stock skeleton.\n  flows.filter(f => prio(f.src) === 3 && prio(f.tgt) === 3).forEach(align);\n\n  // Pass 2a: boundary flows (stock <-> cloud) \u2014 place a stock's inflows on one\n  //          side and its outflows on the OPPOSITE side along the chosen axis,\n  //          so they never pile up / overlap on a single side of the stock.\n  //          cloud->inflow->STOCK->outflow->cloud thus reads as one straight\n  //          line (inflow=left/top, outflow=right/bottom).\n  const MIN_LEN = 120, MAX_LEN = 340, STEP = 95;\n  const handled = new Set();                   // valve ids placed here\n  cy.nodes('[type = \"stock\"]').forEach(s => {\n    const axis = stockAxis[s.id()];\n    if (!axis) return;\n    const sp = pos[s.id()];\n    const ins = [], outs = [];\n    flows.forEach(f => {\n      if (f.tgt.id() === s.id() && typeOf(f.src) === 'cloud') ins.push(f);\n      else if (f.src.id() === s.id() && typeOf(f.tgt) === 'cloud') outs.push(f);\n    });\n    const place = (list, sign) => {\n      // sort by current distance, then space them so same-side flows never\n      // overlap (each at least STEP further out than the previous one).\n      const ax = n => (axis === 'h') ? Math.abs(pos[n].x - sp.x)\n                                     : Math.abs(pos[n].y - sp.y);\n      const entries = list.map(f => ({\n        f, cloud: (typeOf(f.src) === 'cloud') ? f.src : f.tgt\n      }));\n      entries.sort((a, b) => ax(a.cloud.id()) - ax(b.cloud.id()));\n      let prev = -Infinity;\n      entries.forEach((e, k) => {\n        const cp = pos[e.cloud.id()];\n        let d = Math.min(Math.max(ax(e.cloud.id()), MIN_LEN), MAX_LEN);\n        if (k > 0) d = Math.max(d, prev + STEP);\n        prev = d;\n        if (axis === 'h') { cp.x = sp.x + sign * d; cp.y = sp.y; }\n        else              { cp.y = sp.y + sign * d; cp.x = sp.x; }\n        handled.add(e.f.valve.id());\n      });\n    };\n    place(ins, -1);                            // inflows: left (h) / top (v)\n    place(outs, 1);                            // outflows: right (h) / bottom (v)\n  });\n\n  // Pass 2b: any remaining non-stock-stock flow (e.g. cloud<->cloud) aligns\n  //          with the generic rule.\n  flows.filter(f => !(prio(f.src) === 3 && prio(f.tgt) === 3))\n       .filter(f => !handled.has(f.valve.id()))\n       .forEach(align);\n  // Pass 3: center each valve on its now-straight pipe.\n  flows.forEach(f => {\n    const sp = pos[f.src.id()], tp = pos[f.tgt.id()];\n    pos[f.valve.id()] = { x: (sp.x + tp.x) / 2, y: (sp.y + tp.y) / 2 };\n  });\n\n  // Apply with a short animation, then persist the new positions.\n  cy.nodes().forEach(n => {\n    const p = pos[n.id()];\n    if (!p) return;\n    if (Math.abs(p.x - n.position('x')) < 0.5 &&\n        Math.abs(p.y - n.position('y')) < 0.5) return;   // unchanged\n    n.animate({ position: { x: p.x, y: p.y } },\n              { duration: 300, easing: 'ease-in-out' });\n  });\n  flash('Straightened ' + flows.length +\n        ' flow' + (flows.length === 1 ? '' : 's') + '.');\n  pendingAction = 'tidy';\n  setTimeout(emitChange, 360);\n}\ndocument.getElementById('tidyBtn').onclick = tidyFlows;\n\n/* --- Untangle: stocks & flows in the centre, auxiliaries on a ring ---- */\n/* A deliberately simple, predictable arrangement (no global force tangle):\n     \u2022 the stock-flow backbone (stocks, valves, clouds) is KEPT in the central\n       area \u2014 only de-overlapped so nothing sits on top of anything;\n     \u2022 the auxiliary variables are moved out onto a circle around that core,\n       ordered by the direction of the core element each one feeds, so related\n       auxiliaries sit near the part of the model they connect to.\n   Press \"Tidy flows\" afterwards to square the pipes; \"Merge links\" to bundle\n   the information arrows.                                                   */\nfunction removeOverlapsP(list, P, pad, passes) {\n  const ids = list.map(n => n.id());\n  for (let pass = 0; pass < passes; pass++) {\n    let moved = false;\n    for (let a = 0; a < ids.length; a++) {\n      for (let b = a + 1; b < ids.length; b++) {\n        const A = P[ids[a]], B = P[ids[b]];\n        const minx = A.w / 2 + B.w / 2 + pad, miny = A.h / 2 + B.h / 2 + pad;\n        const dx = A.x - B.x, dy = A.y - B.y;\n        const ox = minx - Math.abs(dx), oy = miny - Math.abs(dy);\n        if (ox > 0 && oy > 0) {\n          if (ox < oy) { const s = (ox / 2 + 0.5) * (dx >= 0 ? 1 : -1);\n                         A.x += s; B.x -= s; }\n          else         { const s = (oy / 2 + 0.5) * (dy >= 0 ? 1 : -1);\n                         A.y += s; B.y -= s; }\n          moved = true;\n        }\n      }\n    }\n    if (!moved) break;\n  }\n}\n\nfunction autoLayout() {\n  const ns = cy.nodes();\n  if (ns.length < 2) { flash('Nothing to arrange yet.'); return; }\n\n  const isCore = n => { const t = n.data('type');\n                        return t === 'stock' || t === 'valve' || t === 'cloud'; };\n  const core = ns.filter(isCore);\n  const ring = ns.filter(n => !isCore(n));        // auxiliaries (+ any junctions)\n\n  const P = {};\n  ns.forEach(n => { P[n.id()] = { x: n.position('x'), y: n.position('y'),\n                                  w: n.outerWidth() || 60,\n                                  h: n.outerHeight() || 60 }; });\n\n  // Keep the core central: de-overlap it in place (tiny golden-angle nudge\n  // first so exactly-coincident nodes separate deterministically).\n  core.forEach((n, i) => { const a = i * 2.399963;\n                           P[n.id()].x += Math.cos(a) * 0.5;\n                           P[n.id()].y += Math.sin(a) * 0.5; });\n  removeOverlapsP(core, P, 18, 220);\n\n  // Core centre and radius.\n  let cx = 0, cy0 = 0;\n  const basis = core.nonempty() ? core : ns;\n  basis.forEach(n => { cx += P[n.id()].x; cy0 += P[n.id()].y; });\n  cx /= basis.length; cy0 /= basis.length;\n  let Rcore = 0;\n  core.forEach(n => { const p = P[n.id()];\n    const d = Math.hypot(p.x - cx, p.y - cy0) + Math.hypot(p.w, p.h) / 2;\n    if (d > Rcore) Rcore = d; });\n\n  // Ring the auxiliaries around the core.\n  const M = ring.length;\n  if (M) {\n    const info = ring.map(n => {\n      let ax = 0, ay = 0, cnt = 0;\n      n.connectedEdges('[type = \"connector\"]').forEach(e => {\n        const o = e.source().id() === n.id() ? e.target() : e.source();\n        const op = P[o.id()];\n        if (op) { ax += op.x; ay += op.y; cnt++; }\n      });\n      const ang = cnt ? Math.atan2(ay / cnt - cy0, ax / cnt - cx)\n                      : Math.atan2(P[n.id()].y - cy0, P[n.id()].x - cx);\n      return { n, ang };\n    });\n    info.sort((a, b) => a.ang - b.ang);          // group by connection direction\n    const SLOT = 84;                             // arc length per aux (no overlap)\n    const Rneeded = (M * SLOT) / (2 * Math.PI);\n    const R = Math.max(Rcore + 120, Rneeded, 170);\n    info.forEach((ri, i) => {\n      const theta = (i / M) * 2 * Math.PI;       // even spacing, ordered by angle\n      P[ri.n.id()].x = cx + R * Math.cos(theta);\n      P[ri.n.id()].y = cy0 + R * Math.sin(theta);\n    });\n  }\n\n  // Valves sit on the midpoint of their pipe.\n  cy.nodes('[type = \"valve\"]').forEach(v => {\n    const { srcId, tgtId } = flowEndpoints(v);\n    if (P[srcId] && P[tgtId]) {\n      P[v.id()].x = (P[srcId].x + P[tgtId].x) / 2;\n      P[v.id()].y = (P[srcId].y + P[tgtId].y) / 2;\n    }\n  });\n\n  // Drop stale link bends so connectors redraw straight to the new positions.\n  cy.batch(() => {\n    cy.edges('[type = \"connector\"]').forEach(e => {\n      if ((e.data('waypoints') || []).length) {\n        e.data('waypoints', []); applyConnectorRoute(e);\n      }\n    });\n  });\n  clearHandles();\n  cy.nodes().forEach(n => {\n    const p = P[n.id()]; if (!p) return;\n    n.animate({ position: { x: p.x, y: p.y } },\n              { duration: 430, easing: 'ease-in-out' });\n  });\n  flash('Arranged: stocks & flows in the centre, ' + M + ' auxiliar' +\n        (M === 1 ? 'y' : 'ies') + ' on the ring. ' +\n        'Use \\u201CTidy flows\\u201D to square the pipes.');\n  pendingAction = 'untangle';\n  setTimeout(() => { cy.fit(undefined, 40); emitChange(); }, 470);\n}\ndocument.getElementById('untangleBtn').onclick = autoLayout;\n\n/* --- Merge links: bundle info links that share a source --------------- */\n/* Old hand-drawn SFDs route several information links from one variable as a\n   single trunk that forks near the destinations. This does that: connectors\n   leaving the same source are grouped (by direction, so links heading opposite\n   ways aren't forced together), and each group is given ONE shared bend point\n   \u2014 the \"junction\" \u2014 placed near the group's targets. Because every link in a\n   group passes through the same junction, the source\u2192junction stretch overlaps\n   into a single trunk, then fans out to each target.\n\n   It's a toggle: press once to merge, again to un-merge (clear the bends).\n   The junction is an ordinary bend point, so it can be dragged to fine-tune,\n   and right-clicking a link's bend un-merges just that one link.            */\nfunction clusterByAngle(items, THRESH) {\n  if (items.length <= 1) return [items];\n  items.sort((a, b) => a.ang - b.ang);\n  const clusters = [[items[0]]];\n  for (let i = 1; i < items.length; i++) {\n    if (items[i].ang - items[i - 1].ang <= THRESH)\n      clusters[clusters.length - 1].push(items[i]);\n    else clusters.push([items[i]]);\n  }\n  if (clusters.length > 1) {                       // wrap-around (e.g. 170\u00b0 & -170\u00b0)\n    const wrapGap = (items[0].ang + 360) - items[items.length - 1].ang;\n    if (wrapGap <= THRESH) { const last = clusters.pop();\n                             clusters[0] = last.concat(clusters[0]); }\n  }\n  return clusters;\n}\n\n// A unique \"junction N\" label not already used by any node.\nfunction freshJunctionLabel() {\n  const used = new Set();\n  cy.nodes().forEach(n => used.add(n.data('label')));\n  let k = 1;\n  while (used.has('junction ' + k)) k++;\n  return 'junction ' + k;\n}\n\nfunction mergeLinks() {\n  const conns = cy.edges('[type = \"connector\"]');\n  const junctions = cy.nodes('[type = \"junction\"]');\n\n  // Toggle off: if any junctions exist, dissolve them back to direct links.\n  if (junctions.nonempty()) {\n    let restored = 0;\n    cy.batch(() => {\n      junctions.forEach(j => {\n        const srcs = [], tgts = [];\n        j.connectedEdges('[type = \"connector\"]').forEach(e => {\n          if (e.target().id() === j.id()) srcs.push(e.source());   // trunk in\n          else if (e.source().id() === j.id()) tgts.push(e.target()); // fork out\n        });\n        srcs.forEach(s => tgts.forEach(t => {\n          cy.add({ group: 'edges', data: {\n            id: 'e' + newId(), source: s.id(), target: t.id(),\n            type: 'connector', waypoints: [] } });\n          restored++;\n        }));\n        j.remove();                       // removes the junction and its edges\n      });\n    });\n    clearHandles();\n    flash('Links un-merged \u2014 restored ' + restored + ' direct link' +\n          (restored === 1 ? '' : 's') + '.');\n    pendingAction = 'unmerge';\n    setTimeout(emitChange, 60);\n    return;\n  }\n\n  if (conns.empty()) { flash('No information links to merge yet.'); return; }\n\n  // Group connectors by their source node.\n  const groups = {};\n  conns.forEach(e => { const s = e.source().id();\n                       (groups[s] = groups[s] || []).push(e); });\n\n  const THRESH = 55, bundled = [];\n  cy.batch(() => {\n    Object.keys(groups).forEach(sid => {\n      const grp = groups[sid];\n      if (grp.length < 2) return;\n      const srcNode = cy.getElementById(sid);\n      const A = srcNode.position();\n      const items = grp.map(e => {\n        const tp = e.target().position();\n        return { e, tgt: e.target(), tp,\n                 ang: Math.atan2(tp.y - A.y, tp.x - A.x) * 180 / Math.PI };\n      }).filter(it => Math.hypot(it.tp.x - A.x, it.tp.y - A.y) > 1);\n\n      clusterByAngle(items, THRESH).forEach(cl => {\n        if (cl.length < 2) return;                 // singletons keep their link\n        const M = { x: cl.reduce((s, i) => s + i.tp.x, 0) / cl.length,\n                    y: cl.reduce((s, i) => s + i.tp.y, 0) / cl.length };\n        const dAM = Math.hypot(A.x - M.x, A.y - M.y);\n        if (dAM < 70) return;                      // targets too close to source\n        const ux = (A.x - M.x) / dAM, uy = (A.y - M.y) / dAM;\n        let dist = Math.min(Math.max(45, 0.25 * dAM), 160);\n        dist = Math.min(dist, 0.65 * dAM);\n        const J = { x: M.x + ux * dist, y: M.y + uy * dist };\n\n        // Create the split-point node, the trunk into it, and the forks out.\n        const jid = newId();\n        cy.add({ group: 'nodes',\n                 data: { id: jid, label: freshJunctionLabel(), type: 'junction' },\n                 position: { x: J.x, y: J.y } });\n        cy.add({ group: 'edges', data: {\n          id: 'e' + newId(), source: sid, target: jid,\n          type: 'connector', trunk: 1, waypoints: [] } });   // no arrowhead\n        cl.forEach(i => {\n          cy.add({ group: 'edges', data: {\n            id: 'e' + newId(), source: jid, target: i.tgt.id(),\n            type: 'connector', waypoints: [] } });\n          i.e.remove();                            // drop the original A->target\n        });\n        bundled.push(cl.length);\n      });\n    });\n  });\n  clearHandles();\n  if (!bundled.length) {\n    flash('No mergeable links \u2014 need 2+ links leaving one source the same way.');\n    return;\n  }\n  const total = bundled.reduce((s, n) => s + n, 0);\n  flash('Merged ' + total + ' links through ' + bundled.length +\n        ' split-point' + (bundled.length === 1 ? '' : 's') +\n        '. Press again to un-merge.');\n  pendingAction = 'merge';\n  setTimeout(emitChange, 60);\n}\ndocument.getElementById('mergeBtn').onclick = mergeLinks;\n// Hide all bend-point circles without changing the link shapes.\ndocument.getElementById('hideBendsBtn').onclick = () => {\n  clearHandles();\n  flash('Bend points hidden \u2014 double-click a link to edit it again.');\n};\n/* --- Fade / storytelling: dim all, click to reveal, toggle off -------- */\n/* One button that reads \"Fade\" normally and \"Unfade\" while active. In fade\n   mode every element is ghosted; clicking one reveals it (click again to\n   re-hide) so a model can be explained piece by piece and screenshotted.\n   Clicking any part of a flow reveals the whole flow (its valve and both\n   pipe segments), so an inflow reads as one unit next to its stock. Fade is\n   purely visual \u2014 it is never saved and never affects the equations.      */\nfunction flowUnit(el) {                       // whole flow if el belongs to one\n  const fid = el.data('flow');\n  return fid ? cy.elements(`[flow = \"${fid}\"]`) : el;\n}\nfunction toggleReveal(el) {\n  const grp = flowUnit(el);\n  if (el.hasClass('dim')) grp.removeClass('dim');   // reveal\n  else                    grp.addClass('dim');      // hide again\n}\nfunction setFadeMode(on) {\n  fadeMode = on;\n  const btn = document.getElementById('fadeBtn');\n  if (on) {\n    clearHandles();                           // no bend circles while presenting\n    cy.elements().addClass('dim');            // ghost everything\n    btn.textContent = 'Unfade';\n    btn.classList.add('primary');\n    flash('Fade on \u2014 click elements to reveal them (click again to hide). ' +\n          'Screenshot when ready; press Unfade to restore.');\n  } else {\n    cy.elements().removeClass('dim');\n    btn.textContent = 'Fade';\n    btn.classList.remove('primary');\n    flash('Everything restored.');\n  }\n}\ncy.on('tap', (evt) => {                        // reveal / hide while fading\n  if (!fadeMode) return;\n  if (evt.target === cy) return;               // background: ignore\n  toggleReveal(evt.target);\n});\ndocument.getElementById('fadeBtn').onclick = () => setFadeMode(!fadeMode);\n/* --- auto-emit: send the current diagram to Python on every change ---- */\n/* Cytoscape fires `add`/`remove` when elements appear or disappear, and  */\n/* `dragfree` when a node finishes being dragged. A short debounce        */\n/* coalesces rapid edits (e.g. drawing a flow = 3 add events) into one    */\n/* Python rerun.                                                          */\nlet emitTimer = null;\nlet emitSeq = 0;\n// A layout button (Tidy flows, Untangle, Merge links) names itself in the\n// next emit, so the modelling-process record can show it as a moment.\nlet pendingAction = null;\nfunction emitChange() {\n  clearTimeout(emitTimer);\n  emitTimer = setTimeout(() => {\n    const diagram = serialize();\n    diagram.event = 'change';\n    if (pendingAction) { diagram.action = pendingAction; pendingAction = null; }\n    diagram.seq = ++emitSeq;       // ensures every emit is unique\n    console.log('[SFD] auto-emit #' + emitSeq,\n                diagram.stocks.length, 'stocks,',\n                diagram.flows.length, 'flows,',\n                diagram.auxiliaries.length, 'aux');\n    Streamlit.setComponentValue(diagram);\n  }, 250);                          // 250ms after the last change\n}\ncy.on('add remove', emitChange);\ncy.on('dragfree', 'node', emitChange);\n// Rename via dbltap mutates a `label`; emit then too.\ncy.on('data', 'node', emitChange);\n\n/* ====================================================================\n   Connector bending \u2014 adjustable bend circles on a link\n   ====================================================================\n   A connector may carry data('waypoints') = [{x,y}, ...] (absolute model\n   coords). With none it keeps its default arc; with some it renders as a\n   rounded polyline through them (curve-style round-segments). Editing:\n       double-click near a link  -> add a bend (and show its circles)\n       click a link              -> show that link's bend circles\n       drag a circle             -> adjust just that bend\n       right-click a circle      -> delete just that bend (rest untouched)\n   The circles are repositioned on every render straight from the\n   waypoints, so they always sit exactly on the line; the viewport is\n   frozen while dragging one so the canvas can't pan and nothing drifts.  */\nfunction chordAlong(s, t, pt) {\n  const dx = t.x - s.x, dy = t.y - s.y, l2 = dx * dx + dy * dy || 1;\n  return ((pt.x - s.x) * dx + (pt.y - s.y) * dy) / l2;\n}\n\nfunction applyConnectorRoute(e) {\n  const wps = e.data('waypoints') || [];\n  if (!wps.length) {\n    e.removeStyle('curve-style segment-distances segment-weights ' +\n                  'segment-radii radius-type');\n    return;\n  }\n  const s = e.source().position(), t = e.target().position();\n  const dx = t.x - s.x, dy = t.y - s.y, len = Math.hypot(dx, dy) || 1;\n  const W = [], D = [], R = [];\n  wps.forEach(w => {\n    let along = ((w.x - s.x) * dx + (w.y - s.y) * dy) / (len * len);\n    const perp = ((w.y - s.y) * dx - (w.x - s.x) * dy) / len;\n    along = Math.max(0.02, Math.min(0.98, along));\n    W.push(along); D.push(perp); R.push(14);\n  });\n  e.style({ 'curve-style': 'round-segments',\n            'segment-distances': D, 'segment-weights': W,\n            'segment-radii': R, 'radius-type': 'arc-radius' });\n}\n\nfunction nearestWaypoint(e, pt) {\n  const wps = e.data('waypoints') || [];\n  let idx = -1, best = Infinity;\n  wps.forEach((w, k) => {\n    const d = Math.hypot(w.x - pt.x, w.y - pt.y);\n    if (d < best) { best = d; idx = k; }\n  });\n  return { idx, dist: best };\n}\n\nfunction insertWaypoint(e, pt) {\n  const wps = (e.data('waypoints') || []).slice();\n  const s = e.source().position(), t = e.target().position();\n  const a = chordAlong(s, t, pt);\n  let ins = wps.length;\n  for (let k = 0; k < wps.length; k++) {\n    if (a < chordAlong(s, t, wps[k])) { ins = k; break; }\n  }\n  wps.splice(ins, 0, { x: pt.x, y: pt.y });\n  e.data('waypoints', wps);\n  return ins;\n}\n\n/* --- bend-point circles for the currently active link --------------- */\nconst wpLayer = document.createElement('div');\nwpLayer.id = 'wpLayer';\ndocument.getElementById('cy').appendChild(wpLayer);\nlet wpEdge = null;                          // the link whose circles are shown\n\nfunction clearHandles() {\n  if (wpLayer.children.length) wpLayer.innerHTML = '';\n  if (wpEdge && !wpEdge.removed()) wpEdge.removeClass('wpActive');\n  wpEdge = null;\n}\n\nfunction buildHandles(e) {\n  wpLayer.innerHTML = '';\n  (e.data('waypoints') || []).forEach((w, i) => {\n    const h = document.createElement('div');\n    h.className = 'wphandle';\n    h.title = 'Drag to bend \\u00b7 right-click to remove';\n    wpLayer.appendChild(h);\n    h.addEventListener('pointerdown', ev => startHandleDrag(ev, e, i, h));\n    h.addEventListener('mousedown', ev => ev.stopPropagation());\n    h.addEventListener('touchstart', ev => ev.stopPropagation(),\n                       { passive: false });\n    h.addEventListener('contextmenu', ev => {\n      ev.preventDefault(); ev.stopPropagation();\n      const arr = (e.data('waypoints') || []).slice();\n      arr.splice(i, 1);\n      e.data('waypoints', arr);\n      applyConnectorRoute(e);\n      buildHandles(e);\n      flash(arr.length ? 'Bend removed.' : 'Link straightened.');\n      emitChange();\n    });\n  });\n  positionHandles();\n}\n\nfunction positionHandles() {\n  if (!wpEdge || wpEdge.removed()) { clearHandles(); return; }\n  const wps = wpEdge.data('waypoints') || [];\n  if (wpLayer.children.length !== wps.length) { buildHandles(wpEdge); return; }\n  const z = cy.zoom(), p = cy.pan(), hs = wpLayer.children;\n  for (let i = 0; i < hs.length; i++) {\n    const w = wps[i];\n    hs[i].style.left = (w.x * z + p.x) + 'px';\n    hs[i].style.top  = (w.y * z + p.y) + 'px';\n  }\n}\n\nfunction showHandlesFor(e) {\n  if (!e || e.removed() || e.data('type') !== 'connector') { clearHandles(); return; }\n  if (wpEdge && wpEdge !== e && !wpEdge.removed()) wpEdge.removeClass('wpActive');\n  wpEdge = e;\n  e.addClass('wpActive');\n  buildHandles(e);\n}\n\nfunction startHandleDrag(ev, e, i, h) {\n  ev.preventDefault(); ev.stopPropagation();\n  try { h.setPointerCapture(ev.pointerId); } catch (_) {}\n  // freeze the viewport so the canvas can't pan under the drag\n  const panWas = cy.userPanningEnabled(), boxWas = cy.boxSelectionEnabled();\n  cy.userPanningEnabled(false); cy.boxSelectionEnabled(false);\n  const rect = cy.container().getBoundingClientRect();\n  const move = m => {\n    const z = cy.zoom(), p = cy.pan();\n    const arr = (e.data('waypoints') || []).slice();\n    arr[i] = { x: (m.clientX - rect.left - p.x) / z,\n               y: (m.clientY - rect.top  - p.y) / z };\n    e.data('waypoints', arr);\n    applyConnectorRoute(e);\n    positionHandles();\n  };\n  const up = () => {\n    window.removeEventListener('pointermove', move);\n    window.removeEventListener('pointerup', up);\n    window.removeEventListener('pointercancel', up);\n    cy.userPanningEnabled(panWas); cy.boxSelectionEnabled(boxWas);\n    emitChange();\n  };\n  window.addEventListener('pointermove', move);\n  window.addEventListener('pointerup', up);\n  window.addEventListener('pointercancel', up);\n}\n\n/* double-click a link to add a bend (double-click a bend to remove it).\n   This is edge-targeted, so Cytoscape hit-tests the actual rendered curve\n   and hands us the exact link clicked \u2014 which is what makes the 2nd, 3rd,\n   ... links bend, not just the first. */\ncy.on('dbltap', 'edge[type = \"connector\"]', (evt) => {\n  if (fadeMode) return;\n  const e = evt.target;\n  const near = nearestWaypoint(e, evt.position);\n  if (near.idx >= 0 && near.dist <= 14 / cy.zoom()) {\n    const arr = (e.data('waypoints') || []).slice();\n    arr.splice(near.idx, 1);\n    e.data('waypoints', arr);\n    flash(arr.length ? 'Bend removed.' : 'Link straightened.');\n  } else {\n    insertWaypoint(e, evt.position);\n    flash('Bend added \u2014 drag the circle to shape it; ' +\n          'right-click it to remove.');\n  }\n  applyConnectorRoute(e);\n  showHandlesFor(e);\n  emitChange();\n});\n\n/* show a link's circles when you tap it; switching links re-points the\n   circles. Crucially we do NOT tie this to Cytoscape selection \u2014 a stray\n   background click deselects and would wipe the circles, which is exactly\n   what stopped the 2nd, 3rd, ... links from being editable. */\ncy.on('tap', 'edge[type = \"connector\"]', (evt) => { if (!fadeMode) showHandlesFor(evt.target); });\ncy.on('remove', 'edge', (evt) => { if (evt.target === wpEdge) clearHandles(); });\n\n/* keep the circles glued to the line on every redraw (pan / zoom / resize\n   / animation), so they can never drift away from it */\ncy.on('render', positionHandles);\n\n/* reproject waypointed links when an endpoint node moves */\ncy.on('position', 'node', (evt) => {\n  evt.target.connectedEdges('[type = \"connector\"]').forEach(e => {\n    if ((e.data('waypoints') || []).length) applyConnectorRoute(e);\n  });\n});\n\n/* --- view controls: zoom +/- (10% steps) and fit-to-canvas ----------- */\nfunction zoomBy(factor) {\n  const target = cy.zoom() * factor;\n  const box = document.getElementById('cy').getBoundingClientRect();\n  cy.zoom({\n    level: target,\n    renderedPosition: { x: box.width / 2, y: box.height / 2 }\n  });\n  // Cytoscape clamps to minZoom/maxZoom; detect that and tell the user.\n  const actual = cy.zoom();\n  if (Math.abs(actual - target) > 0.001) {\n    flash('Zoom limit reached (' + Math.round(actual * 100) + '%).');\n  } else {\n    flash('Zoom: ' + Math.round(actual * 100) + '%');\n  }\n}\ndocument.getElementById('zoomInBtn').onclick  = () => zoomBy(1.10);\ndocument.getElementById('zoomOutBtn').onclick = () => zoomBy(1 / 1.10);\ndocument.getElementById('fitBtn').onclick = () => {\n  if (cy.elements().nonempty()) {\n    cy.fit(undefined, 40);            // fit all with 40px padding\n    flash('Centered on the diagram.');\n  } else {\n    cy.zoom(1); cy.center();\n    flash('Canvas reset.');\n  }\n};\n\n/* --- export the current view as SVG ---------------------------------- */\n/* Uses the cytoscape-svg extension (loaded from CDN). The SVG string is  */\n/* sent to Python, which offers it as a file download.                    */\nlet svgSeq = 0;\ndocument.getElementById('svgBtn').onclick = () => {\n  if (cy.elements().empty()) { flash('Nothing to export yet.'); return; }\n  if (typeof cy.svg !== 'function') {\n    flash('SVG export unavailable (extension failed to load).');\n    return;\n  }\n  try {\n    const svgText = cy.svg({ scale: 1, full: true, bg: '#fbfaf7' });\n    Streamlit.setComponentValue({\n      event: 'svg', svg: svgText, seq: ++svgSeq, ts: Date.now()\n    });\n    flash('SVG generated \u2014 use the download button below the canvas.');\n  } catch (e) {\n    console.error('[SFD] svg export failed', e);\n    flash('SVG export failed \u2014 see console.');\n  }\n};\n\n/* --- serialise to typed JSON ----------------------------------------- */\nfunction serialize() {\n  // label for any node; for a valve, its label IS the flow name\n  const labelOf = id => {\n    const n = cy.getElementById(id);\n    return n.nonempty() ? n.data('label') : null;\n  };\n  const out = { submitted_at: Date.now(),\n                stocks: [], auxiliaries: [], clouds: [],\n                flows: [], connectors: [], junctions: [] };\n\n  // plain element nodes\n  cy.nodes().forEach(n => {\n    const t = n.data('type');\n    if (t === 'valve') return;                 // valves handled via flows\n    const rec = { label: n.data('label'),\n                  x: Math.round(n.position('x')),\n                  y: Math.round(n.position('y')) };\n    if (t === 'stock')         out.stocks.push(rec);\n    else if (t === 'aux')      out.auxiliaries.push(rec);\n    else if (t === 'cloud')    out.clouds.push(rec);\n    else if (t === 'junction') out.junctions.push(rec);\n  });\n\n  // reconstruct each flow from its valve + two pipe segments\n  cy.nodes('[type = \"valve\"]').forEach(valve => {\n    const fid = valve.data('flow');\n    const segs = cy.edges(`[flow = \"${fid}\"]`);\n    let from = null, to = null, fromNode = null, toNode = null;\n    segs.forEach(seg => {\n      // the segment ending AT the valve gives the flow source;\n      // the segment starting FROM the valve gives the flow target\n      if (seg.data('target') === valve.id()) {\n        from = labelOf(seg.data('source'));\n        fromNode = cy.getElementById(seg.data('source'));\n      }\n      if (seg.data('source') === valve.id()) {\n        to = labelOf(seg.data('target'));\n        toNode = cy.getElementById(seg.data('target'));\n      }\n    });\n    // the ends' positions tell clouds apart: every cloud is called \"cloud\"\n    const rec = { label: valve.data('label'), from: from, to: to };\n    if (fromNode) rec.from_xy = [Math.round(fromNode.position('x')), Math.round(fromNode.position('y'))];\n    if (toNode)   rec.to_xy   = [Math.round(toNode.position('x')),   Math.round(toNode.position('y'))];\n    rec.valve_xy = [Math.round(valve.position('x')), Math.round(valve.position('y'))];\n    out.flows.push(rec);\n  });\n\n  // connectors \u2014 a valve target resolves to that flow's name\n  cy.edges('[type = \"connector\"]').forEach(e => {\n    const rec = { from: labelOf(e.data('source')),\n                  to:   labelOf(e.data('target')) };\n    const wps = e.data('waypoints');\n    if (wps && wps.length)\n      rec.waypoints = wps.map(w => ({ x: Math.round(w.x),\n                                      y: Math.round(w.y) }));\n    if (e.data('trunk')) rec.trunk = 1;        // segment into a junction\n    out.connectors.push(rec);\n  });\n  return out;\n}\n\n/* --- load a pre-existing diagram (optional) -------------------------- */\nfunction loadDiagram(d) {\n  cy.elements().remove();\n  const idmap = {};        // element label -> node id\n  const valveOf = {};      // flow label    -> valve node id\n\n  const byLabel = {};      // label -> all node ids (clouds share \"cloud\")\n  const addNode = (rec, type) => {\n    const id = newId();\n    idmap[rec.label] = id;\n    (byLabel[rec.label] = byLabel[rec.label] || []).push(id);\n    cy.add({ group:'nodes',\n             data:{ id:id, label:rec.label, type:type },\n             position:{ x:rec.x||120, y:rec.y||120 } });\n  };\n  (d.stocks || []).forEach(r => addNode(r, 'stock'));\n  (d.auxiliaries || []).forEach(r => addNode(r, 'aux'));\n  (d.clouds || []).forEach(r => addNode(r, 'cloud'));\n  (d.junctions || []).forEach(r => addNode(r, 'junction'));\n\n  // rebuild each flow as a valve node plus two pipe segments\n  // A flow end called \"cloud\" could be any cloud: take the one at the\n  // position saved with the flow, else the nearest unused one (a source on\n  // the upstream side, a sink on the downstream side).\n  const usedEnd = new Set();\n  const posOf = id => cy.getElementById(id).position();\n  const pickEnd = (label, xy, otherId, isSource) => {\n    const ids = byLabel[label] || [];\n    if (ids.length <= 1) return idmap[label];\n    const free = ids.filter(i => !usedEnd.has(i));\n    const pool = free.length ? free : ids;\n    const o = otherId ? posOf(otherId) : { x: 0, y: 0 };\n    const cost = i => {\n      const p = posOf(i);\n      if (xy) return Math.hypot(p.x - xy[0], p.y - xy[1]);\n      const lean = isSource ? Math.max(0, p.x - o.x) + Math.max(0, p.y - o.y)\n                            : Math.max(0, o.x - p.x) + Math.max(0, o.y - p.y);\n      return Math.hypot(p.x - o.x, p.y - o.y) + 0.25 * lean;\n    };\n    const best = pool.reduce((a, b) => cost(b) < cost(a) ? b : a);\n    usedEnd.add(best);\n    return best;\n  };\n  (d.flows || []).forEach(f => {\n    const single = l => (byLabel[l] || []).length === 1 ? idmap[l] : null;\n    const s = pickEnd(f.from, f.from_xy, single(f.to), true);\n    const t = pickEnd(f.to, f.to_xy, s || single(f.from), false);\n    if (!s || !t) return;\n    makeFlow(cy.getElementById(s), cy.getElementById(t),\n             f.label || 'flow');\n    // the valve just created is the last valve node added\n    const valve = cy.nodes('[type = \"valve\"]').last();\n    valveOf[f.label] = valve.id();\n    idmap[f.label] = valve.id();   // so a connector can target the flow\n  });\n\n  // connectors \u2014 endpoints may be element labels or flow (valve) labels\n  (d.connectors || []).forEach(c => {\n    const s = idmap[c.from], t = idmap[c.to];\n    if (!s || !t) return;\n    const wps = (c.waypoints || []).map(w => ({ x: w.x, y: w.y }));\n    const data = { id:'e'+newId(), source:s, target:t, type:'connector',\n                   waypoints: wps };\n    if (c.trunk) data.trunk = 1;\n    const e = cy.add({ group:'edges', data });\n    if (wps.length) applyConnectorRoute(e);\n  });\n}\n\n/* --- status line ----------------------------------------------------- */\nlet flashTimer = null;\nfunction flash(msg) {\n  document.getElementById('status').textContent = msg;\n}\n\n/* --- render handler -------------------------------------------------- */\nlet loadedOnce = false;\nStreamlit.onRender((args) => {\n  if (!loadedOnce && args && args.initial &&\n      ((args.initial.stocks || []).length ||\n       (args.initial.auxiliaries || []).length)) {\n    loadDiagram(args.initial);\n  }\n  loadedOnce = true;\n  // Python pushes the set of confirmed-equation labels on every rerun;\n  // refresh badges so they reflect the latest state.\n  if (args && Array.isArray(args.confirmed)) {\n    confirmedLabels = new Set(args.confirmed);\n    refreshBadges();\n  }\n  Streamlit.setFrameHeight();\n});\n\n// Announce readiness immediately, then keep re-announcing every 100ms\n// until Streamlit responds with its first `render`. This defeats the race\n// where our single announcement fires before the parent's listener is\n// attached (the most common cause of a silent, dead component).\nStreamlit.setComponentReady();\nStreamlit._readyTimer = setInterval(() => {\n  if (Streamlit._ready) { clearInterval(Streamlit._readyTimer); return; }\n  Streamlit.setComponentReady();\n}, 100);\nStreamlit.setFrameHeight(520);\nwindow.addEventListener('resize', () => Streamlit.setFrameHeight());\n<\/script>\n<\/body>\n<\/html>\n";
 /* Game engine. No drawing here: the same engine runs the player's pub,
    the three simulated positions and the replay.
 
@@ -656,6 +744,854 @@ const Engine = (function () {
 })();
 if (typeof module !== 'undefined') module.exports = Engine;
 
+/* The answer keys the AI marks against, one per game.
+
+   PROVISIONAL. This key was drafted by Claude from the structure of the game
+   and the ordering rule in Sterman (1989). It is not the author's key and is to
+   be replaced. Replace `items` and `variants`, keep the shape:
+
+     task      what the learner is asked to draw (shown on screen)
+     scope     what the diagram should cover (for the AI)
+     items     what the key requires. id: short and unique; kind: stock | flow |
+               auxiliary | link; what: the element's role, in words; names: names
+               a learner might use (examples, not a closed list); level: required |
+               important | optional
+     variants  other structures to accept as correct
+
+   The word-of-mouth game has no key yet (null): the learner can draw and record,
+   but the diagram cannot be marked. */
+const KEYS = {
+  plain: {
+    status: 'provisional',
+    task: 'Draw a stock-and-flow diagram of your pub that explains what happened in your game: ' +
+      'how kegs reach your cellar and leave it, what happens to customers you cannot serve, and how you decide how many kegs to order. ' +
+      'Name things in your own words. No equations are needed.',
+    scope: 'One position in the chain: the pub. The wholesaler appears only as where deliveries come from (a cloud is enough). Structure only, no equations.',
+    items: [
+      { id: 'S1', kind: 'stock', what: 'Kegs in the cellar (inventory on hand)', names: ['inventory', 'cellar', 'stock', 'kegs in stock'], level: 'required' },
+      { id: 'S2', kind: 'stock', what: 'Kegs owed to customers who could not be served (backlog)', names: ['backlog', 'customers waiting', 'unfilled orders', 'kegs owed'], level: 'required' },
+      { id: 'S3', kind: 'stock', what: 'Kegs ordered but not yet received (supply line), including any the wholesaler has on back order', names: ['supply line', 'on order', 'kegs on the way', 'in transit', 'pipeline'], level: 'required' },
+      { id: 'F1', kind: 'flow', what: 'Orders placed: fills the supply line', names: ['orders', 'order rate', 'ordering'], level: 'required' },
+      { id: 'F2', kind: 'flow', what: 'Deliveries: drains the supply line and fills the cellar', names: ['deliveries', 'arrivals', 'receiving'], level: 'required' },
+      { id: 'F3', kind: 'flow', what: 'Kegs served to customers: drains the cellar', names: ['shipments', 'sales', 'serving', 'kegs served'], level: 'required' },
+      { id: 'F4', kind: 'flow', what: 'Customer demand coming in: fills the backlog', names: ['incoming orders', 'customer orders', 'demand'], level: 'required' },
+      { id: 'F5', kind: 'flow', what: 'Customers served: drains the backlog (the same kegs as F3)', names: ['orders filled', 'customers served'], level: 'important' },
+      { id: 'A1', kind: 'auxiliary', what: 'Expected demand: what the player thinks customers will want, formed from recent demand', names: ['expected demand', 'forecast', 'demand estimate'], level: 'important' },
+      { id: 'A2', kind: 'auxiliary', what: 'Desired inventory: the stock the player aims to hold', names: ['desired inventory', 'target stock'], level: 'important' },
+      { id: 'A3', kind: 'auxiliary', what: 'Customer demand as an outside input (if not drawn as the flow F4 itself)', names: ['customer demand', 'customers'], level: 'optional' },
+      { id: 'L1', kind: 'link', what: 'The cellar (S1) informs the order decision (F1), directly or through a gap or adjustment auxiliary', level: 'required' },
+      { id: 'L2', kind: 'link', what: 'The backlog (S2) informs the order decision (F1), directly or through a gap or adjustment auxiliary', level: 'important' },
+      { id: 'L3', kind: 'link', what: 'The supply line (S3) informs the order decision (F1). Leaving this out is the classic error of the game: kegs already on the way are forgotten, so the player over-orders.', level: 'required' },
+      { id: 'L4', kind: 'link', what: 'Expected demand (A1) informs the order decision (F1)', level: 'important' },
+      { id: 'L5', kind: 'link', what: 'Desired inventory (A2) informs the order decision (F1), directly or through a gap auxiliary', level: 'important' },
+      { id: 'L6', kind: 'link', what: 'Customer demand informs expected demand (A1)', level: 'important' },
+      { id: 'L7', kind: 'link', what: 'The cellar (S1) and the backlog (S2) inform how many kegs are served (F3): you can serve only what you have, and up to what is wanted', level: 'important' }
+    ],
+    variants: [
+      'The supply line (S3) may be drawn as two or more stocks in a row (for example "on the road" and "nearly here", or a separate stock for the back order at the wholesaler), with flows between them. This counts as S3, and L3 then needs links from each of them, or from an auxiliary that adds them up, to the order decision.',
+      'The cellar and the backlog may be combined into one net stock that goes negative when customers are owed kegs. This counts as S1 and S2 together, and L1 and L2 as one link from it.',
+      'Gaps and adjustments may be drawn as extra auxiliaries (inventory gap, supply line adjustment, effective inventory) between the stocks and the order decision. Links through them count as the direct links.',
+      'The order decision may be drawn as an auxiliary that feeds the orders flow (F1). Links into it count as links into F1.'
+    ]
+  },
+  wom: null
+};
+if (typeof module !== 'undefined') module.exports = KEYS;
+
+/* Modelling-process record, ported from SFD Studio's process_log.py.
+
+   Writes the same file format ("bluejay-modelling-process", version 1) with the
+   same SHA-256 hash chain, so a record made here opens, verifies and replays in
+   SFD Studio. The functions mirror the Python ones name for name; the order of
+   changes, loops and questions follows the Python code exactly.
+
+   Not ported: the HMAC chain. It needs a secret key, and a static page cannot
+   keep one, so records made here always use the plain SHA-256 chain.
+
+   The game adds one event kind of its own, "game" (the learner's week-by-week
+   play). SFD Studio's verify accepts it and its replay passes over it. */
+const ProcessLog = (function () {
+  const FORMAT = 'bluejay-modelling-process', VERSION = 1, MAX_CYCLES = 400;
+  const NODE_TYPES = [['stocks', 'stock'], ['auxiliaries', 'auxiliary']];
+  const LAYOUT_ACTIONS = { tidy: 1, untangle: 1, merge: 1, unmerge: 1 };
+  const AI_QUESTIONS = {
+    ai_advice: 'What will you do with this advice — and why?',
+    ai_equations: 'The AI drafted equations. Which will you keep, and how will you check them?'
+  };
+
+  /* ---------- SHA-256 (synchronous, so the record works the same in Node and the browser) ---------- */
+  const K = new Uint32Array([
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2]);
+  function sha256(str) {
+    const msg = new TextEncoder().encode(str), len = msg.length;
+    const n = ((len + 9 + 63) >> 6) << 6, b = new Uint8Array(n);
+    b.set(msg); b[len] = 0x80;
+    const bits = len * 8;
+    for (let i = 0; i < 8; i++) b[n - 1 - i] = Math.floor(bits / Math.pow(2, 8 * i)) & 0xff;
+    const H = new Uint32Array([0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19]);
+    const W = new Uint32Array(64);
+    const ror = function (x, k) { return (x >>> k) | (x << (32 - k)); };
+    for (let off = 0; off < n; off += 64) {
+      for (let t = 0; t < 16; t++) W[t] = (b[off + 4 * t] << 24) | (b[off + 4 * t + 1] << 16) | (b[off + 4 * t + 2] << 8) | b[off + 4 * t + 3];
+      for (let t = 16; t < 64; t++) {
+        const s0 = ror(W[t - 15], 7) ^ ror(W[t - 15], 18) ^ (W[t - 15] >>> 3);
+        const s1 = ror(W[t - 2], 17) ^ ror(W[t - 2], 19) ^ (W[t - 2] >>> 10);
+        W[t] = (W[t - 16] + s0 + W[t - 7] + s1) >>> 0;
+      }
+      let a = H[0], bb = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      for (let t = 0; t < 64; t++) {
+        const S1 = ror(e, 6) ^ ror(e, 11) ^ ror(e, 25), ch = (e & f) ^ (~e & g);
+        const t1 = (h + S1 + ch + K[t] + W[t]) >>> 0;
+        const S0 = ror(a, 2) ^ ror(a, 13) ^ ror(a, 22), mj = (a & bb) ^ (a & c) ^ (bb & c);
+        const t2 = (S0 + mj) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = bb; bb = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] += a; H[1] += bb; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+    }
+    let out = '';
+    for (let i = 0; i < 8; i++) out += ('00000000' + H[i].toString(16)).slice(-8);
+    return out;
+  }
+
+  /* ---------- canonical JSON, as Python's json.dumps(sort_keys=True, separators=(",", ":"), ensure_ascii=False) ---------- */
+  function pyFloat(x) {               // Python's repr of a float
+    if (!isFinite(x)) return x > 0 ? 'Infinity' : x < 0 ? '-Infinity' : 'NaN';
+    const m = x.toExponential().match(/^(-?)(\d)(?:\.(\d+))?e([+-]\d+)$/);
+    const sign = m[1], digits = m[2] + (m[3] || ''), exp = parseInt(m[4], 10);
+    if (exp < -4 || exp >= 16) {
+      const mant = digits.length > 1 ? digits[0] + '.' + digits.slice(1) : digits;
+      return sign + mant + 'e' + (exp < 0 ? '-' : '+') + ('0' + Math.abs(exp)).slice(-2).replace(/^0(\d\d)/, '$1');
+    }
+    if (exp < 0) return sign + '0.' + '0'.repeat(-exp - 1) + digits;
+    if (digits.length <= exp + 1) return sign + digits + '0'.repeat(exp + 1 - digits.length) + '.0';
+    return sign + digits.slice(0, exp + 1) + '.' + digits.slice(exp + 1);
+  }
+  function canon(v) {
+    if (v === null || v === undefined) return 'null';
+    if (typeof v === 'boolean') return v ? 'true' : 'false';
+    if (typeof v === 'number') return Number.isInteger(v) && Math.abs(v) < 1e21 ? String(v) : pyFloat(v);
+    if (typeof v === 'string') return JSON.stringify(v);
+    if (Array.isArray(v)) return '[' + v.map(canon).join(',') + ']';
+    const keys = Object.keys(v).filter(function (k) { return v[k] !== undefined; }).sort();
+    return '{' + keys.map(function (k) { return JSON.stringify(k) + ':' + canon(v[k]); }).join(',') + '}';
+  }
+
+  const header = function (rec) { const h = {}; Object.keys(rec).forEach(function (k) { if (k !== 'events') h[k] = rec[k]; }); return h; };
+  const digest = function (prev, payload) { return sha256(prev + canon(payload)); };
+  const genesis = function (rec) { return sha256(canon(header(rec))); };
+  const iso = function (ms) { return new Date(ms).toISOString().slice(0, 19) + 'Z'; };
+  const plain = function (x) { return JSON.parse(JSON.stringify(x)); };
+  let clock = function () { return Date.now(); };   // replaceable in tests
+
+  /* ---------- record ---------- */
+  function emptyDiagram() { return { stocks: [], auxiliaries: [], clouds: [], flows: [], connectors: [], junctions: [] }; }
+  function newRecord(app) {
+    const rec = { format: FORMAT, version: VERSION, app: app || 'SFD Studio', started: iso(clock()), chain: 'sha256', events: [] };
+    append(rec, { kind: 'start', snapshot: { diagram: emptyDiagram(), equations: {} } });
+    return rec;
+  }
+  function append(rec, event) {
+    const evs = rec.events, prev = evs.length ? evs[evs.length - 1].hash : genesis(rec);
+    const now = clock(), started = Date.parse(rec.started);
+    const ev = { i: evs.length, t: iso(now), s: Math.round((now - started) / 100) / 10 };
+    Object.keys(event).forEach(function (k) { ev[k] = event[k]; });
+    ev.prev = prev;
+    const clean = plain(ev);
+    clean.hash = digest(prev, clean);
+    evs.push(clean);
+    return clean;
+  }
+  function lastSnapshot(rec) {
+    for (let k = rec.events.length - 1; k >= 0; k--) if (rec.events[k].snapshot) return rec.events[k].snapshot;
+    return { diagram: emptyDiagram(), equations: {} };
+  }
+  function cleanDiagram(d) {
+    d = d || {}; const out = emptyDiagram();
+    Object.keys(out).forEach(function (k) { out[k] = plain(d[k] || []); });
+    return out;
+  }
+
+  /* ---------- reading a diagram structurally (labels are the identities) ---------- */
+  const T = function (a, b) { return JSON.stringify([a, b]); };          // a tuple as a map key
+  const U = function (k) { return JSON.parse(k); };
+  function cmp(a, b) {                                                     // Python's ordering of str tuples
+    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+      if (a[i] === b[i]) continue;
+      if (a[i] === null) return -1; if (b[i] === null) return 1;
+      return a[i] < b[i] ? -1 : 1;
+    }
+    return a.length - b.length;
+  }
+  const sortedKeys = function (m) { return Array.from(m.keys()).map(U).sort(cmp); };
+  const get = function (o, k, dflt) { return o && o[k] !== undefined && o[k] !== null ? o[k] : dflt; };
+
+  function structure(d) {
+    const nodes = new Map();                                               // (type, label) -> [x, y]
+    NODE_TYPES.forEach(function (gt) {
+      (d[gt[0]] || []).forEach(function (el) { nodes.set(T(gt[1], get(el, 'label', '')), [get(el, 'x', 0), get(el, 'y', 0)]); });
+    });
+    const flows = new Map();
+    (d.flows || []).forEach(function (f) { flows.set(get(f, 'label', ''), [f.from === undefined ? null : f.from, f.to === undefined ? null : f.to]); });
+    const junctions = new Set((d.junctions || []).map(function (j) { return j.label; }));
+    const conns = d.connectors || [], links = new Map();
+    conns.forEach(function (c) {
+      const a = c.from, b = c.to;
+      if (junctions.has(a) || junctions.has(b) || a == null || b == null) return;
+      links.set(T(a, b), 1);
+    });
+    junctions.forEach(function (j) {
+      const srcs = conns.filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
+      const tgts = conns.filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
+      srcs.forEach(function (a) { tgts.forEach(function (b) { if (!junctions.has(a) && !junctions.has(b)) links.set(T(a, b), 1); }); });
+    });
+    return { nodes: nodes, flows: flows, links: links, clouds: (d.clouds || []).length };
+  }
+
+  function renameMap(old, nw) {
+    const o = structure(old), n = structure(nw), ren = new Map();
+    ['stock', 'auxiliary'].forEach(function (typ) {
+      const gone = [], came = [];
+      o.nodes.forEach(function (v, k) { const t = U(k); if (t[0] === typ && !n.nodes.has(k)) gone.push([t, v]); });
+      n.nodes.forEach(function (v, k) { const t = U(k); if (t[0] === typ && !o.nodes.has(k)) came.push([t, v]); });
+      gone.forEach(function (g) {
+        for (let j = 0; j < came.length; j++) {
+          if (Math.abs(g[1][0] - came[j][1][0]) <= 3 && Math.abs(g[1][1] - came[j][1][1]) <= 3) {
+            ren.set(g[0][1], came[j][0][1]); came.splice(j, 1); break;
+          }
+        }
+      });
+    });
+    const m = function (x) { return ren.has(x) ? ren.get(x) : x; };
+    const gone = [], came = [];
+    o.flows.forEach(function (ends, k) { if (!n.flows.has(k)) gone.push([k, [m(ends[0]), m(ends[1])]]); });
+    n.flows.forEach(function (ends, k) { if (!o.flows.has(k)) came.push([k, ends]); });
+    gone.forEach(function (g) {
+      for (let j = 0; j < came.length; j++) {
+        if (came[j][1][0] === g[1][0] && came[j][1][1] === g[1][1]) { ren.set(g[0], came[j][0]); came.splice(j, 1); break; }
+      }
+    });
+    return ren;
+  }
+
+  function graph(d) {
+    const s = structure(d), g = new Map();
+    const add = function (a, b) { if (!g.has(a)) g.set(a, new Set()); g.get(a).add(b); };
+    s.links.forEach(function (_, k) { const ab = U(k); add(ab[0], ab[1]); });
+    const stocks = new Set();
+    s.nodes.forEach(function (_, k) { const t = U(k); if (t[0] === 'stock') stocks.add(t[1]); });
+    s.flows.forEach(function (ends, f) { ends.forEach(function (x) { if (stocks.has(x)) add(f, x); }); });
+    return g;
+  }
+
+  function cycles(d) {
+    const g = graph(d), all = new Set(g.keys());
+    g.forEach(function (vs) { vs.forEach(function (v) { all.add(v); }); });
+    const order = Array.from(all).sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; });
+    const rank = new Map(order.map(function (x, i) { return [x, i]; }));
+    const found = []; let budget = 50000;
+    order.forEach(function (s) {
+      const stack = [[s, [s]]];
+      while (stack.length && found.length < MAX_CYCLES && budget > 0) {
+        budget -= 1;
+        const top = stack.pop(), node = top[0], path = top[1];
+        const next = Array.from(g.get(node) || []).sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; });
+        next.forEach(function (nx) {
+          if (nx === s) found.push(path.slice());
+          else if ((rank.has(nx) ? rank.get(nx) : -1) > rank.get(s) && path.indexOf(nx) < 0) stack.push([nx, path.concat([nx])]);
+        });
+      }
+    });
+    return found;
+  }
+  function rotate(c) { let i = 0; c.forEach(function (x, k) { if (x < c[i]) i = k; }); return c.slice(i).concat(c.slice(0, i)); }
+
+  function eqView(eqs) {
+    const out = {};
+    Object.keys(eqs || {}).forEach(function (lbl) {
+      const r = eqs[lbl]; let net = null, v;
+      if (r.kind === 'stock') { v = String(r.initial || '').trim(); if (r.confirmed) net = String(r.net_flow || '0').trim(); }
+      else { v = String(r.formula || '').trim(); if (r.lookup && !v) v = '(lookup table)'; }
+      out[lbl] = { value: v, net: net, ok: !!r.confirmed, kind: r.kind };
+    });
+    return out;
+  }
+
+  /* Changes from snapshot old to new ({diagram, equations}), and the feedback loops that closed. */
+  function diff(old, nw) {
+    const od = old.diagram || emptyDiagram(), nd = nw.diagram || emptyDiagram();
+    const ren = renameMap(od, nd), m = function (x) { return ren.has(x) ? ren.get(x) : x; };
+    const O = structure(od), N = structure(nd);
+    const on = new Map(); O.nodes.forEach(function (v, k) { const t = U(k); on.set(T(t[0], m(t[1])), v); });
+    const of = new Map(); O.flows.forEach(function (e, k) { of.set(m(k), [m(e[0]), m(e[1])]); });
+    const ol = new Map(); O.links.forEach(function (_, k) { const ab = U(k); ol.set(T(m(ab[0]), m(ab[1])), 1); });
+    const nn = N.nodes, nf = N.flows, nl = N.links;
+    const ch = [];
+    ren.forEach(function (n, o) {
+      let typ = 'flow';
+      for (const k of nn.keys()) { const t = U(k); if (t[1] === n) { typ = t[0]; break; } }
+      ch.push({ op: 'rename', what: typ, old: o, new: n });
+    });
+    sortedKeys(nn).forEach(function (t) { if (!on.has(T(t[0], t[1]))) ch.push({ op: 'add', what: t[0], name: t[1] }); });
+    Array.from(nf.keys()).sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; }).forEach(function (f) {
+      const e = nf.get(f);
+      if (!of.has(f)) ch.push({ op: 'add', what: 'flow', name: f, from: e[0], to: e[1] });
+      else if (of.get(f)[0] !== e[0] || of.get(f)[1] !== e[1]) ch.push({ op: 'reconnect', what: 'flow', name: f, old: of.get(f).slice(), new: e.slice() });
+    });
+    sortedKeys(nl).forEach(function (ab) { if (!ol.has(T(ab[0], ab[1]))) ch.push({ op: 'add', what: 'link', from: ab[0], to: ab[1] }); });
+    sortedKeys(on).forEach(function (t) { if (!nn.has(T(t[0], t[1]))) ch.push({ op: 'remove', what: t[0], name: t[1] }); });
+    Array.from(of.keys()).sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; }).forEach(function (f) { if (!nf.has(f)) ch.push({ op: 'remove', what: 'flow', name: f }); });
+    sortedKeys(ol).forEach(function (ab) { if (!nl.has(T(ab[0], ab[1]))) ch.push({ op: 'remove', what: 'link', from: ab[0], to: ab[1] }); });
+    if (N.clouds !== O.clouds) ch.push({ op: N.clouds > O.clouds ? 'add' : 'remove', what: 'cloud', n: Math.abs(N.clouds - O.clouds) });
+
+    // equations (the game's exercise has none, but keep the Python behaviour)
+    const oe = {}; const ov = eqView(old.equations); Object.keys(ov).forEach(function (k) { oe[m(k)] = ov[k]; });
+    const ne = eqView(nw.equations), confirmed = [], renamedTo = new Set(ren.values());
+    Object.keys(ne).sort().forEach(function (lbl) {
+      const n = ne[lbl], o = oe[lbl];
+      if (!o) { if (n.value) ch.push({ op: 'eq_set', name: lbl, new: n.value }); if (n.ok) confirmed.push(lbl); return; }
+      if (o.value !== n.value) {
+        if (!o.value) ch.push({ op: 'eq_set', name: lbl, new: n.value });
+        else if (!n.value) { if (!renamedTo.has(lbl)) ch.push({ op: 'eq_clear', name: lbl, old: o.value }); }
+        else ch.push({ op: 'eq_change', name: lbl, old: o.value, new: n.value });
+      }
+      if (o.net !== null && n.net !== null && o.net !== n.net) ch.push({ op: 'eq_change', name: lbl + ' (net flow)', old: o.net, new: n.net });
+      if (n.ok && !o.ok) confirmed.push(lbl);
+    });
+    if (confirmed.length) ch.push({ op: 'eq_confirm', names: confirmed });
+
+    const oldLoops = new Set(cycles(od).map(function (c) { return JSON.stringify(rotate(c.map(m))); }));
+    const loops = cycles(nd).filter(function (c) { return !oldLoops.has(JSON.stringify(c)); });
+    return { changes: ch, loops: loops };
+  }
+
+  /* ---------- the key-moment question ---------- */
+  const loopText = function (c) { return c.concat([c[0]]).join(' → '); };
+  function names(items) {
+    items = items.map(function (x) { return '**' + x + '**'; });
+    if (items.length <= 1) return items.join('');
+    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+  }
+  function keyQuestion(changes, loops, cause) {
+    if (cause === 'import') return 'You imported a model. Where does it come from, and what will you do with it?';
+    if (cause === 'ai_equations') return null;
+    const removed = changes.filter(function (c) { return c.op === 'remove' && c.what !== 'cloud'; });
+    if (removed.length) {
+      const main = removed.filter(function (c) { return c.what !== 'link'; });
+      let what;
+      if (main.length) {
+        const pri = { stock: 0, flow: 1, auxiliary: 2 };
+        main.sort(function (a, b) { return (pri[a.what] === undefined ? 9 : pri[a.what]) - (pri[b.what] === undefined ? 9 : pri[b.what]); });
+        what = 'the ' + main[0].what + ' **' + main[0].name + '**';
+        if (main.length > 1) what = names(main.map(function (c) { return c.name; }));
+      } else {
+        what = removed.length === 1 ? 'the link **' + removed[0].from + '** → **' + removed[0].to + '**' : removed.length + ' links';
+      }
+      return 'You removed ' + what + '. Why?';
+    }
+    if (loops.length) return 'You closed a feedback loop: ' + loopText(loops[0]) + '. What does this loop do in your system?';
+    const changed = changes.filter(function (c) { return c.op === 'eq_change' || c.op === 'eq_clear'; });
+    if (changed.length) return 'You changed the equation of **' + changed[0].name + '**. What made you change it?';
+    return null;
+  }
+
+  /* ---------- recording ---------- */
+  function layoutSig(d) {
+    const s = function (a) { return a.map(function (x) { return JSON.stringify(x); }).sort(); };
+    const nodes = []; ['stocks', 'auxiliaries', 'junctions'].forEach(function (grp) { (d[grp] || []).forEach(function (e) { nodes.push([grp, String(e.label), e.x, e.y]); }); });
+    const clouds = (d.clouds || []).map(function (c) { return [c.x, c.y]; });
+    const conns = (d.connectors || []).map(function (c) { return [String(c.from), String(c.to), !!c.trunk, (c.waypoints || []).map(function (w) { return [w.x, w.y]; })]; });
+    const valves = (d.flows || []).map(function (f) { return [String(f.label), f.valve_xy || []]; });
+    return JSON.stringify([s(nodes), s(clouds), s(conns), s(valves)]);
+  }
+  /* Compare the current model with the last snapshot; record a step if the structure
+     changed, or a layout moment if only the drawing moved. Returns the new event, or null. */
+  function observe(rec, diagram, equations, cause, action) {
+    const snap = { diagram: cleanDiagram(diagram), equations: plain(equations || {}) };
+    const last = lastSnapshot(rec), d = diff(last, snap);
+    if (!d.changes.length) {
+      if (layoutSig(last.diagram || {}) === layoutSig(snap.diagram)) return null;
+      const tail = rec.events[rec.events.length - 1];
+      if (!LAYOUT_ACTIONS[action] && tail && tail.kind === 'layout' && !tail.action) rec.events.pop();
+      const ev = { kind: 'layout', snapshot: snap };
+      if (LAYOUT_ACTIONS[action]) ev.action = action;
+      return append(rec, ev);
+    }
+    const ev = { kind: 'step', changes: d.changes, snapshot: snap };
+    if (d.loops.length) ev.loops = d.loops.slice(0, 10);
+    if (cause) ev.cause = cause;
+    const q = keyQuestion(d.changes, d.loops, cause);
+    if (q) ev.question = q;
+    return append(rec, ev);
+  }
+  function addAi(rec, kind, cfg, asked, answer) {
+    return append(rec, { kind: kind, ai: cfg ? { provider: cfg.provider, model: cfg.model } : { provider: 'offline', model: 'offline review' },
+      asked: asked, answer: answer, question: AI_QUESTIONS[kind] });
+  }
+  function addNote(rec, about, text) { return append(rec, { kind: 'note', about: about | 0, text: String(text).trim() }); }
+  function addName(rec, name) { return append(rec, { kind: 'name', name: String(name).trim() }); }
+  function addEvent(rec, event) { return append(rec, event); }
+
+  /* ---------- verifying (the plain chain only) ---------- */
+  function verify(rec) {
+    if (!rec || rec.format !== FORMAT) return ['invalid', 'This is not a BlueJay modelling-process file.'];
+    if (rec.chain !== 'sha256') return ['unverifiable', 'Only the plain SHA-256 chain can be checked here.'];
+    let prev = genesis(rec), lastT = null;
+    for (let n = 0; n < rec.events.length; n++) {
+      const ev = rec.events[n], body = {};
+      Object.keys(ev).forEach(function (k) { if (k !== 'hash') body[k] = ev[k]; });
+      if (ev.i !== n || ev.prev !== prev || digest(prev, body) !== ev.hash) return ['broken', 'The record was changed after it was written (at event ' + (n + 1) + ').'];
+      const t = Date.parse(ev.t);
+      if (lastT !== null && t < lastT) return ['broken', 'The times run backwards at event ' + (n + 1) + '.'];
+      lastT = t; prev = ev.hash;
+    }
+    return ['ok', 'Record intact — ' + rec.events.length + ' events, hash chain intact (detects edits made by hand).'];
+  }
+  function dumps(rec) { return JSON.stringify(rec, null, 1); }
+
+  return { newRecord: newRecord, observe: observe, addAi: addAi, addNote: addNote, addName: addName, addEvent: addEvent,
+           diff: diff, cycles: cycles, keyQuestion: keyQuestion, verify: verify, dumps: dumps, lastSnapshot: lastSnapshot,
+           sha256: sha256, canon: canon, pyFloat: pyFloat, AI_QUESTIONS: AI_QUESTIONS,
+           _setClock: function (f) { clock = f; } };
+})();
+if (typeof module !== 'undefined') module.exports = ProcessLog;
+
+/* One small client for Claude, ChatGPT and Gemini, ported from SFD Studio's
+   llm_client.py to run in the browser.
+
+   Same providers, default models, retries (429/5xx/529 after 2 s and 5 s, one
+   retry on a time-out), 40-second time-out, light "thinking" for Gemini and
+   plain-language errors. Two differences from the Python:
+   - the calls go straight from the browser to the provider. Anthropic needs the
+     header that allows this; OpenAI and Gemini accept browser calls as they are;
+   - `complete` takes a list of messages, so a conversation can carry on.
+
+   cfg = { provider: 'anthropic' | 'openai' | 'gemini', key: '...', model: '...' }
+   complete(cfg, system, messages, maxTokens, wantJson) -> Promise<[text, null] | [null, error]> */
+const LLM = (function () {
+  const PROVIDERS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (ChatGPT)', gemini: 'Google (Gemini)' };
+  const DEFAULT_MODELS = { anthropic: 'claude-opus-4-7', openai: 'gpt-4o', gemini: 'gemini-3.5-flash-lite' };
+  const KEY_PLACEHOLDER = { anthropic: 'sk-ant-…', openai: 'sk-…', gemini: 'AIza…' };
+  const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
+  const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+  const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent';
+  const RETRY_CODES = { 429: 1, 500: 1, 502: 1, 503: 1, 504: 1, 529: 1 };
+  const RETRY_WAITS = [2, 5], TIMEOUT = 40;
+
+  function HttpError(code, body) { this.code = code; this.body = body; }
+  function Timeout() {}
+  const sleep = function (s) { return new Promise(function (r) { setTimeout(r, s * 1000); }); };
+
+  async function postOnce(url, headers, body) {
+    const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timer = setTimeout(function () { if (ctl) ctl.abort(); }, TIMEOUT * 1000);
+    let res;
+    try {
+      res = await fetch(url, { method: 'POST', headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+        body: JSON.stringify(body), signal: ctl ? ctl.signal : undefined });
+    } catch (e) {
+      clearTimeout(timer);
+      if (e && e.name === 'AbortError') throw new Timeout();
+      throw e;
+    }
+    clearTimeout(timer);
+    const text = await res.text();
+    if (!res.ok) throw new HttpError(res.status, text);
+    return JSON.parse(text);
+  }
+  /* POST with retries when the provider is busy. A timed-out request is retried
+     once; a busy response (429/5xx) up to twice, after short waits. */
+  async function post(url, headers, body) {
+    let timeouts = 0;
+    for (let attempt = 0; attempt <= RETRY_WAITS.length; attempt++) {
+      try { return await postOnce(url, headers, body); }
+      catch (e) {
+        if (e instanceof HttpError) { if (!RETRY_CODES[e.code] || attempt === RETRY_WAITS.length) throw e; }
+        else if (e instanceof Timeout) { timeouts += 1; if (timeouts > 1 || attempt === RETRY_WAITS.length) throw e; }
+        else throw e;
+      }
+      await sleep(RETRY_WAITS[attempt]);
+    }
+  }
+
+  function errorText(e) {
+    if (e instanceof HttpError) {
+      let msg = e.body;
+      try { const d = JSON.parse(e.body), err = d.error; msg = err && typeof err === 'object' ? err.message : (err || e.body); } catch (x) {}
+      if (RETRY_CODES[e.code]) return 'The AI service is very busy right now. Try again in a few minutes, or choose a different model. (Provider said: ' + e.code + ' — ' + msg + ')';
+      return 'API error (' + e.code + '): ' + msg;
+    }
+    if (e instanceof Timeout) return 'The AI service took too long to answer. It is probably busy — try again in a few minutes, or choose a different model.';
+    return 'Could not reach the AI: ' + (e && e.message ? e.message : e) +
+      '. If you are offline, or the provider does not accept calls from a web page, the request cannot get through.';
+  }
+
+  /* Keep thinking light: these are short replies, and heavy thinking makes Gemini
+     slow enough to time out. Gemini 2.x takes a token budget; Gemini 3 and later a level. */
+  function geminiThinking(model) {
+    const m = model.toLowerCase();
+    if (m.indexOf('gemini-2') === 0) return m.indexOf('flash') >= 0 ? { thinkingBudget: 0 } : null;
+    return { thinkingLevel: 'low' };
+  }
+  async function gemini(model, key, system, messages, maxTokens, wantJson) {
+    const gen = { maxOutputTokens: Math.max(maxTokens, 2048) }, thinking = geminiThinking(model);
+    if (thinking) gen.thinkingConfig = thinking;
+    if (wantJson) gen.responseMimeType = 'application/json';
+    const body = { systemInstruction: { parts: [{ text: system }] },
+      contents: messages.map(function (m) { return { role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] }; }),
+      generationConfig: gen };
+    const url = GEMINI_URL.replace('{model}', encodeURIComponent(model));
+    try { return await post(url, { 'x-goog-api-key': key }, body); }
+    catch (e) {   // a model that rejects this thinking setting: retry once without it
+      if (e instanceof HttpError && e.code === 400 && gen.thinkingConfig) { delete gen.thinkingConfig; return post(url, { 'x-goog-api-key': key }, body); }
+      throw e;
+    }
+  }
+
+  async function complete(cfg, system, messages, maxTokens, wantJson) {
+    if (typeof messages === 'string') messages = [{ role: 'user', content: messages }];
+    maxTokens = maxTokens || 300;
+    const provider = cfg.provider, model = (cfg.model || '').trim() || DEFAULT_MODELS[provider], key = cfg.key;
+    try {
+      let text;
+      if (provider === 'anthropic') {
+        const data = await post(ANTHROPIC_URL,
+          { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          { model: model, max_tokens: maxTokens, system: system, messages: messages });
+        text = (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('');
+      } else if (provider === 'openai') {
+        const body = { model: model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }].concat(messages) };
+        if (wantJson) body.response_format = { type: 'json_object' };
+        const data = await post(OPENAI_URL, { Authorization: 'Bearer ' + key }, body);
+        text = data.choices[0].message.content || '';
+      } else {
+        const data = await gemini(model, key, system, messages, maxTokens, wantJson);
+        const parts = (((data.candidates || [{}])[0] || {}).content || {}).parts || [];
+        text = parts.map(function (p) { return p.text || ''; }).join('');
+      }
+      text = (text || '').trim();
+      return text ? [text, null] : [null, 'Empty response from the AI.'];
+    } catch (e) { return [null, errorText(e)]; }
+  }
+  async function completeJson(cfg, system, messages, maxTokens) {
+    const r = await complete(cfg, system, messages, maxTokens || 400, true);
+    if (r[1]) return [null, r[1]];
+    const m = r[0].match(/\{[\s\S]*\}/);
+    if (!m) return [null, 'The AI did not return JSON.'];
+    try { return [JSON.parse(m[0]), null]; } catch (e) { return [null, "The AI's reply could not be read."]; }
+  }
+  async function testConnection(cfg) {
+    const r = await complete(cfg, 'Reply with the single word OK.', 'Ping', 5);
+    return [r[1] === null, r[1]];
+  }
+  return { PROVIDERS: PROVIDERS, DEFAULT_MODELS: DEFAULT_MODELS, KEY_PLACEHOLDER: KEY_PLACEHOLDER,
+           complete: complete, completeJson: completeJson, testConnection: testConnection };
+})();
+if (typeof module !== 'undefined') module.exports = LLM;
+
+/* The modelling step: the learner draws a stock-and-flow diagram of the game on
+   SFD Studio's canvas, the AI marks it against the answer key and answers
+   questions about it, and every step is recorded in SFD Studio's process format.
+
+   The canvas is SFD Studio's own page, unchanged apart from hiding its Edit mode
+   (equations are not part of this exercise). It runs in a frame and talks to its
+   host through the Streamlit component messages; this file answers those
+   messages in Streamlit's place. */
+const Model = (function () {
+  const $ = function (id) { return document.getElementById(id); };
+  const PL = ProcessLog;
+  const S = {
+    game: null, mode: 'plain', key: null,    // the finished game this model explains
+    rec: null,                                // the process record
+    diagram: null,                            // the latest diagram from the canvas
+    cfg: null, conn: null,                    // AI settings (kept in memory only) and the last test result
+    marking: null, chat: [],                  // the last marking and the conversation since
+    why: null,                                // { about: event index, q: question or null }
+    busy: false
+  };
+  const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  const md = function (s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>'); };
+
+  /* ---------- the canvas ---------- */
+  function frame() { return $('canvasFrame'); }
+  function loadCanvas() {
+    S.diagram = null;
+    frame().srcdoc = CANVAS_HTML;
+  }
+  window.addEventListener('message', function (e) {
+    const f = frame();
+    if (!f || e.source !== f.contentWindow) return;
+    const d = e.data;
+    if (!d || !d.isStreamlitMessage) return;
+    if (d.type === 'streamlit:componentReady')
+      f.contentWindow.postMessage({ type: 'streamlit:render', args: { initial: {}, confirmed: [] } }, '*');
+    else if (d.type === 'streamlit:setFrameHeight' && d.height) f.style.height = Math.max(380, Math.ceil(d.height)) + 'px';
+    else if (d.type === 'streamlit:setComponentValue' && d.value) fromCanvas(d.value);
+  });
+  function fromCanvas(v) {
+    if (v.event === 'svg') { download('my-model.svg', v.svg, 'image/svg+xml'); return; }
+    if (v.event !== 'change') return;             // edit requests belong to Edit mode, which is hidden
+    const action = v.action || null, dg = {};
+    ['stocks', 'auxiliaries', 'clouds', 'flows', 'connectors', 'junctions'].forEach(function (k) { dg[k] = v[k] || []; });
+    S.diagram = dg;
+    if (!S.rec) return;
+    const ev = PL.observe(S.rec, dg, {}, null, action);
+    if (ev && ev.kind === 'step') askWhy(ev.i, ev.question || null);
+    drawRecord();
+  }
+
+  /* ---------- reasons ---------- */
+  function askWhy(about, question) {
+    S.why = { about: about, q: question };
+    $('whyQ').innerHTML = question ? md(question) : 'Your last move: why? <span class="muted">(optional)</span>';
+    $('whyRow').classList.toggle('asking', !!question);
+    $('whyIn').value = '';
+  }
+  function saveWhy() {
+    const t = $('whyIn').value.trim();
+    if (!t || !S.rec || !S.why) return;
+    PL.addNote(S.rec, S.why.about, t);
+    $('whyIn').value = '';
+    $('whyQ').innerHTML = 'Saved. <span class="muted">Carry on modelling.</span>';
+    $('whyRow').classList.remove('asking');
+    S.why = null; drawRecord();
+  }
+
+  /* ---------- describing the diagram, the key and the game to the AI ---------- */
+  function diagramText(d) {
+    if (!d) return '(The learner has not drawn anything yet.)';
+    const L = [], J = new Set((d.junctions || []).map(function (j) { return j.label; }));
+    L.push('STOCKS: ' + ((d.stocks || []).map(function (s) { return s.label; }).join('; ') || 'none'));
+    L.push('FLOWS (name: from -> to; "cloud" is a source or sink): ' + ((d.flows || []).map(function (f) { return f.label + ': ' + (f.from || '(unattached)') + ' -> ' + (f.to || '(unattached)'); }).join('; ') || 'none'));
+    L.push('AUXILIARIES: ' + ((d.auxiliaries || []).map(function (a) { return a.label; }).join('; ') || 'none'));
+    const links = [];
+    (d.connectors || []).forEach(function (c) {
+      if (J.has(c.from) || J.has(c.to)) return;
+      links.push(c.from + ' -> ' + c.to);
+    });
+    J.forEach(function (j) {   // merged links: trunk -> junction -> forks
+      const a = (d.connectors || []).filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
+      const b = (d.connectors || []).filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
+      a.forEach(function (x) { b.forEach(function (y) { links.push(x + ' -> ' + y); }); });
+    });
+    L.push('INFORMATION LINKS (from -> to; a link into a flow\'s name goes into its valve): ' + (links.join('; ') || 'none'));
+    return L.join('\n');
+  }
+  function keyText(k) {
+    return 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope + '\n\nKEY ITEMS:\n' +
+      k.items.map(function (it) { return it.id + ' [' + it.kind + ', ' + it.level + '] ' + it.what + (it.names ? ' (names a learner might use: ' + it.names.join(', ') + ')' : ''); }).join('\n') +
+      '\n\nACCEPTED VARIANTS:\n' + k.variants.map(function (v) { return '- ' + v; }).join('\n');
+  }
+  function gameText() {
+    const g = S.game, w = S.mode === 'wom';
+    const rows = g.log.map(function (r, k) {
+      const me = r.pos[0], nxt = g.log[k + 1], sup = nxt ? nxt.pos[1] : null;
+      return [r.week, me.asked, me.arrived, me.sent, w ? me.turned : me.owed, me.stock, me.order == null ? '' : me.order,
+        sup ? sup.sent : '', sup ? sup.owed : ''].join(',');
+    });
+    return 'THE LEARNER\'S GAME (' + (w ? 'word of mouth' : 'the supply game') + ', the learner ran the pub), one line a week:\n' +
+      'week,customers,delivered to the pub,served,' + (w ? 'turned away' : 'left waiting') + ',cellar at end,pub ordered,wholesaler sent in answer,on back order with the wholesaler\n' +
+      rows.join('\n') + '\nLargest order placed by the brewery: ' + Math.max.apply(null, g.log.map(function (r) { return r.pos[3].order || 0; })) +
+      '.\nWhat the learner wrote before seeing the results: ' + (S.said || '(nothing)');
+  }
+
+  const MARK_SYSTEM = [
+    'You are a teaching assistant in a system dynamics course. A learner played a supply-chain game and then drew a stock-and-flow diagram (SFD) to explain it.',
+    'You mark the diagram against an ANSWER KEY written by the educator. The key is the standard. Do not add requirements of your own, and do not mark down anything the key or its accepted variants allow.',
+    '',
+    'How to read the diagram: it lists stocks, flows (with what each flows from and to; "cloud" is a source or sink), auxiliaries, and information links. A link into a flow\'s name goes into that flow\'s valve.',
+    'Match the learner\'s elements to the key by meaning, not by exact name: learners use their own words. An element of the right meaning but the wrong type (for example a stock drawn as an auxiliary) counts as "wrong". A flow counts only if it connects the right things. A link counts only if it runs in the right direction; a link through an intermediate auxiliary counts as the direct link where the key or its variants say so.',
+    '',
+    'For each key item give a verdict: "present", "partly" (there but incomplete or misconnected), "wrong" (drawn, but as the wrong type or with the wrong meaning) or "missing".',
+    'In each reason, name the learner\'s element you matched. For a missing or wrong item, describe the role that is missing as a hint the learner can act on, without simply naming the key\'s element. Where the learner\'s game shows why an item matters, cite a week.',
+    'Also list elements in the diagram that match no key item, and say whether each is harmless or a mistake.',
+    'Write in plain English for a beginner. Be accurate and specific; never praise vaguely.',
+    '',
+    'Reply ONLY with a JSON object, no markdown fences, of this shape:',
+    '{"overall": "<2-3 sentences>", "verdicts": [{"item": "<key item id>", "verdict": "present|partly|wrong|missing", "learner_element": "<the learner\'s element, or empty>", "reason": "<one or two sentences>"}], "extras": [{"element": "<name>", "comment": "<one sentence>"}], "suggestion": "<the single most useful next step>"}'
+  ].join('\n');
+  const ASK_SYSTEM = [
+    'You are a teaching assistant in a system dynamics course. A learner played a supply-chain game, drew a stock-and-flow diagram to explain it, and had it marked against the educator\'s answer key. Now they ask you questions.',
+    'Ground every answer in the answer key, the learner\'s current diagram and the learner\'s own game record. Cite weeks of their game where that helps: their own numbers are the best evidence they have.',
+    'Explain the errors the marking found and why they matter. Prefer a hint first; if the learner asks for the answer directly, you may give it.',
+    'If a question is not settled by the key, say so plainly, and answer briefly from general system dynamics knowledge, marked as such.',
+    'Keep answers short: at most about 150 words, plain English, no markdown headings.'
+  ].join('\n');
+
+  /* ---------- marking ---------- */
+  const LEVEL = { required: 0, important: 1, optional: 2 };
+  async function mark() {
+    if (S.busy) return;
+    if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be marked.'); return; }
+    if (!S.cfg) { showMarkMsg('Add an AI key under <b>AI settings</b> first.'); openSettings(); return; }
+    if (!S.diagram || !((S.diagram.stocks || []).length + (S.diagram.flows || []).length + (S.diagram.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
+    busy(true, 'mark');
+    const user = 'ANSWER KEY\n' + keyText(S.key) + '\n\nTHE LEARNER\'S DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() + '\n\nMark the diagram now.';
+    const r = await LLM.completeJson(S.cfg, MARK_SYSTEM, user, 2500);
+    busy(false);
+    if (r[1]) { showMarkMsg(esc(r[1])); return; }
+    const a = r[0];
+    a.verdicts = Array.isArray(a.verdicts) ? a.verdicts : [];
+    // what SFD Studio's replay shows of an advisor's answer: overall, issues, suggestion
+    const byId = {}; S.key.items.forEach(function (it) { byId[it.id] = it; });
+    a.issues = a.verdicts.filter(function (v) { return v.verdict !== 'present'; })
+      .map(function (v) { return (byId[v.item] ? byId[v.item].what : v.item) + ': ' + v.reason; });
+    S.marking = a; S.chat = [];
+    if (S.rec) { const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram against the answer key.' }, a); askWhy(ev.i, ev.question); }
+    drawMarking(); drawChat(); drawRecord();
+  }
+  function showMarkMsg(html) { $('markOut').innerHTML = '<p class="mark-msg">' + html + '</p>'; }
+  function drawMarking() {
+    const a = S.marking; if (!a) { $('markOut').innerHTML = ''; return; }
+    const byId = {}; S.key.items.forEach(function (it) { byId[it.id] = it; });
+    const ICON = { present: '✅', partly: '🟡', wrong: '❌', missing: '⬜' }, WORD = { present: 'There', partly: 'Partly', wrong: 'Wrong', missing: 'Missing' };
+    const req = S.key.items.filter(function (it) { return it.level === 'required'; });
+    const got = req.filter(function (it) { return a.verdicts.some(function (v) { return v.item === it.id && v.verdict === 'present'; }); });
+    const rows = a.verdicts.slice().sort(function (x, y) {
+      const ix = byId[x.item], iy = byId[y.item];
+      return (ix ? LEVEL[ix.level] : 3) - (iy ? LEVEL[iy.level] : 3);
+    }).map(function (v) {
+      const it = byId[v.item];
+      return '<li class="v-' + esc(v.verdict) + '"><span class="v-ico" aria-hidden="true">' + (ICON[v.verdict] || '•') + '</span><div>' +
+        '<b>' + esc(WORD[v.verdict] || v.verdict) + '</b> <span class="muted">· ' + esc(it ? it.kind + (it.level !== 'required' ? ', ' + it.level : '') : v.item) + '</span>' +
+        (v.learner_element ? ' <span class="chip">' + esc(v.learner_element) + '</span>' : '') +
+        '<div>' + esc(v.reason) + '</div></div></li>';
+    }).join('');
+    const extras = (a.extras || []).map(function (x) { return '<li><span class="chip">' + esc(x.element) + '</span> ' + esc(x.comment) + '</li>'; }).join('');
+    $('markOut').innerHTML =
+      '<p class="mark-score"><b>' + got.length + ' of ' + req.length + '</b> required parts are there.</p>' +
+      '<p>' + esc(a.overall) + '</p><ul class="verdicts">' + rows + '</ul>' +
+      (extras ? '<h4>Not in the key</h4><ul class="extras">' + extras + '</ul>' : '') +
+      (a.suggestion ? '<p class="mark-next"><b>Next step:</b> ' + esc(a.suggestion) + '</p>' : '') +
+      '<p class="muted small">Marked by ' + esc(LLM.PROVIDERS[S.cfg.provider]) + ' · ' + esc(S.cfg.model) + ' against ' + (S.key.status === 'provisional' ? 'a provisional answer key' : 'the answer key') + '. The AI can be wrong: if a verdict looks wrong, ask about it below.</p>';
+    $('askPanel').hidden = false;
+  }
+
+  /* ---------- questions ---------- */
+  async function ask() {
+    const q = $('askIn').value.trim();
+    if (!q || S.busy) return;
+    if (!S.cfg) { openSettings(); return; }
+    S.chat.push({ role: 'user', content: q }); $('askIn').value = ''; drawChat();
+    busy(true, 'ask');
+    const ctx = 'ANSWER KEY\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
+      '\n\nTHE MARKING THEY RECEIVED\n' + JSON.stringify({ overall: S.marking.overall, verdicts: S.marking.verdicts, suggestion: S.marking.suggestion });
+    const msgs = [{ role: 'user', content: ctx + '\n\n(The learner\'s questions follow.)' }, { role: 'assistant', content: 'Understood. I will answer as their teaching assistant.' }].concat(S.chat);
+    const r = await LLM.complete(S.cfg, ASK_SYSTEM, msgs, 700, false);
+    busy(false);
+    const text = r[1] ? null : r[0];
+    S.chat.push({ role: 'assistant', content: text || ('⚠ ' + r[1]), failed: !text });
+    if (text && S.rec) { const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: q }, { overall: text }); askWhy(ev.i, ev.question); }
+    drawChat(); drawRecord();
+  }
+  function drawChat() {
+    $('chat').innerHTML = S.chat.map(function (m) {
+      return '<div class="msg ' + (m.role === 'user' ? 'me' : 'ai') + (m.failed ? ' failed' : '') + '"><span class="who">' + (m.role === 'user' ? 'You' : 'Teaching assistant') + '</span>' + esc(m.content).replace(/\n/g, '<br>') + '</div>';
+    }).join('');
+    $('chat').scrollTop = $('chat').scrollHeight;
+  }
+  function busy(on, what) {
+    S.busy = on;
+    $('markBtn').disabled = on; $('askBtn').disabled = on;
+    $('markBtn').textContent = on && what === 'mark' ? 'Marking…' : 'Check my diagram';
+    $('askBtn').textContent = on && what === 'ask' ? 'Thinking…' : 'Ask';
+  }
+
+  /* ---------- AI settings (in memory only, as in SFD Studio) ---------- */
+  function readSettings() {
+    const p = $('aiProv').value, key = $('aiKey').value.trim(), model = $('aiModel').value.trim() || LLM.DEFAULT_MODELS[p];
+    const sig = p + '|' + key + '|' + model;
+    if (S.sig !== sig) { S.sig = sig; S.conn = null; }
+    S.cfg = key ? { provider: p, key: key, model: model } : null;
+    drawSettings();
+  }
+  function drawSettings() {
+    const st = $('aiState');
+    if (!S.cfg) { st.className = 'ai-state'; st.textContent = 'No key yet. The game and the drawing work without one; checking the diagram needs one.'; }
+    else if (S.conn === null) { st.className = 'ai-state warn'; st.textContent = 'Key entered but not checked yet. Press Test the connection.'; }
+    else if (S.conn === true) { st.className = 'ai-state ok'; st.textContent = 'AI on: ' + LLM.PROVIDERS[S.cfg.provider] + ' · ' + S.cfg.model; }
+    else { st.className = 'ai-state err'; st.textContent = S.conn; }
+    $('aiSum').textContent = S.cfg ? (S.conn === true ? 'on' : 'key entered') : 'no key';
+  }
+  async function testConn() {
+    readSettings(); if (!S.cfg) return;
+    $('aiTest').disabled = true; $('aiTest').textContent = 'Asking the AI to say hello…';
+    const r = await LLM.testConnection(S.cfg);
+    $('aiTest').disabled = false; $('aiTest').textContent = 'Test the connection';
+    S.conn = r[0] ? true : r[1]; drawSettings();
+  }
+  function openSettings() { $('aiBox').open = true; $('aiKey').focus(); }
+
+  /* ---------- the record ---------- */
+  function drawRecord() {
+    if (!S.rec) return;
+    const ev = S.rec.events, steps = ev.filter(function (e) { return e.kind === 'step'; }).length;
+    const ai = ev.filter(function (e) { return e.kind === 'ai_advice'; }).length, notes = ev.filter(function (e) { return e.kind === 'note'; }).length;
+    $('recState').textContent = 'Recording: ' + steps + ' modelling step' + (steps === 1 ? '' : 's') + ', ' + ai + ' exchange' + (ai === 1 ? '' : 's') + ' with the AI, ' + notes + ' reason' + (notes === 1 ? '' : 's') + '.';
+  }
+  function download(name, text, type) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function downloadRecord() {
+    if (!S.rec) return;
+    const nm = $('recName').value.trim();
+    if (nm && nm !== S.named) { PL.addName(S.rec, nm); S.named = nm; }
+    const stamp = S.rec.started.replace(/[-:]/g, '').replace('T', '-').slice(0, 13);
+    download('modelling-process-' + (nm ? nm.replace(/[^\w-]+/g, '_') + '-' : '') + stamp + '.json', PL.dumps(S.rec), 'application/json');
+    drawRecord();
+  }
+
+  /* ---------- opening the step for a finished game ---------- */
+  function open(game, said) {
+    const fresh = S.game !== game;
+    S.game = game; S.mode = game.mode; S.key = KEYS[game.mode] || null; S.said = said || '';
+    if (fresh) {
+      S.rec = PL.newRecord('Pub Supply Game'); S.marking = null; S.chat = []; S.named = null;
+      PL.addEvent(S.rec, { kind: 'game', mode: game.mode, weeks: game.log.map(function (r, k) {
+        const me = r.pos[0], nxt = game.log[k + 1], sup = nxt ? nxt.pos[1] : null;
+        return { week: r.week, customers: me.asked, delivered: me.arrived, served: me.sent, waiting: me.owed, turned_away: me.turned, sent_back: me.back,
+          cellar: me.stock, ordered: me.order, wholesaler_sent: sup ? sup.sent : null, back_order: sup ? sup.owed : null };
+      }), said: S.said });
+      loadCanvas(); drawMarking(); drawChat(); $('askPanel').hidden = true; $('markOut').innerHTML = '';
+      askWhy(0, null); $('whyQ').innerHTML = 'Your last move: why? <span class="muted">(optional)</span>';
+    }
+    $('taskText').textContent = S.key ? S.key.task : 'Draw a stock-and-flow diagram of your pub that explains what happened in your game. Name things in your own words. No equations are needed.';
+    $('keyNote').hidden = !(S.key && S.key.status === 'provisional');
+    $('noKey').hidden = !!S.key;
+    $('markBtn').disabled = !S.key;
+    drawSettings(); drawRecord();
+  }
+
+  /* ---------- wiring ---------- */
+  function init() {
+    $('aiProv').innerHTML = Object.keys(LLM.PROVIDERS).map(function (k) { return '<option value="' + k + '">' + LLM.PROVIDERS[k] + '</option>'; }).join('');
+    const setModel = function () { $('aiModel').value = LLM.DEFAULT_MODELS[$('aiProv').value]; $('aiKey').placeholder = LLM.KEY_PLACEHOLDER[$('aiProv').value]; };
+    setModel();
+    $('aiProv').addEventListener('change', function () { setModel(); readSettings(); });
+    $('aiKey').addEventListener('input', readSettings);
+    $('aiModel').addEventListener('input', readSettings);
+    $('aiTest').addEventListener('click', testConn);
+    $('markBtn').addEventListener('click', mark);
+    $('askBtn').addEventListener('click', ask);
+    $('askIn').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } });
+    $('whySave').addEventListener('click', saveWhy);
+    $('whyIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') saveWhy(); });
+    $('recBtn').addEventListener('click', downloadRecord);
+    $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
+    drawSettings();
+  }
+  return { init: init, open: open, _state: S, _diagramText: diagramText, _keyText: keyText, MARK_SYSTEM: MARK_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+})();
+
 /* Drawing and interaction. Reads the engine's state; never changes the rules. */
 (function () {
   const $ = function (id) { return document.getElementById(id); };
@@ -668,7 +1604,8 @@ if (typeof module !== 'undefined') module.exports = Engine;
   const money = function (x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); };
 
   function show(id) {
-    ['intro', 'play', 'commit', 'results'].forEach(function (s) { $(s).hidden = s !== id; });
+    ['intro', 'play', 'commit', 'results', 'model'].forEach(function (s) { $(s).hidden = s !== id; });
+    window.scrollTo(0, 0);
     $('topStats').hidden = id === 'intro';
   }
   function speed() {
@@ -1253,6 +2190,9 @@ if (typeof module !== 'undefined') module.exports = Engine;
   $('playBtn').addEventListener('click', replay);
   $('scrub').addEventListener('input', function () { clearInterval(timer); $('playBtn').textContent = 'Play'; drawChain(parseInt($('scrub').value, 10)); });
   $('againBtn').addEventListener('click', start);
+  $('modelBtn').addEventListener('click', function () { show('model'); Model.open(G, $('why').value.trim()); });
+  $('backBtn').addEventListener('click', function () { show('results'); });
+  Model.init();
   $('homeBtn').addEventListener('click', home);
   document.querySelectorAll('input[name="mode"]').forEach(function (r) {
     r.addEventListener('change', function () {

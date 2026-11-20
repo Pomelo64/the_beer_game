@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>SFD Canvas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-svg@0.4.0/cytoscape-svg.js"></script>
+<style>
+  :root {
+    --stock:  #2563eb;   /* blue   */
+    --flow:   #059669;   /* green  */
+    --aux:    #d97706;   /* amber  */
+    --cloud:  #94a3b8;   /* grey   */
+    --conn:   #6b7280;   /* grey info arrow */
+    --ink:    #1e293b;
+    --paper:  #fbfaf7;
+    --line:   #d8d4cc;
+  }
+  html, body { margin: 0; padding: 0; font-family: Georgia, 'Times New Roman', serif; }
+  #toolbar {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    padding: 8px 10px; background: #f3f1ec;
+    border: 1px solid var(--line); border-bottom: none;
+    font-size: 13px; color: var(--ink);
+  }
+  .tool {
+    font-family: inherit; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--line); background: #fff; color: var(--ink);
+    padding: 5px 9px; border-radius: 2px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .tool .swatch {
+    width: 11px; height: 11px; border-radius: 2px; display: inline-block;
+    border: 1px solid rgba(0,0,0,.25);
+  }
+  .tool.active { border-color: var(--ink); border-width: 2px; font-weight: bold;
+                 background: #fffdf8; }
+  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }
+  .act {
+    font-family: inherit; font-size: 12px; cursor: pointer;
+    border: 1px solid var(--ink); background: #fff; color: var(--ink);
+    padding: 5px 11px; border-radius: 2px;
+  }
+  .act.primary { background: var(--ink); color: #fff; }
+  .act:active, .tool:active { transform: translateY(1px); }
+  #cy {
+    width: 100%; height: 430px; background: var(--paper);
+    background-image: radial-gradient(var(--line) 0.8px, transparent 0.8px);
+    background-size: 22px 22px;
+    border: 1px solid var(--line); box-sizing: border-box;
+    position: relative;
+  }
+  /* overlay holding the bend-point circles for the active link */
+  #wpLayer { position: absolute; left: 0; top: 0; right: 0; bottom: 0;
+             pointer-events: none; z-index: 5; overflow: visible; }
+  .wphandle { position: absolute; width: 13px; height: 13px;
+              transform: translate(-50%, -50%); border-radius: 50%;
+              background: #fff; border: 2px solid #2563eb;
+              box-shadow: 0 1px 2px rgba(0,0,0,.3);
+              pointer-events: auto; cursor: grab; z-index: 6; }
+  .wphandle:hover { border-color: #1e293b; }
+  .wphandle:active { cursor: grabbing; border-color: #1e293b; }
+  #status { font-size: 12px; color: #767067; padding: 5px 10px;
+            border: 1px solid var(--line); border-top: none; min-height: 1.1em;
+            background: #f3f1ec; font-style: italic; }
+  #footer {
+    display: flex; justify-content: flex-end;
+    padding: 8px 10px; background: #f3f1ec;
+    border: 1px solid var(--line); border-top: none;
+  }
+  /* Draw / Edit mode toggle on the left side of the toolbar */
+  .mode {
+    display: inline-flex; border: 1px solid var(--ink); border-radius: 2px;
+    overflow: hidden; margin-right: 6px;
+  }
+  .mode button {
+    font-family: inherit; font-size: 12px; cursor: pointer;
+    background: #fff; color: var(--ink);
+    padding: 5px 10px; border: none;
+  }
+  .mode button.active { background: var(--ink); color: #fff; font-weight: bold; }
+  .mode button + button { border-left: 1px solid var(--ink); }
+  /* visual cue while in edit mode: dim the tool buttons */
+  body.edit-mode .tool, body.edit-mode #clearBtn { opacity: 0.4; pointer-events: none; }
+</style>
+</head>
+<body>
+  <div id="toolbar">
+    <span class="mode" id="modeToggle">
+      <button data-mode="draw" class="active">Draw</button>
+      <button data-mode="edit">Edit</button>
+    </span>
+    <button class="tool active" data-tool="stock">
+      <span class="swatch" style="background:#2563eb"></span>Stock</button>
+    <button class="tool" data-tool="aux">
+      <span class="swatch" style="background:#d97706;border-radius:50%"></span>Auxiliary</button>
+    <button class="tool" data-tool="cloud">
+      <span class="swatch" style="background:#94a3b8"></span>Cloud</button>
+    <span class="sep"></span>
+    <button class="tool" data-tool="flow">
+      <span class="swatch" style="background:#059669"></span>Flow</button>
+    <button class="tool" data-tool="connector">
+      <span class="swatch" style="background:#6b7280"></span>Connector</button>
+    <span class="sep"></span>
+    <button class="act" id="clearBtn">Clear</button>
+    <span class="sep"></span>
+    <button class="act" id="untangleBtn" title="Auto-arrange the whole diagram: keep the stock-flow backbone in the centre, spread the auxiliaries onto a ring around it, and remove overlaps. Then use &ldquo;Tidy flows&rdquo; to square up the pipes.">Untangle</button>
+    <button class="act" id="tidyBtn" title="Straighten every flow: square up pipes to horizontal/vertical and center each valve. A stock's inflow and outflow share one axis, so cloud&rarr;inflow&rarr;stock&rarr;outflow&rarr;cloud comes out fully horizontal (or fully vertical).">Tidy flows</button>
+    <button class="act" id="hideBendsBtn" title="Hide the bend-point circles on links (the link shapes are kept)">Hide bend points</button>
+    <button class="act" id="mergeBtn" title="Merge information links that share a source: they leave the source as one trunk and fork near their targets (links heading opposite ways stay separate). Press again to un-merge. Drag a bend to fine-tune; right-click a bend to unmerge just one link.">Merge links</button>
+    <span class="sep"></span>
+    <button class="act" id="zoomOutBtn" title="Zoom out 10%">&minus;</button>
+    <button class="act" id="zoomInBtn"  title="Zoom in 10%">+</button>
+    <button class="act" id="fitBtn"     title="Fit diagram to canvas">Center</button>
+    <button class="act" id="fadeBtn"    title="Storytelling: dim everything, then click elements to reveal them (click again to re-hide) for a screenshot. Click a flow to reveal the whole flow. Press again to restore.">Fade</button>
+    <button class="act" id="svgBtn"     title="Export the diagram as an SVG image">SVG</button>
+  </div>
+  <div id="cy"></div>
+  <div id="status">Stock tool active — click the canvas to place a stock.</div>
+
+<script>
+/* ====================================================================
+   Streamlit component protocol (vanilla, no build step)
+   ==================================================================== */
+const Streamlit = {
+  _renderHandler: null,
+  _ready: false,            // becomes true once Streamlit sends first render
+  _pending: null,           // a value emitted before we were ready
+  _readyTimer: null,
+  setComponentReady() {
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:componentReady",
+        apiVersion: 1 }, "*");
+  },
+  setFrameHeight(h) {
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:setFrameHeight",
+        height: h || document.body.scrollHeight }, "*");
+  },
+  setComponentValue(v) {
+    // Streamlit's handler reads BOTH `value` and `dataType`; omitting
+    // dataType makes the value silently fail to register. Use "json".
+    if (!this._ready) { this._pending = v; return; }   // queue until ready
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:setComponentValue",
+        dataType: "json", value: v }, "*");
+  },
+  onRender(fn) { this._renderHandler = fn; }
+};
+window.addEventListener("message", (e) => {
+  if (!e.data || e.data.type !== "streamlit:render") return;
+  // The first render means Streamlit has registered us as ready. Stop the
+  // re-announce loop and flush any value queued before this point.
+  if (!Streamlit._ready) {
+    Streamlit._ready = true;
+    if (Streamlit._readyTimer) {
+      clearInterval(Streamlit._readyTimer);
+      Streamlit._readyTimer = null;
+    }
+  }
+  if (Streamlit._renderHandler) {
+    Streamlit._renderHandler(e.data.args || {});
+  }
+  if (Streamlit._pending !== null) {
+    const v = Streamlit._pending;
+    Streamlit._pending = null;
+    Streamlit.setComponentValue(v);
+  }
+});
+
+const C = {
+  stock: "#2563eb", flow: "#059669", aux: "#d97706",
+  cloud: "#94a3b8", conn: "#6b7280"
+};
+
+/* A real cloud glyph (classic SFD source/sink marker), drawn as an inline
+   SVG and used as the cloud node's background image. Encoded so the '#' in
+   the colours is safe inside a data URI. */
+const CLOUD_SVG =
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="11 15 76.8 38.5" ' +
+  'width="153.6" height="77">' +
+  '<path d="M24,50 C12,50 8,38 18,34 C13,22 30,16 37,26 C42,13 64,13 68,27 ' +
+  'C82,22 93,34 82,40 C90,46 82,52 72,50 C60,53 36,53 24,50 Z" ' +
+  'fill="#eef0f2" stroke="' + C.cloud + '" stroke-width="2.6" ' +
+  'stroke-linejoin="round"/></svg>';
+const CLOUD_URI =
+  'data:image/svg+xml;utf8,' + encodeURIComponent(CLOUD_SVG);
+
+/* ====================================================================
+   Cytoscape editor — typed SFD elements
+   ==================================================================== */
+const cy = cytoscape({
+  container: document.getElementById('cy'),
+  minZoom: 0.4, maxZoom: 2.5,
+  style: [
+    /* --- STOCK : blue rectangle --------------------------------------- */
+    { selector: 'node[type="stock"]', style: {
+        'label': 'data(label)', 'shape': 'rectangle',
+        'background-color': '#eef3ff', 'border-color': C.stock,
+        'border-width': 2.5,
+        'width': 96, 'height': 46,
+        'text-valign': 'center', 'text-halign': 'center',
+        'font-family': 'Georgia, serif', 'font-size': 12,
+        'color': '#1e3a8a', 'text-wrap': 'wrap', 'text-max-width': 88
+    }},
+    /* --- AUXILIARY : amber circle ------------------------------------- */
+    { selector: 'node[type="aux"]', style: {
+        'label': 'data(label)', 'shape': 'ellipse',
+        'background-color': '#fef3e2', 'border-color': C.aux,
+        'border-width': 2,
+        'width': 62, 'height': 62,
+        'text-valign': 'center', 'text-halign': 'center',
+        'font-family': 'Georgia, serif', 'font-size': 11,
+        'color': '#92400e', 'text-wrap': 'wrap', 'text-max-width': 56
+    }},
+    /* --- CLOUD : real cloud glyph (boundary source / sink) ------------ */
+    /* The glyph is scaled to 112% of the node box and allowed to overflow
+       it (background-clip:none), so a flow connecting to the node boundary
+       always meets the cloud with no gap, from any angle. */
+    { selector: 'node[type="cloud"]', style: {
+        'label': '',                       /* clouds carry no visible text */
+        'shape': 'round-rectangle',        /* invisible body; image shows */
+        'background-opacity': 0, 'border-width': 0,
+        'background-image': CLOUD_URI,
+        'background-fit': 'none', 'background-clip': 'none',
+        'background-width': '112%', 'background-height': '112%',
+        'background-position-x': '50%', 'background-position-y': '50%',
+        'width': 62, 'height': 31
+    }},
+    /* keep the cloud free of a rectangular border when selected --------- */
+    { selector: 'node[type="cloud"]:selected', style: {
+        'border-width': 0
+    }},
+    /* --- selected highlight ------------------------------------------- */
+    { selector: 'node:selected', style: {
+        'border-width': 4, 'overlay-color': '#1e293b', 'overlay-opacity': 0.06
+    }},
+    /* --- FLOW : two thick green pipe segments meeting at a valve node - */
+    { selector: 'edge[type="flowseg"]', style: {
+        'curve-style': 'bezier',
+        'width': 7,
+        'line-color': C.flow, 'line-style': 'double',
+        'target-arrow-color': C.flow,
+        'target-arrow-shape': 'data(arrow)',   /* 'triangle' or 'none' */
+        'arrow-scale': 1.6
+    }},
+    /* the VALVE : the small symbol sitting on the flow pipe ------------- */
+    { selector: 'node[type="valve"]', style: {
+        'label': 'data(label)', 'shape': 'diamond',
+        'background-color': '#fffdf8', 'border-color': C.flow,
+        'border-width': 2.5,
+        'width': 22, 'height': 22,
+        'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': -3,
+        'font-family': 'Georgia, serif', 'font-size': 11, 'font-weight': 'bold',
+        'color': '#065f46',
+        'text-background-color': '#fbfaf7',
+        'text-background-opacity': 1, 'text-background-padding': 2
+    }},
+    /* --- CONNECTOR : thin grey curved information arrow --------------- */
+    { selector: 'edge[type="connector"]', style: {
+        'curve-style': 'unbundled-bezier',
+        'control-point-distances': [38], 'control-point-weights': [0.5],
+        'width': 1.6,
+        'line-color': C.conn, 'line-style': 'solid',
+        'target-arrow-color': C.conn, 'target-arrow-shape': 'vee',
+        'arrow-scale': 1.0
+    }},
+    /* --- JUNCTION : tiny split-point where merged links fork ---------- */
+    { selector: 'node[type="junction"]', style: {
+        'label': '', 'shape': 'ellipse',
+        'background-color': '#fffdf8', 'border-color': '#334155',
+        'border-width': 2, 'width': 15, 'height': 15
+    }},
+    { selector: 'node[type="junction"]:selected', style: {
+        'border-width': 3, 'border-color': '#2563eb' }},
+    /* the trunk segment running into a junction carries no arrowhead */
+    { selector: 'edge[type="connector"][trunk]', style: {
+        'target-arrow-shape': 'none' }},
+    { selector: 'edge:selected', style: { 'overlay-color': '#1e293b',
+        'overlay-opacity': 0.12, 'overlay-padding': 4 }},
+    /* the link currently being bent (its circles are showing) */
+    { selector: 'edge[type="connector"].wpActive', style: {
+        'line-color': '#2563eb', 'target-arrow-color': '#2563eb',
+        'width': 2.4 }},
+    /* fade / storytelling: dimmed elements recede so the revealed ones pop */
+    { selector: 'node.dim', style: { 'opacity': 0.11, 'text-opacity': 0.11 }},
+    { selector: 'edge.dim', style: { 'opacity': 0.09 }},
+    /* hover glow — signals "this element is clickable".
+       Border + width changes always render, unlike overlay-*. */
+    { selector: 'node.hovered', style: {
+        'border-width': 5, 'border-color': '#1e293b' }},
+    { selector: 'edge[type="flowseg"].hovered', style: {
+        'width': 10, 'line-color': '#065f46' }},
+    { selector: 'edge[type="connector"].hovered', style: {
+        'width': 3.5, 'line-color': '#1e293b',
+        'target-arrow-color': '#1e293b' }},
+    /* Completion badges in edit mode — a ring around the element.
+       Amber = unconfirmed, green = user has saved the equation.    */
+    { selector: 'node.unconfirmed', style: {
+        'underlay-color': '#d97706', 'underlay-opacity': 0.18,
+        'underlay-padding': 7, 'underlay-shape': 'round-rectangle' }},
+    { selector: 'node.confirmed', style: {
+        'underlay-color': '#059669', 'underlay-opacity': 0.20,
+        'underlay-padding': 7, 'underlay-shape': 'round-rectangle' }}
+  ],
+  layout: { name: 'preset' }
+});
+
+/* --- mode + tool state ----------------------------------------------- */
+let mode = 'draw';        // 'draw' or 'edit'
+let fadeMode = false;     // storytelling: dim everything, click to reveal
+let tool = 'stock';
+
+/* Track confirmation status per element label (pushed from Python via
+   args.confirmed). The Set holds labels of confirmed elements. */
+let confirmedLabels = new Set();
+
+const TOOL_HINT = {
+  stock:     'Stock tool — click the canvas to place a stock.',
+  aux:       'Auxiliary tool — click the canvas to place an auxiliary.',
+  cloud:     'Cloud tool — click the canvas to place a boundary cloud.',
+  flow:      'Flow tool — click a source element, then a target, to draw a flow.',
+  connector: 'Connector tool — click a source, then a target, to draw an info link.'
+};
+const EDIT_HINT = 'Edit mode — click any stock, flow valve, or auxiliary to edit its equation.';
+
+document.querySelectorAll('.tool').forEach(btn => {
+  btn.onclick = () => {
+    tool = btn.dataset.tool;
+    document.querySelectorAll('.tool').forEach(b =>
+      b.classList.toggle('active', b === btn));
+    linkSource = null; cy.elements().unselect();
+    flash(TOOL_HINT[tool]);
+  };
+});
+
+/* Mode toggle: Draw lets you build the diagram; Edit lets you click an
+   element to edit its equation. The two are exclusive.                  */
+document.querySelectorAll('#modeToggle button').forEach(btn => {
+  btn.onclick = () => {
+    mode = btn.dataset.mode;
+    console.log('[SFD] mode ->', mode);
+    document.querySelectorAll('#modeToggle button').forEach(b =>
+      b.classList.toggle('active', b === btn));
+    document.body.classList.toggle('edit-mode', mode === 'edit');
+    linkSource = null; cy.elements().unselect();
+    refreshBadges();
+    flash(mode === 'edit' ? EDIT_HINT : TOOL_HINT[tool]);
+  };
+});
+
+/* Apply or clear completion-badge classes on every editable element.
+   Elements with equations are: stocks, auxiliaries, and flow valves
+   (their label is the flow's name). Clouds and pipe segments are
+   excluded — they don't carry equations.                                */
+function refreshBadges() {
+  cy.nodes().forEach(n => {
+    n.removeClass('confirmed').removeClass('unconfirmed');
+    if (mode !== 'edit') return;
+    const t = n.data('type');
+    if (t === 'cloud') return;
+    const label = (t === 'valve') ? n.data('label') : n.data('label');
+    if (confirmedLabels.has(label)) n.addClass('confirmed');
+    else                            n.addClass('unconfirmed');
+  });
+}
+
+let seq = 0;
+const newId = () => 'x' + (++seq);
+
+/* --- name validation -------------------------------------------------- */
+/* A component name must start with a letter (any language), so it can't be */
+/* mistaken for a number or an operator in an equation. E.g. naming flows   */
+/* "1" and "2" would make a stock's net flow read "1 - 2", which looks like */
+/* arithmetic. Names may contain letters, digits, spaces and underscores    */
+/* after the first character.                                               */
+function validName(s) {
+  if (!s) return false;
+  const t = s.trim();
+  if (!t) return false;
+  // first character must be a letter in any language (Unicode property)
+  return /^\p{L}/u.test(t);
+}
+/* Prompt for a name, re-prompting while the entry is invalid. Returns the  */
+/* trimmed name, or null if the user cancels.                               */
+function promptName(message, initial) {
+  let val = window.prompt(message, initial || '');
+  while (val !== null) {                       // null = user cancelled
+    if (validName(val)) return val.trim();
+    val = window.prompt(
+      'Name must start with a letter (not a number or symbol). ' +
+      'Try again:', val);
+  }
+  return null;
+}
+
+/* --- click empty canvas: place a node-type element ------------------- */
+cy.on('tap', (evt) => {
+  if (fadeMode) return;                    // fade mode: clicks only reveal
+  if (mode !== 'draw') return;              // edit mode: no creation
+  if (evt.target !== cy) return;            // only background clicks
+  if (tool === 'flow' || tool === 'connector') {
+    flash('That tool draws arrows — click an element, not empty space.');
+    return;
+  }
+  let label;
+  if (tool === 'cloud') {
+    label = 'cloud';                        // clouds need no name
+  } else {
+    label = promptName(
+      tool === 'stock' ? 'Stock name:' : 'Auxiliary name:');
+    if (!label) return;                      // cancelled or never valid
+  }
+  cy.add({ group: 'nodes',
+           data: { id: newId(), label: label, type: tool },
+           position: { x: evt.position.x, y: evt.position.y } });
+  flash('Added ' + tool + (tool === 'cloud' ? '' : ' "' + label + '"'));
+});
+
+/* --- flow construction: source --[seg]--> valve --[seg]--> target ----- */
+/* A flow is a valve node plus two pipe segments sharing a `flow` id.     */
+/* This lets connectors attach to the valve, exactly as in real SFD tools.*/
+let flowSeq = 0;
+
+function makeFlow(srcNode, tgtNode, label) {
+  const fid = 'flow' + (++flowSeq);
+  // valve sits at the midpoint of the two endpoints
+  const vx = (srcNode.position('x') + tgtNode.position('x')) / 2;
+  const vy = (srcNode.position('y') + tgtNode.position('y')) / 2;
+  const valveId = newId();
+  cy.add({ group: 'nodes',
+           data: { id: valveId, type: 'valve', label: label, flow: fid },
+           position: { x: vx, y: vy } });
+  // segment 1: source -> valve, no arrowhead
+  cy.add({ group: 'edges', data: {
+    id: 'e' + newId(), source: srcNode.id(), target: valveId,
+    type: 'flowseg', flow: fid, arrow: 'none' } });
+  // segment 2: valve -> target, carries the arrowhead
+  cy.add({ group: 'edges', data: {
+    id: 'e' + newId(), source: valveId, target: tgtNode.id(),
+    type: 'flowseg', flow: fid, arrow: 'triangle' } });
+}
+
+/* removing any part of a flow removes the whole flow ------------------- */
+function removeFlow(fid) {
+  cy.elements(`[flow = "${fid}"]`).remove();
+}
+
+/* --- click two elements: draw a flow or a connector ------------------ */
+let linkSource = null;
+cy.on('tap', 'node', (evt) => {
+  if (fadeMode) return;                    // fade mode: handled by fade tap
+  // In edit mode, clicking an editable element sends an "edit-this"
+  // event to Python; drawing logic is suspended.
+  if (mode === 'edit') {
+    const n = evt.target;
+    const t = n.data('type');
+    console.log('[SFD] edit-click on', t, n.data('label'));
+    if (t === 'cloud') {
+      flash('Clouds have no equation.');
+      return;
+    }
+    // kind to emit: 'stock', 'aux', or 'flow' (via the valve)
+    let kind;
+    if (t === 'valve')      kind = 'flow';
+    else if (t === 'stock') kind = 'stock';
+    else if (t === 'aux')   kind = 'auxiliary';
+    else                    return;
+    const payload = {
+      event: 'edit_request',
+      label: n.data('label'),
+      kind: kind,
+      ts: Date.now()
+    };
+    console.log('[SFD] sending edit_request', payload);
+    Streamlit.setComponentValue(payload);
+    flash('Sent edit request for "' + n.data('label') + '" — '
+          + 'editor should appear above. (If not, see browser console.)');
+    return;
+  }
+
+  if (tool !== 'flow' && tool !== 'connector') return;   // selection only
+  const node = evt.target;
+
+  // A flow must run between stocks/clouds (or a valve isn't a sensible
+  // flow endpoint) — but we impose no hard restriction; we only skip
+  // using a valve as a *flow* endpoint, which would be meaningless.
+  if (linkSource === null) {
+    linkSource = node; node.select();
+    flash(tool + ' from "' + node.data('label') + '" — click the target.');
+  } else if (linkSource.id() === node.id()) {
+    linkSource.unselect(); linkSource = null;
+    flash(tool + ' cancelled.');
+  } else {
+    if (tool === 'flow') {
+      const fl = promptName('Flow name:');
+      if (!fl) { linkSource.unselect(); linkSource = null;
+                 flash('Flow cancelled.'); return; }
+      makeFlow(linkSource, node, fl);
+    } else {
+      cy.add({ group: 'edges', data: {
+        id: 'e' + newId(), source: linkSource.id(), target: node.id(),
+        type: 'connector' } });
+    }
+    flash(tool + ' drawn: "' + linkSource.data('label') +
+          '" \u2192 "' + node.data('label') + '"');
+    linkSource.unselect(); linkSource = null;
+  }
+});
+
+/* --- double-click a node to rename ----------------------------------- */
+cy.on('dbltap', 'node', (evt) => {
+  if (fadeMode) return;
+  if (mode !== 'draw') return;             // edit mode: no rename
+  const n = evt.target;
+  if (n.data('type') === 'cloud') return;
+  const what = n.data('type') === 'valve' ? 'Rename flow:' : 'Rename:';
+  const name = promptName(what, n.data('label'));
+  if (name) n.data('label', name);
+});
+
+/* --- right-click deletes ---------------------------------------------- */
+/* Deleting a valve or a pipe segment removes the entire flow.           */
+cy.on('cxttap', 'node', (evt) => {
+  if (fadeMode) return;
+  if (mode !== 'draw') return;             // edit mode: no deletion
+  const n = evt.target;
+  if (n.data('type') === 'valve') removeFlow(n.data('flow'));
+  else n.remove();
+});
+cy.on('cxttap', 'edge', (evt) => {
+  if (fadeMode) return;
+  if (mode !== 'draw') return;
+  const e = evt.target;
+  if (e.data('type') === 'flowseg') removeFlow(e.data('flow'));
+  else e.remove();
+});
+
+/* --- hover glow: highlight the element under the cursor -------------- */
+/* Makes it clear when a click lands ON an element (select it / link it) */
+/* versus on empty canvas (place a new element).                         */
+cy.on('mouseover', 'node', (evt) => {
+  evt.target.addClass('hovered');
+  cy.container().style.cursor = 'pointer';
+});
+cy.on('mouseout', 'node', (evt) => {
+  evt.target.removeClass('hovered');
+  cy.container().style.cursor = 'default';
+});
+cy.on('mouseover', 'edge', (evt) => {
+  evt.target.addClass('hovered');
+  cy.container().style.cursor = 'pointer';
+});
+cy.on('mouseout', 'edge', (evt) => {
+  evt.target.removeClass('hovered');
+  cy.container().style.cursor = 'default';
+});
+
+/* --- toolbar actions -------------------------------------------------- */
+document.getElementById('clearBtn').onclick = () => {
+  if (window.confirm('Clear the whole diagram?')) {
+    if (fadeMode) setFadeMode(false);
+    cy.elements().remove(); linkSource = null; flash('Cleared.');
+  }
+};
+
+/* --- Tidy flows: square up every pipe and center every valve ---------- */
+/* For each flow (source --[seg]--> valve --[seg]--> target) we:          */
+/*   1. make the pipe axis-aligned by snapping the lower-priority endpoint */
+/*      onto the higher-priority endpoint's row (horizontal) or column    */
+/*      (vertical). Priority: stock > auxiliary > cloud, so stocks stay    */
+/*      put and clouds line up to them; ties (stock-stock) anchor on the   */
+/*      flow's source.                                                     */
+/*   2. drop the valve exactly on the midpoint of the straightened pipe,   */
+/*      removing the "down to the valve then back up" kink.                */
+/* Stocks only ever move to align another stock; auxiliaries never move.   */
+/* Connectors feeding a valve follow it automatically.                     */
+function flowEndpoints(valve) {
+  const fid = valve.data('flow');
+  let srcId = null, tgtId = null;
+  cy.edges(`[flow = "${fid}"]`).forEach(seg => {
+    if (seg.data('target') === valve.id()) srcId = seg.data('source');
+    if (seg.data('source') === valve.id()) tgtId = seg.data('target');
+  });
+  return { srcId, tgtId };
+}
+
+function tidyFlows() {
+  const valves = cy.nodes('[type = "valve"]');
+  if (valves.empty()) { flash('No flows to straighten yet.'); return; }
+
+  // Collect well-formed flows.
+  const flows = [];
+  valves.forEach(valve => {
+    const { srcId, tgtId } = flowEndpoints(valve);
+    const src = cy.getElementById(srcId), tgt = cy.getElementById(tgtId);
+    if (src.nonempty() && tgt.nonempty()) flows.push({ valve, src, tgt });
+  });
+  if (!flows.length) { flash('No flows to straighten yet.'); return; }
+
+  // Work on a scratch copy of positions so passes compose cleanly.
+  const pos = {};
+  cy.nodes().forEach(n => { pos[n.id()] = { x: n.position('x'), y: n.position('y') }; });
+  const typeOf = n => n.data('type');
+  const prio = n => { const t = typeOf(n);
+                      return t === 'stock' ? 3 : (t === 'aux' ? 2 : 1); };
+
+  // --- chain axis: pick ONE orientation per stock from its boundary (cloud)
+  //     flows so the whole cloud->inflow->stock->outflow->cloud chain ends up
+  //     collinear. The inflow decides; if a stock has no cloud-inflow, its
+  //     cloud-outflow decides. (Stocks with no cloud flows are left to the
+  //     generic per-flow alignment below.)                                  */
+  const stockAxis = {};                       // stock id -> 'h' | 'v'
+  cy.nodes('[type = "stock"]').forEach(s => {
+    const sp = pos[s.id()];
+    let inH = 0, inV = 0, outH = 0, outV = 0, hasIn = false, hasOut = false;
+    flows.forEach(f => {
+      if (f.src.id() === s.id() && typeOf(f.tgt) === 'cloud') {
+        const cp = pos[f.tgt.id()]; hasOut = true;
+        outH += Math.abs(cp.x - sp.x); outV += Math.abs(cp.y - sp.y);
+      } else if (f.tgt.id() === s.id() && typeOf(f.src) === 'cloud') {
+        const cp = pos[f.src.id()]; hasIn = true;
+        inH += Math.abs(cp.x - sp.x); inV += Math.abs(cp.y - sp.y);
+      }
+    });
+    if (!hasIn && !hasOut) return;
+    const H = hasIn ? inH : outH, V = hasIn ? inV : outV;
+    stockAxis[s.id()] = (H >= V) ? 'h' : 'v';
+  });
+
+  const align = f => {
+    const sp = pos[f.src.id()], tp = pos[f.tgt.id()];
+    const horizontal = Math.abs(tp.x - sp.x) >= Math.abs(tp.y - sp.y);
+    // higher priority is the anchor; on a tie the source anchors.
+    const srcAnchors = prio(f.src) >= prio(f.tgt);
+    const ap = srcAnchors ? sp : tp;          // anchor position (stays)
+    const mp = srcAnchors ? tp : sp;          // mover position (snaps)
+    if (horizontal) mp.y = ap.y; else mp.x = ap.x;
+  };
+
+  // Pass 1: stock-to-stock flows first, to settle the stock skeleton.
+  flows.filter(f => prio(f.src) === 3 && prio(f.tgt) === 3).forEach(align);
+
+  // Pass 2a: boundary flows (stock <-> cloud) — place a stock's inflows on one
+  //          side and its outflows on the OPPOSITE side along the chosen axis,
+  //          so they never pile up / overlap on a single side of the stock.
+  //          cloud->inflow->STOCK->outflow->cloud thus reads as one straight
+  //          line (inflow=left/top, outflow=right/bottom).
+  const MIN_LEN = 120, MAX_LEN = 340, STEP = 95;
+  const handled = new Set();                   // valve ids placed here
+  cy.nodes('[type = "stock"]').forEach(s => {
+    const axis = stockAxis[s.id()];
+    if (!axis) return;
+    const sp = pos[s.id()];
+    const ins = [], outs = [];
+    flows.forEach(f => {
+      if (f.tgt.id() === s.id() && typeOf(f.src) === 'cloud') ins.push(f);
+      else if (f.src.id() === s.id() && typeOf(f.tgt) === 'cloud') outs.push(f);
+    });
+    const place = (list, sign) => {
+      // sort by current distance, then space them so same-side flows never
+      // overlap (each at least STEP further out than the previous one).
+      const ax = n => (axis === 'h') ? Math.abs(pos[n].x - sp.x)
+                                     : Math.abs(pos[n].y - sp.y);
+      const entries = list.map(f => ({
+        f, cloud: (typeOf(f.src) === 'cloud') ? f.src : f.tgt
+      }));
+      entries.sort((a, b) => ax(a.cloud.id()) - ax(b.cloud.id()));
+      let prev = -Infinity;
+      entries.forEach((e, k) => {
+        const cp = pos[e.cloud.id()];
+        let d = Math.min(Math.max(ax(e.cloud.id()), MIN_LEN), MAX_LEN);
+        if (k > 0) d = Math.max(d, prev + STEP);
+        prev = d;
+        if (axis === 'h') { cp.x = sp.x + sign * d; cp.y = sp.y; }
+        else              { cp.y = sp.y + sign * d; cp.x = sp.x; }
+        handled.add(e.f.valve.id());
+      });
+    };
+    place(ins, -1);                            // inflows: left (h) / top (v)
+    place(outs, 1);                            // outflows: right (h) / bottom (v)
+  });
+
+  // Pass 2b: any remaining non-stock-stock flow (e.g. cloud<->cloud) aligns
+  //          with the generic rule.
+  flows.filter(f => !(prio(f.src) === 3 && prio(f.tgt) === 3))
+       .filter(f => !handled.has(f.valve.id()))
+       .forEach(align);
+  // Pass 3: center each valve on its now-straight pipe.
+  flows.forEach(f => {
+    const sp = pos[f.src.id()], tp = pos[f.tgt.id()];
+    pos[f.valve.id()] = { x: (sp.x + tp.x) / 2, y: (sp.y + tp.y) / 2 };
+  });
+
+  // Apply with a short animation, then persist the new positions.
+  cy.nodes().forEach(n => {
+    const p = pos[n.id()];
+    if (!p) return;
+    if (Math.abs(p.x - n.position('x')) < 0.5 &&
+        Math.abs(p.y - n.position('y')) < 0.5) return;   // unchanged
+    n.animate({ position: { x: p.x, y: p.y } },
+              { duration: 300, easing: 'ease-in-out' });
+  });
+  flash('Straightened ' + flows.length +
+        ' flow' + (flows.length === 1 ? '' : 's') + '.');
+  pendingAction = 'tidy';
+  setTimeout(emitChange, 360);
+}
+document.getElementById('tidyBtn').onclick = tidyFlows;
+
+/* --- Untangle: stocks & flows in the centre, auxiliaries on a ring ---- */
+/* A deliberately simple, predictable arrangement (no global force tangle):
+     • the stock-flow backbone (stocks, valves, clouds) is KEPT in the central
+       area — only de-overlapped so nothing sits on top of anything;
+     • the auxiliary variables are moved out onto a circle around that core,
+       ordered by the direction of the core element each one feeds, so related
+       auxiliaries sit near the part of the model they connect to.
+   Press "Tidy flows" afterwards to square the pipes; "Merge links" to bundle
+   the information arrows.                                                   */
+function removeOverlapsP(list, P, pad, passes) {
+  const ids = list.map(n => n.id());
+  for (let pass = 0; pass < passes; pass++) {
+    let moved = false;
+    for (let a = 0; a < ids.length; a++) {
+      for (let b = a + 1; b < ids.length; b++) {
+        const A = P[ids[a]], B = P[ids[b]];
+        const minx = A.w / 2 + B.w / 2 + pad, miny = A.h / 2 + B.h / 2 + pad;
+        const dx = A.x - B.x, dy = A.y - B.y;
+        const ox = minx - Math.abs(dx), oy = miny - Math.abs(dy);
+        if (ox > 0 && oy > 0) {
+          if (ox < oy) { const s = (ox / 2 + 0.5) * (dx >= 0 ? 1 : -1);
+                         A.x += s; B.x -= s; }
+          else         { const s = (oy / 2 + 0.5) * (dy >= 0 ? 1 : -1);
+                         A.y += s; B.y -= s; }
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+}
+
+function autoLayout() {
+  const ns = cy.nodes();
+  if (ns.length < 2) { flash('Nothing to arrange yet.'); return; }
+
+  const isCore = n => { const t = n.data('type');
+                        return t === 'stock' || t === 'valve' || t === 'cloud'; };
+  const core = ns.filter(isCore);
+  const ring = ns.filter(n => !isCore(n));        // auxiliaries (+ any junctions)
+
+  const P = {};
+  ns.forEach(n => { P[n.id()] = { x: n.position('x'), y: n.position('y'),
+                                  w: n.outerWidth() || 60,
+                                  h: n.outerHeight() || 60 }; });
+
+  // Keep the core central: de-overlap it in place (tiny golden-angle nudge
+  // first so exactly-coincident nodes separate deterministically).
+  core.forEach((n, i) => { const a = i * 2.399963;
+                           P[n.id()].x += Math.cos(a) * 0.5;
+                           P[n.id()].y += Math.sin(a) * 0.5; });
+  removeOverlapsP(core, P, 18, 220);
+
+  // Core centre and radius.
+  let cx = 0, cy0 = 0;
+  const basis = core.nonempty() ? core : ns;
+  basis.forEach(n => { cx += P[n.id()].x; cy0 += P[n.id()].y; });
+  cx /= basis.length; cy0 /= basis.length;
+  let Rcore = 0;
+  core.forEach(n => { const p = P[n.id()];
+    const d = Math.hypot(p.x - cx, p.y - cy0) + Math.hypot(p.w, p.h) / 2;
+    if (d > Rcore) Rcore = d; });
+
+  // Ring the auxiliaries around the core.
+  const M = ring.length;
+  if (M) {
+    const info = ring.map(n => {
+      let ax = 0, ay = 0, cnt = 0;
+      n.connectedEdges('[type = "connector"]').forEach(e => {
+        const o = e.source().id() === n.id() ? e.target() : e.source();
+        const op = P[o.id()];
+        if (op) { ax += op.x; ay += op.y; cnt++; }
+      });
+      const ang = cnt ? Math.atan2(ay / cnt - cy0, ax / cnt - cx)
+                      : Math.atan2(P[n.id()].y - cy0, P[n.id()].x - cx);
+      return { n, ang };
+    });
+    info.sort((a, b) => a.ang - b.ang);          // group by connection direction
+    const SLOT = 84;                             // arc length per aux (no overlap)
+    const Rneeded = (M * SLOT) / (2 * Math.PI);
+    const R = Math.max(Rcore + 120, Rneeded, 170);
+    info.forEach((ri, i) => {
+      const theta = (i / M) * 2 * Math.PI;       // even spacing, ordered by angle
+      P[ri.n.id()].x = cx + R * Math.cos(theta);
+      P[ri.n.id()].y = cy0 + R * Math.sin(theta);
+    });
+  }
+
+  // Valves sit on the midpoint of their pipe.
+  cy.nodes('[type = "valve"]').forEach(v => {
+    const { srcId, tgtId } = flowEndpoints(v);
+    if (P[srcId] && P[tgtId]) {
+      P[v.id()].x = (P[srcId].x + P[tgtId].x) / 2;
+      P[v.id()].y = (P[srcId].y + P[tgtId].y) / 2;
+    }
+  });
+
+  // Drop stale link bends so connectors redraw straight to the new positions.
+  cy.batch(() => {
+    cy.edges('[type = "connector"]').forEach(e => {
+      if ((e.data('waypoints') || []).length) {
+        e.data('waypoints', []); applyConnectorRoute(e);
+      }
+    });
+  });
+  clearHandles();
+  cy.nodes().forEach(n => {
+    const p = P[n.id()]; if (!p) return;
+    n.animate({ position: { x: p.x, y: p.y } },
+              { duration: 430, easing: 'ease-in-out' });
+  });
+  flash('Arranged: stocks & flows in the centre, ' + M + ' auxiliar' +
+        (M === 1 ? 'y' : 'ies') + ' on the ring. ' +
+        'Use \u201CTidy flows\u201D to square the pipes.');
+  pendingAction = 'untangle';
+  setTimeout(() => { cy.fit(undefined, 40); emitChange(); }, 470);
+}
+document.getElementById('untangleBtn').onclick = autoLayout;
+
+/* --- Merge links: bundle info links that share a source --------------- */
+/* Old hand-drawn SFDs route several information links from one variable as a
+   single trunk that forks near the destinations. This does that: connectors
+   leaving the same source are grouped (by direction, so links heading opposite
+   ways aren't forced together), and each group is given ONE shared bend point
+   — the "junction" — placed near the group's targets. Because every link in a
+   group passes through the same junction, the source→junction stretch overlaps
+   into a single trunk, then fans out to each target.
+
+   It's a toggle: press once to merge, again to un-merge (clear the bends).
+   The junction is an ordinary bend point, so it can be dragged to fine-tune,
+   and right-clicking a link's bend un-merges just that one link.            */
+function clusterByAngle(items, THRESH) {
+  if (items.length <= 1) return [items];
+  items.sort((a, b) => a.ang - b.ang);
+  const clusters = [[items[0]]];
+  for (let i = 1; i < items.length; i++) {
+    if (items[i].ang - items[i - 1].ang <= THRESH)
+      clusters[clusters.length - 1].push(items[i]);
+    else clusters.push([items[i]]);
+  }
+  if (clusters.length > 1) {                       // wrap-around (e.g. 170° & -170°)
+    const wrapGap = (items[0].ang + 360) - items[items.length - 1].ang;
+    if (wrapGap <= THRESH) { const last = clusters.pop();
+                             clusters[0] = last.concat(clusters[0]); }
+  }
+  return clusters;
+}
+
+// A unique "junction N" label not already used by any node.
+function freshJunctionLabel() {
+  const used = new Set();
+  cy.nodes().forEach(n => used.add(n.data('label')));
+  let k = 1;
+  while (used.has('junction ' + k)) k++;
+  return 'junction ' + k;
+}
+
+function mergeLinks() {
+  const conns = cy.edges('[type = "connector"]');
+  const junctions = cy.nodes('[type = "junction"]');
+
+  // Toggle off: if any junctions exist, dissolve them back to direct links.
+  if (junctions.nonempty()) {
+    let restored = 0;
+    cy.batch(() => {
+      junctions.forEach(j => {
+        const srcs = [], tgts = [];
+        j.connectedEdges('[type = "connector"]').forEach(e => {
+          if (e.target().id() === j.id()) srcs.push(e.source());   // trunk in
+          else if (e.source().id() === j.id()) tgts.push(e.target()); // fork out
+        });
+        srcs.forEach(s => tgts.forEach(t => {
+          cy.add({ group: 'edges', data: {
+            id: 'e' + newId(), source: s.id(), target: t.id(),
+            type: 'connector', waypoints: [] } });
+          restored++;
+        }));
+        j.remove();                       // removes the junction and its edges
+      });
+    });
+    clearHandles();
+    flash('Links un-merged — restored ' + restored + ' direct link' +
+          (restored === 1 ? '' : 's') + '.');
+    pendingAction = 'unmerge';
+    setTimeout(emitChange, 60);
+    return;
+  }
+
+  if (conns.empty()) { flash('No information links to merge yet.'); return; }
+
+  // Group connectors by their source node.
+  const groups = {};
+  conns.forEach(e => { const s = e.source().id();
+                       (groups[s] = groups[s] || []).push(e); });
+
+  const THRESH = 55, bundled = [];
+  cy.batch(() => {
+    Object.keys(groups).forEach(sid => {
+      const grp = groups[sid];
+      if (grp.length < 2) return;
+      const srcNode = cy.getElementById(sid);
+      const A = srcNode.position();
+      const items = grp.map(e => {
+        const tp = e.target().position();
+        return { e, tgt: e.target(), tp,
+                 ang: Math.atan2(tp.y - A.y, tp.x - A.x) * 180 / Math.PI };
+      }).filter(it => Math.hypot(it.tp.x - A.x, it.tp.y - A.y) > 1);
+
+      clusterByAngle(items, THRESH).forEach(cl => {
+        if (cl.length < 2) return;                 // singletons keep their link
+        const M = { x: cl.reduce((s, i) => s + i.tp.x, 0) / cl.length,
+                    y: cl.reduce((s, i) => s + i.tp.y, 0) / cl.length };
+        const dAM = Math.hypot(A.x - M.x, A.y - M.y);
+        if (dAM < 70) return;                      // targets too close to source
+        const ux = (A.x - M.x) / dAM, uy = (A.y - M.y) / dAM;
+        let dist = Math.min(Math.max(45, 0.25 * dAM), 160);
+        dist = Math.min(dist, 0.65 * dAM);
+        const J = { x: M.x + ux * dist, y: M.y + uy * dist };
+
+        // Create the split-point node, the trunk into it, and the forks out.
+        const jid = newId();
+        cy.add({ group: 'nodes',
+                 data: { id: jid, label: freshJunctionLabel(), type: 'junction' },
+                 position: { x: J.x, y: J.y } });
+        cy.add({ group: 'edges', data: {
+          id: 'e' + newId(), source: sid, target: jid,
+          type: 'connector', trunk: 1, waypoints: [] } });   // no arrowhead
+        cl.forEach(i => {
+          cy.add({ group: 'edges', data: {
+            id: 'e' + newId(), source: jid, target: i.tgt.id(),
+            type: 'connector', waypoints: [] } });
+          i.e.remove();                            // drop the original A->target
+        });
+        bundled.push(cl.length);
+      });
+    });
+  });
+  clearHandles();
+  if (!bundled.length) {
+    flash('No mergeable links — need 2+ links leaving one source the same way.');
+    return;
+  }
+  const total = bundled.reduce((s, n) => s + n, 0);
+  flash('Merged ' + total + ' links through ' + bundled.length +
+        ' split-point' + (bundled.length === 1 ? '' : 's') +
+        '. Press again to un-merge.');
+  pendingAction = 'merge';
+  setTimeout(emitChange, 60);
+}
+document.getElementById('mergeBtn').onclick = mergeLinks;
+// Hide all bend-point circles without changing the link shapes.
+document.getElementById('hideBendsBtn').onclick = () => {
+  clearHandles();
+  flash('Bend points hidden — double-click a link to edit it again.');
+};
+/* --- Fade / storytelling: dim all, click to reveal, toggle off -------- */
+/* One button that reads "Fade" normally and "Unfade" while active. In fade
+   mode every element is ghosted; clicking one reveals it (click again to
+   re-hide) so a model can be explained piece by piece and screenshotted.
+   Clicking any part of a flow reveals the whole flow (its valve and both
+   pipe segments), so an inflow reads as one unit next to its stock. Fade is
+   purely visual — it is never saved and never affects the equations.      */
+function flowUnit(el) {                       // whole flow if el belongs to one
+  const fid = el.data('flow');
+  return fid ? cy.elements(`[flow = "${fid}"]`) : el;
+}
+function toggleReveal(el) {
+  const grp = flowUnit(el);
+  if (el.hasClass('dim')) grp.removeClass('dim');   // reveal
+  else                    grp.addClass('dim');      // hide again
+}
+function setFadeMode(on) {
+  fadeMode = on;
+  const btn = document.getElementById('fadeBtn');
+  if (on) {
+    clearHandles();                           // no bend circles while presenting
+    cy.elements().addClass('dim');            // ghost everything
+    btn.textContent = 'Unfade';
+    btn.classList.add('primary');
+    flash('Fade on — click elements to reveal them (click again to hide). ' +
+          'Screenshot when ready; press Unfade to restore.');
+  } else {
+    cy.elements().removeClass('dim');
+    btn.textContent = 'Fade';
+    btn.classList.remove('primary');
+    flash('Everything restored.');
+  }
+}
+cy.on('tap', (evt) => {                        // reveal / hide while fading
+  if (!fadeMode) return;
+  if (evt.target === cy) return;               // background: ignore
+  toggleReveal(evt.target);
+});
+document.getElementById('fadeBtn').onclick = () => setFadeMode(!fadeMode);
+/* --- auto-emit: send the current diagram to Python on every change ---- */
+/* Cytoscape fires `add`/`remove` when elements appear or disappear, and  */
+/* `dragfree` when a node finishes being dragged. A short debounce        */
+/* coalesces rapid edits (e.g. drawing a flow = 3 add events) into one    */
+/* Python rerun.                                                          */
+let emitTimer = null;
+let emitSeq = 0;
+// A layout button (Tidy flows, Untangle, Merge links) names itself in the
+// next emit, so the modelling-process record can show it as a moment.
+let pendingAction = null;
+function emitChange() {
+  clearTimeout(emitTimer);
+  emitTimer = setTimeout(() => {
+    const diagram = serialize();
+    diagram.event = 'change';
+    if (pendingAction) { diagram.action = pendingAction; pendingAction = null; }
+    diagram.seq = ++emitSeq;       // ensures every emit is unique
+    console.log('[SFD] auto-emit #' + emitSeq,
+                diagram.stocks.length, 'stocks,',
+                diagram.flows.length, 'flows,',
+                diagram.auxiliaries.length, 'aux');
+    Streamlit.setComponentValue(diagram);
+  }, 250);                          // 250ms after the last change
+}
+cy.on('add remove', emitChange);
+cy.on('dragfree', 'node', emitChange);
+// Rename via dbltap mutates a `label`; emit then too.
+cy.on('data', 'node', emitChange);
+
+/* ====================================================================
+   Connector bending — adjustable bend circles on a link
+   ====================================================================
+   A connector may carry data('waypoints') = [{x,y}, ...] (absolute model
+   coords). With none it keeps its default arc; with some it renders as a
+   rounded polyline through them (curve-style round-segments). Editing:
+       double-click near a link  -> add a bend (and show its circles)
+       click a link              -> show that link's bend circles
+       drag a circle             -> adjust just that bend
+       right-click a circle      -> delete just that bend (rest untouched)
+   The circles are repositioned on every render straight from the
+   waypoints, so they always sit exactly on the line; the viewport is
+   frozen while dragging one so the canvas can't pan and nothing drifts.  */
+function chordAlong(s, t, pt) {
+  const dx = t.x - s.x, dy = t.y - s.y, l2 = dx * dx + dy * dy || 1;
+  return ((pt.x - s.x) * dx + (pt.y - s.y) * dy) / l2;
+}
+
+function applyConnectorRoute(e) {
+  const wps = e.data('waypoints') || [];
+  if (!wps.length) {
+    e.removeStyle('curve-style segment-distances segment-weights ' +
+                  'segment-radii radius-type');
+    return;
+  }
+  const s = e.source().position(), t = e.target().position();
+  const dx = t.x - s.x, dy = t.y - s.y, len = Math.hypot(dx, dy) || 1;
+  const W = [], D = [], R = [];
+  wps.forEach(w => {
+    let along = ((w.x - s.x) * dx + (w.y - s.y) * dy) / (len * len);
+    const perp = ((w.y - s.y) * dx - (w.x - s.x) * dy) / len;
+    along = Math.max(0.02, Math.min(0.98, along));
+    W.push(along); D.push(perp); R.push(14);
+  });
+  e.style({ 'curve-style': 'round-segments',
+            'segment-distances': D, 'segment-weights': W,
+            'segment-radii': R, 'radius-type': 'arc-radius' });
+}
+
+function nearestWaypoint(e, pt) {
+  const wps = e.data('waypoints') || [];
+  let idx = -1, best = Infinity;
+  wps.forEach((w, k) => {
+    const d = Math.hypot(w.x - pt.x, w.y - pt.y);
+    if (d < best) { best = d; idx = k; }
+  });
+  return { idx, dist: best };
+}
+
+function insertWaypoint(e, pt) {
+  const wps = (e.data('waypoints') || []).slice();
+  const s = e.source().position(), t = e.target().position();
+  const a = chordAlong(s, t, pt);
+  let ins = wps.length;
+  for (let k = 0; k < wps.length; k++) {
+    if (a < chordAlong(s, t, wps[k])) { ins = k; break; }
+  }
+  wps.splice(ins, 0, { x: pt.x, y: pt.y });
+  e.data('waypoints', wps);
+  return ins;
+}
+
+/* --- bend-point circles for the currently active link --------------- */
+const wpLayer = document.createElement('div');
+wpLayer.id = 'wpLayer';
+document.getElementById('cy').appendChild(wpLayer);
+let wpEdge = null;                          // the link whose circles are shown
+
+function clearHandles() {
+  if (wpLayer.children.length) wpLayer.innerHTML = '';
+  if (wpEdge && !wpEdge.removed()) wpEdge.removeClass('wpActive');
+  wpEdge = null;
+}
+
+function buildHandles(e) {
+  wpLayer.innerHTML = '';
+  (e.data('waypoints') || []).forEach((w, i) => {
+    const h = document.createElement('div');
+    h.className = 'wphandle';
+    h.title = 'Drag to bend \u00b7 right-click to remove';
+    wpLayer.appendChild(h);
+    h.addEventListener('pointerdown', ev => startHandleDrag(ev, e, i, h));
+    h.addEventListener('mousedown', ev => ev.stopPropagation());
+    h.addEventListener('touchstart', ev => ev.stopPropagation(),
+                       { passive: false });
+    h.addEventListener('contextmenu', ev => {
+      ev.preventDefault(); ev.stopPropagation();
+      const arr = (e.data('waypoints') || []).slice();
+      arr.splice(i, 1);
+      e.data('waypoints', arr);
+      applyConnectorRoute(e);
+      buildHandles(e);
+      flash(arr.length ? 'Bend removed.' : 'Link straightened.');
+      emitChange();
+    });
+  });
+  positionHandles();
+}
+
+function positionHandles() {
+  if (!wpEdge || wpEdge.removed()) { clearHandles(); return; }
+  const wps = wpEdge.data('waypoints') || [];
+  if (wpLayer.children.length !== wps.length) { buildHandles(wpEdge); return; }
+  const z = cy.zoom(), p = cy.pan(), hs = wpLayer.children;
+  for (let i = 0; i < hs.length; i++) {
+    const w = wps[i];
+    hs[i].style.left = (w.x * z + p.x) + 'px';
+    hs[i].style.top  = (w.y * z + p.y) + 'px';
+  }
+}
+
+function showHandlesFor(e) {
+  if (!e || e.removed() || e.data('type') !== 'connector') { clearHandles(); return; }
+  if (wpEdge && wpEdge !== e && !wpEdge.removed()) wpEdge.removeClass('wpActive');
+  wpEdge = e;
+  e.addClass('wpActive');
+  buildHandles(e);
+}
+
+function startHandleDrag(ev, e, i, h) {
+  ev.preventDefault(); ev.stopPropagation();
+  try { h.setPointerCapture(ev.pointerId); } catch (_) {}
+  // freeze the viewport so the canvas can't pan under the drag
+  const panWas = cy.userPanningEnabled(), boxWas = cy.boxSelectionEnabled();
+  cy.userPanningEnabled(false); cy.boxSelectionEnabled(false);
+  const rect = cy.container().getBoundingClientRect();
+  const move = m => {
+    const z = cy.zoom(), p = cy.pan();
+    const arr = (e.data('waypoints') || []).slice();
+    arr[i] = { x: (m.clientX - rect.left - p.x) / z,
+               y: (m.clientY - rect.top  - p.y) / z };
+    e.data('waypoints', arr);
+    applyConnectorRoute(e);
+    positionHandles();
+  };
+  const up = () => {
+    window.removeEventListener('pointermove', move);
+    window.removeEventListener('pointerup', up);
+    window.removeEventListener('pointercancel', up);
+    cy.userPanningEnabled(panWas); cy.boxSelectionEnabled(boxWas);
+    emitChange();
+  };
+  window.addEventListener('pointermove', move);
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+}
+
+/* double-click a link to add a bend (double-click a bend to remove it).
+   This is edge-targeted, so Cytoscape hit-tests the actual rendered curve
+   and hands us the exact link clicked — which is what makes the 2nd, 3rd,
+   ... links bend, not just the first. */
+cy.on('dbltap', 'edge[type = "connector"]', (evt) => {
+  if (fadeMode) return;
+  const e = evt.target;
+  const near = nearestWaypoint(e, evt.position);
+  if (near.idx >= 0 && near.dist <= 14 / cy.zoom()) {
+    const arr = (e.data('waypoints') || []).slice();
+    arr.splice(near.idx, 1);
+    e.data('waypoints', arr);
+    flash(arr.length ? 'Bend removed.' : 'Link straightened.');
+  } else {
+    insertWaypoint(e, evt.position);
+    flash('Bend added — drag the circle to shape it; ' +
+          'right-click it to remove.');
+  }
+  applyConnectorRoute(e);
+  showHandlesFor(e);
+  emitChange();
+});
+
+/* show a link's circles when you tap it; switching links re-points the
+   circles. Crucially we do NOT tie this to Cytoscape selection — a stray
+   background click deselects and would wipe the circles, which is exactly
+   what stopped the 2nd, 3rd, ... links from being editable. */
+cy.on('tap', 'edge[type = "connector"]', (evt) => { if (!fadeMode) showHandlesFor(evt.target); });
+cy.on('remove', 'edge', (evt) => { if (evt.target === wpEdge) clearHandles(); });
+
+/* keep the circles glued to the line on every redraw (pan / zoom / resize
+   / animation), so they can never drift away from it */
+cy.on('render', positionHandles);
+
+/* reproject waypointed links when an endpoint node moves */
+cy.on('position', 'node', (evt) => {
+  evt.target.connectedEdges('[type = "connector"]').forEach(e => {
+    if ((e.data('waypoints') || []).length) applyConnectorRoute(e);
+  });
+});
+
+/* --- view controls: zoom +/- (10% steps) and fit-to-canvas ----------- */
+function zoomBy(factor) {
+  const target = cy.zoom() * factor;
+  const box = document.getElementById('cy').getBoundingClientRect();
+  cy.zoom({
+    level: target,
+    renderedPosition: { x: box.width / 2, y: box.height / 2 }
+  });
+  // Cytoscape clamps to minZoom/maxZoom; detect that and tell the user.
+  const actual = cy.zoom();
+  if (Math.abs(actual - target) > 0.001) {
+    flash('Zoom limit reached (' + Math.round(actual * 100) + '%).');
+  } else {
+    flash('Zoom: ' + Math.round(actual * 100) + '%');
+  }
+}
+document.getElementById('zoomInBtn').onclick  = () => zoomBy(1.10);
+document.getElementById('zoomOutBtn').onclick = () => zoomBy(1 / 1.10);
+document.getElementById('fitBtn').onclick = () => {
+  if (cy.elements().nonempty()) {
+    cy.fit(undefined, 40);            // fit all with 40px padding
+    flash('Centered on the diagram.');
+  } else {
+    cy.zoom(1); cy.center();
+    flash('Canvas reset.');
+  }
+};
+
+/* --- export the current view as SVG ---------------------------------- */
+/* Uses the cytoscape-svg extension (loaded from CDN). The SVG string is  */
+/* sent to Python, which offers it as a file download.                    */
+let svgSeq = 0;
+document.getElementById('svgBtn').onclick = () => {
+  if (cy.elements().empty()) { flash('Nothing to export yet.'); return; }
+  if (typeof cy.svg !== 'function') {
+    flash('SVG export unavailable (extension failed to load).');
+    return;
+  }
+  try {
+    const svgText = cy.svg({ scale: 1, full: true, bg: '#fbfaf7' });
+    Streamlit.setComponentValue({
+      event: 'svg', svg: svgText, seq: ++svgSeq, ts: Date.now()
+    });
+    flash('SVG generated — use the download button below the canvas.');
+  } catch (e) {
+    console.error('[SFD] svg export failed', e);
+    flash('SVG export failed — see console.');
+  }
+};
+
+/* --- serialise to typed JSON ----------------------------------------- */
+function serialize() {
+  // label for any node; for a valve, its label IS the flow name
+  const labelOf = id => {
+    const n = cy.getElementById(id);
+    return n.nonempty() ? n.data('label') : null;
+  };
+  const out = { submitted_at: Date.now(),
+                stocks: [], auxiliaries: [], clouds: [],
+                flows: [], connectors: [], junctions: [] };
+
+  // plain element nodes
+  cy.nodes().forEach(n => {
+    const t = n.data('type');
+    if (t === 'valve') return;                 // valves handled via flows
+    const rec = { label: n.data('label'),
+                  x: Math.round(n.position('x')),
+                  y: Math.round(n.position('y')) };
+    if (t === 'stock')         out.stocks.push(rec);
+    else if (t === 'aux')      out.auxiliaries.push(rec);
+    else if (t === 'cloud')    out.clouds.push(rec);
+    else if (t === 'junction') out.junctions.push(rec);
+  });
+
+  // reconstruct each flow from its valve + two pipe segments
+  cy.nodes('[type = "valve"]').forEach(valve => {
+    const fid = valve.data('flow');
+    const segs = cy.edges(`[flow = "${fid}"]`);
+    let from = null, to = null, fromNode = null, toNode = null;
+    segs.forEach(seg => {
+      // the segment ending AT the valve gives the flow source;
+      // the segment starting FROM the valve gives the flow target
+      if (seg.data('target') === valve.id()) {
+        from = labelOf(seg.data('source'));
+        fromNode = cy.getElementById(seg.data('source'));
+      }
+      if (seg.data('source') === valve.id()) {
+        to = labelOf(seg.data('target'));
+        toNode = cy.getElementById(seg.data('target'));
+      }
+    });
+    // the ends' positions tell clouds apart: every cloud is called "cloud"
+    const rec = { label: valve.data('label'), from: from, to: to };
+    if (fromNode) rec.from_xy = [Math.round(fromNode.position('x')), Math.round(fromNode.position('y'))];
+    if (toNode)   rec.to_xy   = [Math.round(toNode.position('x')),   Math.round(toNode.position('y'))];
+    rec.valve_xy = [Math.round(valve.position('x')), Math.round(valve.position('y'))];
+    out.flows.push(rec);
+  });
+
+  // connectors — a valve target resolves to that flow's name
+  cy.edges('[type = "connector"]').forEach(e => {
+    const rec = { from: labelOf(e.data('source')),
+                  to:   labelOf(e.data('target')) };
+    const wps = e.data('waypoints');
+    if (wps && wps.length)
+      rec.waypoints = wps.map(w => ({ x: Math.round(w.x),
+                                      y: Math.round(w.y) }));
+    if (e.data('trunk')) rec.trunk = 1;        // segment into a junction
+    out.connectors.push(rec);
+  });
+  return out;
+}
+
+/* --- load a pre-existing diagram (optional) -------------------------- */
+function loadDiagram(d) {
+  cy.elements().remove();
+  const idmap = {};        // element label -> node id
+  const valveOf = {};      // flow label    -> valve node id
+
+  const byLabel = {};      // label -> all node ids (clouds share "cloud")
+  const addNode = (rec, type) => {
+    const id = newId();
+    idmap[rec.label] = id;
+    (byLabel[rec.label] = byLabel[rec.label] || []).push(id);
+    cy.add({ group:'nodes',
+             data:{ id:id, label:rec.label, type:type },
+             position:{ x:rec.x||120, y:rec.y||120 } });
+  };
+  (d.stocks || []).forEach(r => addNode(r, 'stock'));
+  (d.auxiliaries || []).forEach(r => addNode(r, 'aux'));
+  (d.clouds || []).forEach(r => addNode(r, 'cloud'));
+  (d.junctions || []).forEach(r => addNode(r, 'junction'));
+
+  // rebuild each flow as a valve node plus two pipe segments
+  // A flow end called "cloud" could be any cloud: take the one at the
+  // position saved with the flow, else the nearest unused one (a source on
+  // the upstream side, a sink on the downstream side).
+  const usedEnd = new Set();
+  const posOf = id => cy.getElementById(id).position();
+  const pickEnd = (label, xy, otherId, isSource) => {
+    const ids = byLabel[label] || [];
+    if (ids.length <= 1) return idmap[label];
+    const free = ids.filter(i => !usedEnd.has(i));
+    const pool = free.length ? free : ids;
+    const o = otherId ? posOf(otherId) : { x: 0, y: 0 };
+    const cost = i => {
+      const p = posOf(i);
+      if (xy) return Math.hypot(p.x - xy[0], p.y - xy[1]);
+      const lean = isSource ? Math.max(0, p.x - o.x) + Math.max(0, p.y - o.y)
+                            : Math.max(0, o.x - p.x) + Math.max(0, o.y - p.y);
+      return Math.hypot(p.x - o.x, p.y - o.y) + 0.25 * lean;
+    };
+    const best = pool.reduce((a, b) => cost(b) < cost(a) ? b : a);
+    usedEnd.add(best);
+    return best;
+  };
+  (d.flows || []).forEach(f => {
+    const single = l => (byLabel[l] || []).length === 1 ? idmap[l] : null;
+    const s = pickEnd(f.from, f.from_xy, single(f.to), true);
+    const t = pickEnd(f.to, f.to_xy, s || single(f.from), false);
+    if (!s || !t) return;
+    makeFlow(cy.getElementById(s), cy.getElementById(t),
+             f.label || 'flow');
+    // the valve just created is the last valve node added
+    const valve = cy.nodes('[type = "valve"]').last();
+    valveOf[f.label] = valve.id();
+    idmap[f.label] = valve.id();   // so a connector can target the flow
+  });
+
+  // connectors — endpoints may be element labels or flow (valve) labels
+  (d.connectors || []).forEach(c => {
+    const s = idmap[c.from], t = idmap[c.to];
+    if (!s || !t) return;
+    const wps = (c.waypoints || []).map(w => ({ x: w.x, y: w.y }));
+    const data = { id:'e'+newId(), source:s, target:t, type:'connector',
+                   waypoints: wps };
+    if (c.trunk) data.trunk = 1;
+    const e = cy.add({ group:'edges', data });
+    if (wps.length) applyConnectorRoute(e);
+  });
+}
+
+/* --- status line ----------------------------------------------------- */
+let flashTimer = null;
+function flash(msg) {
+  document.getElementById('status').textContent = msg;
+}
+
+/* --- render handler -------------------------------------------------- */
+let loadedOnce = false;
+Streamlit.onRender((args) => {
+  if (!loadedOnce && args && args.initial &&
+      ((args.initial.stocks || []).length ||
+       (args.initial.auxiliaries || []).length)) {
+    loadDiagram(args.initial);
+  }
+  loadedOnce = true;
+  // Python pushes the set of confirmed-equation labels on every rerun;
+  // refresh badges so they reflect the latest state.
+  if (args && Array.isArray(args.confirmed)) {
+    confirmedLabels = new Set(args.confirmed);
+    refreshBadges();
+  }
+  Streamlit.setFrameHeight();
+});
+
+// Announce readiness immediately, then keep re-announcing every 100ms
+// until Streamlit responds with its first `render`. This defeats the race
+// where our single announcement fires before the parent's listener is
+// attached (the most common cause of a silent, dead component).
+Streamlit.setComponentReady();
+Streamlit._readyTimer = setInterval(() => {
+  if (Streamlit._ready) { clearInterval(Streamlit._readyTimer); return; }
+  Streamlit.setComponentReady();
+}, 100);
+Streamlit.setFrameHeight(520);
+window.addEventListener('resize', () => Streamlit.setFrameHeight());
+</script>
+</body>
+</html>

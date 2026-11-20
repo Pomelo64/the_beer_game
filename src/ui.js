@@ -10,7 +10,8 @@
   const money = function (x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); };
 
   function show(id) {
-    ['intro', 'play', 'commit', 'results'].forEach(function (s) { $(s).hidden = s !== id; });
+    ['intro', 'play', 'commit', 'results', 'model'].forEach(function (s) { $(s).hidden = s !== id; });
+    window.scrollTo(0, 0);
     $('topStats').hidden = id === 'intro';
   }
   function speed() {
@@ -595,6 +596,9 @@
   $('playBtn').addEventListener('click', replay);
   $('scrub').addEventListener('input', function () { clearInterval(timer); $('playBtn').textContent = 'Play'; drawChain(parseInt($('scrub').value, 10)); });
   $('againBtn').addEventListener('click', start);
+  $('modelBtn').addEventListener('click', function () { show('model'); Model.open(G, $('why').value.trim()); });
+  $('backBtn').addEventListener('click', function () { show('results'); });
+  Model.init();
   $('homeBtn').addEventListener('click', home);
   document.querySelectorAll('input[name="mode"]').forEach(function (r) {
     r.addEventListener('change', function () {

@@ -125,6 +125,59 @@
     </div>
   </section>
 
+  <section id="model" hidden>
+    <div class="playbar">
+      <h2>Model what you played</h2>
+      <button class="btn ghost small" id="backBtn" type="button">← Back to your results</button>
+    </div>
+    <div class="panel">
+      <p id="taskText"></p>
+      <p class="note" id="keyNote">Prototype: the answer key is a provisional draft, to be replaced by the course's own.</p>
+      <p class="note" id="noKey" hidden>The answer key for this game has not been written yet. You can draw and record your model, but it cannot be marked.</p>
+      <details class="howto">
+        <summary>How to draw</summary>
+        <p>Pick a tool in the toolbar, then click the canvas to place a stock, auxiliary or cloud. For a flow or a link, click where it starts, then where it ends. To feed a flow with information, end the link on the flow's valve (the diamond). Double-click to rename, right-click to delete.</p>
+      </details>
+    </div>
+    <iframe id="canvasFrame" title="Stock-and-flow drawing canvas" class="canvas-frame"></iframe>
+    <div class="why" id="whyRow">
+      <label for="whyIn" id="whyQ">Your last move: why? <span class="muted">(optional)</span></label>
+      <div class="why-in"><input id="whyIn" type="text" placeholder="A sentence is enough"><button class="btn ghost small" id="whySave" type="button">Save</button></div>
+    </div>
+
+    <div class="desk">
+      <div class="panel">
+        <h3>Check your diagram</h3>
+        <details class="aibox" id="aiBox">
+          <summary>AI settings <span class="muted">(<span id="aiSum">no key</span>)</span></summary>
+          <label>Provider <select id="aiProv"></select></label>
+          <label>API key <input id="aiKey" type="password" autocomplete="off" spellcheck="false"></label>
+          <label>Model <input id="aiModel" type="text" spellcheck="false"></label>
+          <button class="btn ghost small" id="aiTest" type="button">Test the connection</button>
+          <p class="ai-state" id="aiState" role="status"></p>
+          <p class="note">The key stays in this page's memory and is sent only to the provider you choose. Nothing is stored: it is gone when you close or reload the page.</p>
+        </details>
+        <div class="order-row"><button class="btn" id="markBtn" type="button">Check my diagram</button></div>
+        <div id="markOut" aria-live="polite"></div>
+      </div>
+      <div class="panel" id="askPanel" hidden>
+        <h3>Ask about your diagram</h3>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="ask-in"><textarea id="askIn" rows="2" placeholder="For example: why does the supply line matter?"></textarea><button class="btn" id="askBtn" type="button">Ask</button></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Your modelling process</h3>
+      <p id="recState" class="note"></p>
+      <p class="note">Every change to your diagram, every exchange with the AI and every reason you give is recorded, with your game. The file opens in SFD Studio, which replays it step by step.</p>
+      <div class="rec-row"><label><span>Your name <span class="muted">(optional)</span></span> <input id="recName" type="text" autocomplete="name"></label>
+        <button class="btn" id="recBtn" type="button">Download my modelling process</button>
+        <button class="btn ghost small" id="jsonBtn" type="button">Download the diagram (JSON)</button></div>
+      <p class="note">The record lives only in this page until you download it. Download it before you close or reload the page. The canvas's SVG button downloads a picture of the diagram.</p>
+    </div>
+  </section>
+
   <!-- speech bubbles -->
   <div id="spot" hidden></div>
   <div id="bubble" role="dialog" aria-labelledby="bubbleHead" hidden>
@@ -191,8 +244,8 @@
     <div class="panel">
       <h2>What you wrote before seeing this</h2>
       <p class="quote" id="said"></p>
-      <p>The next step is to build a diagram that explains these charts. That step is not in this prototype.</p>
-      <div class="order-row"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
+      <p>Next, explain what you saw: draw a stock-and-flow diagram of your pub, and have it checked.</p>
+      <div class="order-row"><button class="btn" id="modelBtn" type="button">Draw the model</button><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
     </div>
   </section>
 </div>

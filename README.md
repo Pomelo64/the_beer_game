@@ -28,6 +28,17 @@ The opening screen offers two games. The supply game is the default.
 - A customer you cannot serve leaves. Word gets around: the crowd shrinks with each customer turned away, and grows after a week in which everyone was served. Lost regulars come back quickly, one a week. New customers are won more slowly.
 - The score is the number of customers served. There is no money in this game.
 
+## After the game: modelling it
+
+After the results, **Draw the model** opens the modelling step. The learner draws a stock-and-flow diagram of the pub, has it marked by an AI against an answer key, and can ask the AI questions about it.
+
+- **The canvas** is SFD Studio's drawing canvas (`src/sfd/canvas.html`), copied unchanged. The build hides only its Edit mode, since this exercise has no equations. It runs in a frame and talks to the page through the same messages it uses with Streamlit.
+- **The answer key** is in `src/sfd/key.js`, one per game. The current key is a provisional draft and should be replaced. The word-of-mouth game has no key yet, so its diagrams can be drawn and recorded but not marked.
+- **The AI** is called straight from the browser with a key the learner pastes under *AI settings* (Anthropic, OpenAI or Google, as in SFD Studio). The key is kept only in the page's memory. The marking and the answers are grounded in the key, the learner's diagram and the learner's own game.
+- **The record**: every change to the diagram, every exchange with the AI and every reason the learner gives is recorded, together with the game, in SFD Studio's modelling-process format (`bluejay-modelling-process`, version 1, SHA-256 chain). The downloaded file opens, verifies and replays in SFD Studio. The game is stored as an extra event of kind `game`, which SFD Studio passes over in its replay.
+
+The recording code (`src/sfd/process_log.js`) and the AI client (`src/sfd/llm_client.js`) are ports of SFD Studio's `process_log.py` and `llm_client.py`.
+
 ## Where the rules come from
 
 The supply chain is that of the Beer Game as described in Sterman (1989), and the three computer-played positions use the ordering rule estimated in that paper.
