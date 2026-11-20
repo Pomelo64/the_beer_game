@@ -239,7 +239,7 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .costsum{margin-top:8px;padding:8px 10px;border-radius:8px;background:var(--sunk);font-size:.85rem;line-height:1.5;font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;gap:0 6px}
 .costsum:empty{display:none}
 .costsum span{white-space:nowrap}
-.costsum .sofar{flex-basis:100%;color:var(--muted)}
+.costsum .sofar{flex-basis:100%;color:var(--muted);white-space:normal}
 .rates{margin-top:8px;color:var(--muted);font-size:.8rem;line-height:1.45}
 
 /* cellar limit */
@@ -258,3 +258,24 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .pick small{display:block;color:var(--muted);font-size:.85rem;line-height:1.4}
 @media (max-width:560px){.pick{grid-template-columns:1fr}}
 .order-row .btn + .btn{margin-left:8px}
+
+/* the play screen: one view */
+.playbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 8px;flex-wrap:wrap}
+.playbar h2{font-size:1.1rem}
+.btn.small{padding:6px 12px;font-size:.88rem}
+
+/* speech bubbles */
+#spot{position:fixed;z-index:40;pointer-events:none;border-radius:12px;outline:3px solid var(--accent);
+  box-shadow:0 0 0 9999px rgba(8,16,12,.42);transition:left .2s,top .2s,width .2s,height .2s}
+#bubble{position:fixed;z-index:41;box-sizing:border-box;width:min(340px,calc(100vw - 32px));background:var(--surface);color:var(--fg);
+  border:2px solid var(--accent);border-radius:14px;padding:14px 16px 12px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+#bubble h4{margin:0 24px 4px 0;font-family:var(--font-head);font-size:1rem}
+#bubble p{margin:0 0 10px;font-size:.92rem;line-height:1.45}
+.bubble-foot{display:flex;align-items:center;gap:8px}
+.bubble-foot #bubbleN{margin-right:auto;color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.bubble-x{position:absolute;top:6px;right:8px;border:0;background:transparent;color:var(--muted);font-size:1.3rem;line-height:1;cursor:pointer;padding:4px}
+#bubble .tail{position:absolute;width:16px;height:16px;background:var(--surface);transform:translateX(-50%) rotate(45deg)}
+#bubble.bubble-below .tail{top:-10px;border-left:2px solid var(--accent);border-top:2px solid var(--accent)}
+#bubble.bubble-above .tail{bottom:-10px;border-right:2px solid var(--accent);border-bottom:2px solid var(--accent)}
+#bubble.bubble-over .tail{display:none}
+@media (prefers-reduced-motion:reduce){#spot{transition:none}}

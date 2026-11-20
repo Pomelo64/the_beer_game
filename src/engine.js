@@ -16,9 +16,10 @@
 
    'wom' (word of mouth) adds four more changes:
    (3) the pub's customers do not wait. One who cannot be served leaves;
-   (4) the number of customers depends on how the pub served them. It grows
-       after a week in which everyone was served, and falls with each customer
-       turned away;
+   (4) the number of customers depends on how the pub served them. It falls
+       with each customer turned away. After a week in which everyone was
+       served it rises: by one customer a week while it is below its starting
+       level, and by a percentage above that;
    (5) the pub's cellar has a limit. Kegs that do not fit are sent back;
    (6) there is no money. The score is the number of customers served.
    The numbers behind (4) and (5) are design choices of this game, not
@@ -36,7 +37,8 @@ const Engine = (function () {
     // --- word-of-mouth scenario: design choices of this game ---
     cellar: 20,               // most kegs the pub's cellar can hold
     crowdStart: 4,            // customers a week at the start
-    crowdGrowth: 0.08,        // growth of the crowd after a week in which everyone was served
+    crowdGrowth: 0.08,        // growth of the crowd after a week in which everyone was served, from crowdStart up
+    crowdReturn: 1,           // below crowdStart, customers who come back after such a week
     putOff: 2,                // customers who stay away for each customer turned away
     crowdFloor: 1,            // the crowd never falls below this
     // ------------------------------------
@@ -114,7 +116,8 @@ const Engine = (function () {
     g.served += me.sent; g.turned += me.turned;
     if (wom) {   // word of mouth
       if (me.turned > 0) g.crowd = Math.max(CFG.crowdFloor, g.crowd - CFG.putOff * me.turned);
-      else g.crowd = g.crowd * (1 + CFG.crowdGrowth);
+      else if (g.crowd < CFG.crowdStart) g.crowd = Math.min(CFG.crowdStart, g.crowd + CFG.crowdReturn);   // regulars come back
+      else g.crowd = g.crowd * (1 + CFG.crowdGrowth);                                                   // new customers are won
     }
     me.served = g.served; me.turnedAll = g.turned; me.wasted = g.wasted;
 

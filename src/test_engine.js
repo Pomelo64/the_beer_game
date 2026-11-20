@@ -77,6 +77,11 @@ let r = E.beginWeek(g); assert.equal(r.pos[0].turned, 0); assert.ok(Math.abs(g.c
 g = E.newGame(0, 'wom'); g.pos[0].stock = 0; g.pos[0].inbound = [1, 0];
 r = E.beginWeek(g); assert.equal(r.pos[0].turned, 3); assert.equal(g.crowd, Math.max(C.crowdFloor, 4 - C.putOff * 3));
 
+// 6b. Recovery: below its starting level the crowd comes back one customer for each fully served week, then grows by a percentage.
+g = E.newGame(0, 'wom'); g.crowd = 1; g.pos[0].stock = 20; g.pos[0].inbound = [0, 0];
+{ const seen = []; for (let w = 1; w <= 5; w++) { const r = E.beginWeek(g); seen.push(r.demand); assert.equal(r.pos[0].turned, 0); E.endWeek(g, {0: 0}); }
+  assert.deepEqual(seen, [1, 2, 3, 4, 4]); assert.ok(Math.abs(g.crowd - 4 * (1 + C.crowdGrowth) * (1 + C.crowdGrowth)) < 1e-9); console.log('crowd coming back from 1:', seen.join(' ')); }
+
 // 7. Kegs are conserved along the chain: start + brewed = now + sold + sent back.
 g = E.newGame(0, 'wom'); let brewed = 0;
 const total = () => g.pos.reduce((s,p)=>s+p.stock+p.inbound[0]+p.inbound[1],0);

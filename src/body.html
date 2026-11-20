@@ -44,12 +44,13 @@
   </section>
 
   <section id="play" hidden>
-    <div class="tabs" role="tablist" aria-label="View">
-      <button type="button" role="tab" id="tabPub" aria-selected="true" aria-controls="lane">Your pub</button>
-      <button type="button" role="tab" id="tabChain" aria-selected="false" aria-controls="chainPlay">The chain</button>
+    <div class="playbar">
+      <h2>The supply chain</h2>
+      <button class="btn ghost small" id="tourBtn" type="button"><span aria-hidden="true">💬</span> Show me around</button>
     </div>
-    <div id="chainPlay" hidden></div>
-    <div class="lane" id="lane">
+    <div id="chainPlay"></div>
+    <!-- The earlier "Your pub" view. Hidden for good; kept because the wholesaler's message is written here. -->
+    <div class="lane" id="lane" hidden>
       <div class="zone far" id="zWho">
         <div class="zone-top"><span class="zone-name">Wholesaler</span><span aria-hidden="true">🚚</span></div>
         <div class="zone-hint">You cannot see its stock.</div>
@@ -81,14 +82,14 @@
     <div class="alert" id="alert" role="status" hidden></div>
     <div class="alert" id="alert2" role="status" hidden></div>
     <div class="desk">
-      <div class="panel">
+      <div class="panel" id="panelWeek">
         <h3>This week</h3>
         <dl class="facts" id="facts"></dl>
         <div class="past" id="lastWk" aria-live="polite"></div>
         <div class="costsum" id="sumWk"></div>
         <div class="rates" id="rates"></div>
       </div>
-      <div class="panel">
+      <div class="panel" id="panelOrder">
         <h3 id="orderHead">How many kegs do you order?</h3>
         <div class="order-row">
           <div class="stepper">
@@ -102,7 +103,7 @@
       </div>
     </div>
 
-    <div class="panel logp">
+    <div class="panel logp" id="panelLog">
       <h3>Week by week</h3>
       <div class="logwrap" tabindex="0" role="region" aria-label="Record of every week so far">
         <table class="log">
@@ -123,6 +124,20 @@
       <button class="btn ghost" id="autoBtn" type="button">Play the rest automatically (for testing)</button>
     </div>
   </section>
+
+  <!-- speech bubbles -->
+  <div id="spot" hidden></div>
+  <div id="bubble" role="dialog" aria-labelledby="bubbleHead" hidden>
+    <button type="button" class="bubble-x" id="bClose" aria-label="Close">×</button>
+    <h4 id="bubbleHead"></h4>
+    <p id="bubbleBody"></p>
+    <div class="bubble-foot">
+      <span id="bubbleN"></span>
+      <button type="button" class="btn ghost small" id="bBack">Back</button>
+      <button type="button" class="btn small" id="bNext">Next</button>
+    </div>
+    <span class="tail" aria-hidden="true"></span>
+  </div>
 
   <section id="commit" hidden>
     <div class="panel">

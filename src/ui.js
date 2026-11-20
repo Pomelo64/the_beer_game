@@ -108,16 +108,125 @@
     const wrap = $('chainPlay').querySelector('.chainwrap');
     wrap.scrollLeft = keep == null ? wrap.scrollWidth : keep;
   }
-  /* Where a flying token starts or ends, in whichever tab is open. */
+  /* Where a flying token starts or ends. */
   function at(key) {
-    if ($('chainPlay').hidden) return $({ who: 'tWho', s2: 'tS2', s1: 'tS1', cel: 'tCel', cus: 'tCus', ofrom: 'tCel', oto: 'tWho' }[key]);
     return $('chainPlay').querySelector('[data-k="' + { who: 'n1', s2: 'r2_0', s1: 'r1_0', cel: 'st0', cus: 'cserved', cin: 'cin', cserved: 'cserved', cout: 'cout', ofrom: 'un0', oto: 'un1' }[key] + '"]');
   }
-  function tab(chain) {
-    $('chainPlay').hidden = !chain; $('lane').hidden = chain;
-    if (chain) { const w = $('chainPlay').querySelector('.chainwrap'); if (w) w.scrollLeft = w.scrollWidth; }
-    $('tabPub').setAttribute('aria-selected', String(!chain)); $('tabChain').setAttribute('aria-selected', String(chain));
-    try { localStorage.setItem('pubgame.tab', chain ? 'chain' : 'pub'); } catch (e) {}
+
+  /* ---------- speech bubbles ----------
+     A tour of the screen, shown the first time someone plays and on request, and
+     single bubbles the first time something important happens in a game. */
+  const B = { steps: null, i: 0, target: null, hintQueue: [], seen: {} };
+  const inChain = function (sel) { return function () { return $('chainPlay').querySelector(sel); }; };
+  const byId = function (id) { return function () { return $(id); }; };
+  function tourSteps() {
+    const w = wom();
+    return [
+      { t: [inChain('[data-k="n0"]')], h: 'Your pub',
+        b: 'This is you. The number is how many kegs are in your cellar right now.' + (w ? ' Your cellar holds ' + CAP + ' kegs at most.' : '') },
+      { t: [inChain('[data-k="cin"]')], h: 'Customers coming in',
+        b: 'This week\'s customers. Each one wants one keg. You do not know in advance how many will come.' },
+      { t: [inChain('[data-k="cserved"]')], h: 'Leaving served',
+        b: 'Customers who got their keg. When you send your order, kegs go from your cellar to the customers.' },
+      { t: [inChain('[data-k="cout"]')], h: w ? 'Turned away' : 'Still waiting',
+        b: w ? 'Customers you could not serve. They leave without a keg and tell others, so fewer come next time.'
+             : 'Customers you could not serve. They wait, and they are served first when kegs arrive. Each keg you owe a customer costs £1 a week.' },
+      { t: [inChain('[data-k="n1"]')], h: 'Your wholesaler',
+        b: 'Your supplier. You cannot see its stock. It tells you here what it will send. If it runs short, this box turns red and the rest of your order goes on back order.' },
+      { t: [inChain('[data-k="r2_0"]'), inChain('[data-k="r1_0"]'), inChain('[data-k="arr"]')], h: 'Kegs on the road',
+        b: 'Kegs the wholesaler has already sent you. Each week they move one step to the right. The batch nearest your pub arrives next week, the other the week after.' },
+      { t: [inChain('[data-k="un0"]'), inChain('[data-k="un1"]')], h: 'Orders',
+        b: 'Your orders go along this row. An order reaches the wholesaler at once, but the kegs take three weeks to reach you.' },
+      { t: [inChain('[data-k="n2"]'), inChain('[data-k="n3"]')], h: 'Further up the chain',
+        b: 'The wholesaler orders from a distributor, who orders from a brewery. The computer plays both. You cannot see them while you play, but you will see the whole chain at the end.' },
+      { t: [byId('panelWeek')], h: 'This week',
+        b: 'The numbers for your decision: how many customers want a keg, what is in your cellar, and what is already on its way to you.' },
+      { t: [byId('panelOrder')], h: 'Your decision',
+        b: 'Your only decision each week: how many kegs to order. Type a number or use − and +, then press Send order.' },
+      { t: [byId('panelLog')], h: 'Week by week',
+        b: 'A record of every week so far. Numbers in red mark trouble: customers ' + (w ? 'turned away, kegs sent back,' : 'left waiting,') + ' or kegs the wholesaler could not send.' },
+      { t: [byId('topStats')], h: 'Your score',
+        b: w ? 'Customers served so far. Serve as many as you can.' : 'Your cost so far. Keep it as low as you can.' }
+    ];
+  }
+  function rectOf(fns) {
+    let L = Infinity, T = Infinity, R = -Infinity, Bm = -Infinity;
+    fns.forEach(function (f) {
+      const e = f(); if (!e) return;
+      const r = e.getBoundingClientRect(); if (!r.width && !r.height) return;
+      L = Math.min(L, r.left); T = Math.min(T, r.top); R = Math.max(R, r.right); Bm = Math.max(Bm, r.bottom);
+    });
+    return L === Infinity ? null : { left: L, top: T, right: R, bottom: Bm, width: R - L, height: Bm - T };
+  }
+  function placeBubble() {
+    if ($('bubble').hidden || !B.target) return;
+    const r = rectOf(B.target), bu = $('bubble'), sp = $('spot');
+    if (!r) { sp.hidden = true; return; }
+    const pad = 6, gap = 14, m = 16;
+    sp.hidden = false;
+    sp.style.left = (r.left - pad) + 'px'; sp.style.top = (r.top - pad) + 'px';
+    sp.style.width = (r.width + 2 * pad) + 'px'; sp.style.height = (r.height + 2 * pad) + 'px';
+    const w = bu.offsetWidth, h = bu.offsetHeight, cx = r.left + r.width / 2;
+    let top, side;
+    if (r.bottom + pad + gap + h <= innerHeight - m) { top = r.bottom + pad + gap; side = 'below'; }
+    else if (r.top - pad - gap - h >= m) { top = r.top - pad - gap - h; side = 'above'; }
+    else { top = innerHeight - h - m; side = 'over'; }
+    const left = Math.max(m, Math.min(innerWidth - m - w, cx - w / 2));
+    bu.style.left = left + 'px'; bu.style.top = top + 'px';
+    bu.className = 'bubble-' + side;
+    bu.querySelector('.tail').style.left = Math.max(18, Math.min(w - 18, cx - left)) + 'px';
+  }
+  function openBubble(target, head, body, n, last) {
+    B.target = target;
+    $('bubbleHead').textContent = head; $('bubbleBody').textContent = body;
+    $('bubbleN').textContent = n || '';
+    $('bBack').hidden = !B.steps || B.i === 0;
+    $('bNext').textContent = last ? (B.steps ? 'Start playing' : 'Got it') : 'Next';
+    $('bubble').hidden = false;
+    const first = rectOf(target) && target.map(function (f) { return f(); }).filter(Boolean)[0];
+    if (first) first.scrollIntoView({ block: 'center', inline: 'nearest' });
+    placeBubble();
+    requestAnimationFrame(placeBubble);
+    $('bNext').focus({ preventScroll: true });
+  }
+  function closeBubble() {
+    $('bubble').hidden = true; $('spot').hidden = true; B.target = null;
+    if (B.steps) { B.steps = null; try { localStorage.setItem('pubgame.toured', '1'); } catch (e) {} }
+  }
+  function tourAt(i) {
+    B.i = i; const st = B.steps[i];
+    openBubble(st.t, st.h, st.b, (i + 1) + ' of ' + B.steps.length, i === B.steps.length - 1);
+  }
+  function tour() { B.hintQueue = []; B.steps = tourSteps(); tourAt(0); }
+  function next() {
+    if (B.steps) { if (B.i < B.steps.length - 1) tourAt(B.i + 1); else { closeBubble(); $('order').focus(); } return; }
+    closeBubble(); nextHint();
+  }
+  /* A bubble the first time something happens in a game. */
+  function hint(key, target, head, body) {
+    if (B.seen[key]) return; B.seen[key] = true;
+    B.hintQueue.push([target, head, body]);
+  }
+  function nextHint() {
+    if (B.steps || !$('bubble').hidden || !B.hintQueue.length) return;
+    const h = B.hintQueue.shift(); openBubble(h[0], h[1], h[2], '', true);
+  }
+  /* At each pause: anything new worth a word? */
+  function checkHints(rec) {
+    const me = rec.pos[G.seat], prev = G.log.length > 1 ? G.log[G.log.length - 2].pos[G.seat] : null;
+    if (ANS && ANS.owed > 0)
+      hint('short', [inChain('[data-k="n1"]')], 'The wholesaler has run short',
+        'It sent ' + ANS.sent + ' kegs this week. The rest of what you ordered is on back order: it will be sent when the wholesaler has kegs again, on top of anything you order from now on.');
+    if (!wom() && V.red > 0)
+      hint('waiting', [inChain('[data-k="cout"]')], 'Customers are waiting',
+        'You could not serve everyone. These customers wait for their kegs, and each one costs £1 a week until you serve them.');
+    if (wom() && prev && prev.turned > 0)
+      hint('turned', [byId('topStats')], 'Customers were turned away',
+        'Last week ' + prev.turned + (prev.turned === 1 ? ' customer' : ' customers') + ' left without a keg. They tell others, so fewer customers come in for a while.');
+    if (wom() && me.back > 0)
+      hint('back', [inChain('[data-k="n0"]')], 'Your cellar was full',
+        me.back + (me.back === 1 ? ' keg' : ' kegs') + ' of this week\'s delivery did not fit, and went back to the wholesaler. They are lost.');
+    nextHint();
   }
 
   /* ---------- the lane ---------- */
@@ -300,9 +409,12 @@
     const rec = Engine.beginWeek(G);
     syncView(rec, false); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec);
     $('order').value = CFG.startFlow; $('why').value = '';
+    closeBubble(); B.seen = {}; B.hintQueue = [];
     show('play'); lock(false);
+    let toured = false; try { toured = localStorage.getItem('pubgame.toured') === '1'; } catch (e) {}
+    if (!toured) requestAnimationFrame(tour);
   }
-  function home() { clearInterval(timer); G = null; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
+  function home() { clearInterval(timer); closeBubble(); G = null; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
   /* This week's customers get their kegs from the cellar. Where customers wait (plain), the
      longest wait comes first: kegs go to those already waiting, then to this week's customers.
      Where they do not (wom), nobody is waiting, and those left without a keg are turned away. */
@@ -331,6 +443,7 @@
     let o = parseInt($('order').value, 10);
     if (isNaN(o) || o < 0) o = 0; if (o > 99) o = 99;
     $('order').value = o;
+    closeBubble(); B.hintQueue = [];
     lock(true);
     const sp = speed(), step = 520 * sp;
     // 1. this week's customers are served
@@ -364,16 +477,18 @@
     drawFacts(rec);
     if (Engine.finished(G)) {   // the last week: no order left to place
       await wait(step); await serve(rec, step); await wait(step);
-      show('commit'); $('why').focus(); return;
+      closeBubble(); show('commit'); $('why').focus(); return;
     }
     lock(false);
     $('order').focus(); $('order').select();
+    checkHints(rec);
   }
 
   function autoplay() {
     if (busy) return;
     let rec = null;
     while (!Engine.finished(G)) { Engine.endWeek(G, {}); rec = Engine.beginWeek(G); }
+    closeBubble();
     if (rec) { syncView(rec, true); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec); drawLast(rec); }
     show('commit');
   }
@@ -486,9 +601,18 @@
       MODE = r.value; $('rulesPlain').hidden = MODE === 'wom'; $('rulesWom').hidden = MODE !== 'wom';
     });
   });
-  $('tabPub').addEventListener('click', function () { tab(false); });
-  $('tabChain').addEventListener('click', function () { tab(true); });
-  try { if (localStorage.getItem('pubgame.tab') === 'chain') tab(true); } catch (e) {}
+  $('tourBtn').addEventListener('click', tour);
+  $('bNext').addEventListener('click', next);
+  $('bBack').addEventListener('click', function () { if (B.steps && B.i > 0) tourAt(B.i - 1); });
+  $('bClose').addEventListener('click', function () { closeBubble(); B.hintQueue = []; });
+  document.addEventListener('keydown', function (e) {
+    if ($('bubble').hidden) return;
+    if (e.key === 'Escape') { closeBubble(); B.hintQueue = []; }
+    else if (B.steps && e.key === 'ArrowRight' && document.activeElement !== $('order')) next();
+    else if (B.steps && e.key === 'ArrowLeft' && B.i > 0 && document.activeElement !== $('order')) tourAt(B.i - 1);
+  });
+  addEventListener('resize', placeBubble);
+  addEventListener('scroll', placeBubble, { passive: true });
   try { const s = localStorage.getItem('pubgame.speed'); if (s != null) $('speed').value = s; } catch (e) {}
   $('speed').addEventListener('change', function () { try { localStorage.setItem('pubgame.speed', $('speed').value); } catch (e) {} });
 })();
