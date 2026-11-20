@@ -9,10 +9,26 @@
   const wom = function () { return G ? G.mode === 'wom' : MODE === 'wom'; };
   const money = function (x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); };
 
-  function show(id) {
-    ['intro', 'play', 'commit', 'results', 'model'].forEach(function (s) { $(s).hidden = s !== id; });
-    window.scrollTo(0, 0);
-    $('topStats').hidden = id === 'intro';
+  /* Two tabs once a game has started: the game (whichever of its screens is current)
+     and the learner's model, open from week 1 to the end. */
+  let SCREEN = 'intro', TAB = 'game';
+  function show(id) { SCREEN = id; render(); window.scrollTo(0, 0); }
+  function render() {
+    const inGame = SCREEN !== 'intro', cur = inGame && TAB === 'model' ? 'model' : SCREEN;
+    ['intro', 'play', 'commit', 'results', 'model'].forEach(function (s) { $(s).hidden = s !== cur; });
+    $('tabs').hidden = !inGame;
+    $('tabGame').setAttribute('aria-selected', String(cur !== 'model'));
+    $('tabModel').setAttribute('aria-selected', String(cur === 'model'));
+    $('topStats').hidden = !inGame;
+  }
+  /* On a narrow screen the chain scrolls sideways: show the pub's end. */
+  function pubEnd() { const w = $('chainPlay').querySelector('.chainwrap'); if (w) w.scrollLeft = w.scrollWidth; }
+  function tab(t) {
+    if (TAB === t) return;
+    TAB = t;
+    if (t === 'model') { closeBubble(); Model.show(); }
+    render(); window.scrollTo(0, 0);
+    if (t === 'game') { if (SCREEN === 'play') pubEnd(); if (SCREEN === 'play' && !busy) $('order').focus({ preventScroll: true }); nextHint(); }
   }
   function speed() {
     const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -146,6 +162,8 @@
         b: 'Your only decision each week: how many kegs to order. Type a number or use − and +, then press Send order.' },
       { t: [byId('panelLog')], h: 'Week by week',
         b: 'A record of every week so far. Numbers in red mark trouble: customers ' + (w ? 'turned away, kegs sent back,' : 'left waiting,') + ' or kegs the wholesaler could not send.' },
+      { t: [byId('tabModel')], h: 'Your model',
+        b: 'Draw your stock-and-flow diagram of the game here, and have it checked. The tab is open the whole time: draw while you play, after it, or both, and switch back and forth as you like.' },
       { t: [byId('topStats')], h: 'Your score',
         b: w ? 'Customers served so far. Serve as many as you can.' : 'Your cost so far. Keep it as low as you can.' }
     ];
@@ -209,7 +227,7 @@
     B.hintQueue.push([target, head, body]);
   }
   function nextHint() {
-    if (B.steps || !$('bubble').hidden || !B.hintQueue.length) return;
+    if (B.steps || !$('bubble').hidden || !B.hintQueue.length || $('play').hidden) return;
     const h = B.hintQueue.shift(); openBubble(h[0], h[1], h[2], '', true);
   }
   /* At each pause: anything new worth a word? */
@@ -291,7 +309,7 @@
     drawChainPlay(); drawTable();
   }
   function fly(sym, from, to, n, ms, label) {
-    if (!ms || n <= 0) return Promise.resolve();
+    if (!ms || n <= 0 || $('play').hidden) return Promise.resolve();   // nothing to watch while the model tab is open
     if (!$('chainPlay').hidden) {
       const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), s = document.createElement('span');
       s.className = 'flyer badge'; s.innerHTML = label || kegs(n);
@@ -408,14 +426,15 @@
     G = Engine.newGame(0, MODE);
     setMode();
     const rec = Engine.beginWeek(G);
+    Model.startGame(G); TAB = 'game';
     syncView(rec, false); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec);
     $('order').value = CFG.startFlow; $('why').value = '';
     closeBubble(); B.seen = {}; B.hintQueue = [];
-    show('play'); lock(false);
+    show('play'); pubEnd(); lock(false);
     let toured = false; try { toured = localStorage.getItem('pubgame.toured') === '1'; } catch (e) {}
     if (!toured) requestAnimationFrame(tour);
   }
-  function home() { clearInterval(timer); closeBubble(); G = null; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
+  function home() { clearInterval(timer); closeBubble(); G = null; TAB = 'game'; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
   /* This week's customers get their kegs from the cellar. Where customers wait (plain), the
      longest wait comes first: kegs go to those already waiting, then to this week's customers.
      Where they do not (wom), nobody is waiting, and those left without a keg are turned away. */
@@ -456,6 +475,7 @@
     Engine.endWeek(G, orders);
     const before = { s1: V.s1, s2: V.s2 };
     const rec = Engine.beginWeek(G), me = rec.pos[G.seat], p = G.pos[G.seat];
+    Model.weeksUpTo(G, G.log.length - 2);   // last week is complete: served, ordered, answered
     $('wk').textContent = rec.week;
     reply(rec);
     V.back = 0; wasteAlert(0); drawLane();
@@ -489,6 +509,7 @@
     if (busy) return;
     let rec = null;
     while (!Engine.finished(G)) { Engine.endWeek(G, {}); rec = Engine.beginWeek(G); }
+    Model.weeksUpTo(G, G.log.length - 2);
     closeBubble();
     if (rec) { syncView(rec, true); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec); drawLast(rec); }
     show('commit');
@@ -592,12 +613,13 @@
   $('less').addEventListener('click', function () { $('order').value = Math.max(0, (parseInt($('order').value, 10) || 0) - 1); });
   $('more').addEventListener('click', function () { $('order').value = Math.min(99, (parseInt($('order').value, 10) || 0) + 1); });
   $('autoBtn').addEventListener('click', autoplay);
-  $('seeBtn').addEventListener('click', results);
+  $('seeBtn').addEventListener('click', function () { Model.gameEnd(G, $('why').value.trim()); results(); });
   $('playBtn').addEventListener('click', replay);
   $('scrub').addEventListener('input', function () { clearInterval(timer); $('playBtn').textContent = 'Play'; drawChain(parseInt($('scrub').value, 10)); });
   $('againBtn').addEventListener('click', start);
-  $('modelBtn').addEventListener('click', function () { show('model'); Model.open(G, $('why').value.trim()); });
-  $('backBtn').addEventListener('click', function () { show('results'); });
+  $('modelBtn').addEventListener('click', function () { tab('model'); });
+  $('tabGame').addEventListener('click', function () { tab('game'); });
+  $('tabModel').addEventListener('click', function () { tab('model'); });
   Model.init();
   $('homeBtn').addEventListener('click', home);
   document.querySelectorAll('input[name="mode"]').forEach(function (r) {

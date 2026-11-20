@@ -12,6 +12,10 @@
       <span class="st-wom" hidden>Kegs sent back <b id="totW">0</b></span>
     </div>
   </header>
+  <div class="tabs" id="tabs" role="tablist" aria-label="View" hidden>
+    <button type="button" role="tab" id="tabGame" aria-selected="true">The game</button>
+    <button type="button" role="tab" id="tabModel" aria-selected="false">Your model</button>
+  </div>
 
   <section id="intro">
     <div class="panel brief">
@@ -127,8 +131,8 @@
 
   <section id="model" hidden>
     <div class="playbar">
-      <h2>Model what you played</h2>
-      <button class="btn ghost small" id="backBtn" type="button">← Back to your results</button>
+      <h2>Your model</h2>
+      <span class="note" id="modelWhen"></span>
     </div>
     <div class="panel">
       <p id="taskText"></p>
@@ -244,8 +248,8 @@
     <div class="panel">
       <h2>What you wrote before seeing this</h2>
       <p class="quote" id="said"></p>
-      <p>Next, explain what you saw: draw a stock-and-flow diagram of your pub, and have it checked.</p>
-      <div class="order-row"><button class="btn" id="modelBtn" type="button">Draw the model</button><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
+      <p>Now explain what you saw: draw or finish your stock-and-flow diagram in the <b>Your model</b> tab, and have it checked.</p>
+      <div class="order-row"><button class="btn" id="modelBtn" type="button">Go to your model</button><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
     </div>
   </section>
 </div>

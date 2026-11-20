@@ -10,8 +10,9 @@ const Model = (function () {
   const $ = function (id) { return document.getElementById(id); };
   const PL = ProcessLog;
   const S = {
-    game: null, mode: 'plain', key: null,    // the finished game this model explains
-    rec: null,                                // the process record
+    game: null, mode: 'plain', key: null,    // the game being played, or last played
+    n: 0, done: -1, finished: false, said: '', // its number in the session, the last week recorded, whether it has ended
+    rec: null, loaded: false,                 // the process record (one for the session) and whether the canvas is loaded
     diagram: null,                            // the latest diagram from the canvas
     cfg: null, conn: null,                    // AI settings (kept in memory only) and the last test result
     marking: null, chat: [],                  // the last marking and the conversation since
@@ -91,21 +92,28 @@ const Model = (function () {
       k.items.map(function (it) { return it.id + ' [' + it.kind + ', ' + it.level + '] ' + it.what + (it.names ? ' (names a learner might use: ' + it.names.join(', ') + ')' : ''); }).join('\n') +
       '\n\nACCEPTED VARIANTS:\n' + k.variants.map(function (v) { return '- ' + v; }).join('\n');
   }
+  /* Only what the learner has seen: completed weeks, and while the game runs nothing
+     from the distributor or brewery, which are hidden from the player. */
   function gameText() {
     const g = S.game, w = S.mode === 'wom';
-    const rows = g.log.map(function (r, k) {
+    if (!g) return 'THE LEARNER\'S GAME: not started yet.';
+    const upto = S.finished ? g.log.length - 1 : S.done;
+    const rows = g.log.slice(0, upto + 1).map(function (r, k) {
       const me = r.pos[0], nxt = g.log[k + 1], sup = nxt ? nxt.pos[1] : null;
       return [r.week, me.asked, me.arrived, me.sent, w ? me.turned : me.owed, me.stock, me.order == null ? '' : me.order,
         sup ? sup.sent : '', sup ? sup.owed : ''].join(',');
     });
-    return 'THE LEARNER\'S GAME (' + (w ? 'word of mouth' : 'the supply game') + ', the learner ran the pub), one line a week:\n' +
-      'week,customers,delivered to the pub,served,' + (w ? 'turned away' : 'left waiting') + ',cellar at end,pub ordered,wholesaler sent in answer,on back order with the wholesaler\n' +
-      rows.join('\n') + '\nLargest order placed by the brewery: ' + Math.max.apply(null, g.log.map(function (r) { return r.pos[3].order || 0; })) +
-      '.\nWhat the learner wrote before seeing the results: ' + (S.said || '(nothing)');
+    return 'THE LEARNER\'S GAME (' + (w ? 'word of mouth' : 'the supply game') + ', the learner runs the pub). ' +
+      (S.finished ? 'The game is over: ' + g.log.length + ' weeks played.'
+        : 'The game is still being played: ' + (upto + 1) + ' week' + (upto === 0 ? '' : 's') + ' completed so far. The learner has not yet seen how the game ends, nor anything from the distributor or the brewery, which are hidden while they play. Do not guess at what comes next.') +
+      '\nOne line a week:\nweek,customers,delivered to the pub,served,' + (w ? 'turned away' : 'left waiting') + ',cellar at end,pub ordered,wholesaler sent in answer,on back order with the wholesaler\n' +
+      (rows.length ? rows.join('\n') : '(no week completed yet)') +
+      (S.finished ? '\nLargest order placed by the brewery: ' + Math.max.apply(null, g.log.map(function (r) { return r.pos[3].order || 0; })) +
+        '.\nWhat the learner wrote at the end, before seeing the results: ' + (S.said || '(nothing)') : '');
   }
 
   const MARK_SYSTEM = [
-    'You are a teaching assistant in a system dynamics course. A learner played a supply-chain game and then drew a stock-and-flow diagram (SFD) to explain it.',
+    'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, and draws a stock-and-flow diagram (SFD) to explain it.',
     'You mark the diagram against an ANSWER KEY written by the educator. The key is the standard. Do not add requirements of your own, and do not mark down anything the key or its accepted variants allow.',
     '',
     'How to read the diagram: it lists stocks, flows (with what each flows from and to; "cloud" is a source or sink), auxiliaries, and information links. A link into a flow\'s name goes into that flow\'s valve.',
@@ -120,8 +128,8 @@ const Model = (function () {
     '{"overall": "<2-3 sentences>", "verdicts": [{"item": "<key item id>", "verdict": "present|partly|wrong|missing", "learner_element": "<the learner\'s element, or empty>", "reason": "<one or two sentences>"}], "extras": [{"element": "<name>", "comment": "<one sentence>"}], "suggestion": "<the single most useful next step>"}'
   ].join('\n');
   const ASK_SYSTEM = [
-    'You are a teaching assistant in a system dynamics course. A learner played a supply-chain game, drew a stock-and-flow diagram to explain it, and had it marked against the educator\'s answer key. Now they ask you questions.',
-    'Ground every answer in the answer key, the learner\'s current diagram and the learner\'s own game record. Cite weeks of their game where that helps: their own numbers are the best evidence they have.',
+    'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, draws a stock-and-flow diagram to explain it, and has had it marked against the educator\'s answer key. Now they ask you questions.',
+    'Ground every answer in the answer key, the learner\'s current diagram and the learner\'s own game record. Cite weeks of their game where that helps: their own numbers are the best evidence they have. If the game is still being played, use only the weeks given, and never tell them what the game will do next.',
     'Explain the errors the marking found and why they matter. Prefer a hint first; if the learner asks for the answer directly, you may give it.',
     'If a question is not settled by the key, say so plainly, and answer briefly from general system dynamics knowledge, marked as such.',
     'Keep answers short: at most about 150 words, plain English, no markdown headings.'
@@ -253,24 +261,43 @@ const Model = (function () {
     drawRecord();
   }
 
-  /* ---------- opening the step for a finished game ---------- */
-  function open(game, said) {
-    const fresh = S.game !== game;
-    S.game = game; S.mode = game.mode; S.key = KEYS[game.mode] || null; S.said = said || '';
-    if (fresh) {
-      S.rec = PL.newRecord('Pub Supply Game'); S.marking = null; S.chat = []; S.named = null;
-      PL.addEvent(S.rec, { kind: 'game', mode: game.mode, weeks: game.log.map(function (r, k) {
-        const me = r.pos[0], nxt = game.log[k + 1], sup = nxt ? nxt.pos[1] : null;
-        return { week: r.week, customers: me.asked, delivered: me.arrived, served: me.sent, waiting: me.owed, turned_away: me.turned, sent_back: me.back,
-          cellar: me.stock, ordered: me.order, wholesaler_sent: sup ? sup.sent : null, back_order: sup ? sup.owed : null };
-      }), said: S.said });
-      loadCanvas(); drawMarking(); drawChat(); $('askPanel').hidden = true; $('markOut').innerHTML = '';
-      askWhy(0, null); $('whyQ').innerHTML = 'Your last move: why? <span class="muted">(optional)</span>';
+  /* ---------- the game, as it is played ----------
+     One record for the session: each game and each week played are recorded as
+     they happen, between the modelling steps, so a reader can see when the
+     learner drew what. The diagram carries over from one game to the next. */
+  function startGame(game) {
+    if (!S.rec) S.rec = PL.newRecord('Pub Supply Game');
+    S.game = game; S.mode = game.mode; S.key = KEYS[game.mode] || null;
+    S.n += 1; S.done = -1; S.finished = false; S.said = '';
+    PL.addEvent(S.rec, { kind: 'game', game: S.n, mode: game.mode });
+    drawRecord();
+  }
+  function weeksUpTo(game, upto) {
+    if (game !== S.game) return;
+    for (let k = S.done + 1; k <= upto; k++) {
+      const r = game.log[k], me = r.pos[0], nxt = game.log[k + 1], sup = nxt ? nxt.pos[1] : null;
+      PL.addEvent(S.rec, { kind: 'week', game: S.n, week: r.week, customers: me.asked, delivered: me.arrived, served: me.sent,
+        waiting: me.owed, turned_away: me.turned, sent_back: me.back, cellar: me.stock, ordered: me.order,
+        wholesaler_sent: sup ? sup.sent : null, back_order: sup ? sup.owed : null });
+      S.done = k;
     }
-    $('taskText').textContent = S.key ? S.key.task : 'Draw a stock-and-flow diagram of your pub that explains what happened in your game. Name things in your own words. No equations are needed.';
+    drawRecord();
+  }
+  function gameEnd(game, said) {
+    if (game !== S.game || S.finished) return;
+    weeksUpTo(game, game.log.length - 1);
+    S.finished = true; S.said = said || '';
+    PL.addEvent(S.rec, { kind: 'game_end', game: S.n, said: S.said });
+    drawRecord();
+  }
+  /* The tab is opened. */
+  function show() {
+    if (!S.loaded) { S.loaded = true; loadCanvas(); askWhy(0, null); $('whyQ').innerHTML = 'Your last move: why? <span class="muted">(optional)</span>'; }
+    $('taskText').textContent = S.key ? S.key.task : 'Draw a stock-and-flow diagram of your pub that explains what happens in your game. Name things in your own words. No equations are needed.';
     $('keyNote').hidden = !(S.key && S.key.status === 'provisional');
     $('noKey').hidden = !!S.key;
-    $('markBtn').disabled = !S.key;
+    $('markBtn').disabled = !S.key || S.busy;
+    $('modelWhen').textContent = !S.game ? '' : S.finished ? 'Game ' + S.n + ' is over.' : 'Game ' + S.n + ' is on: week ' + (S.done + 2) + '.';
     drawSettings(); drawRecord();
   }
 
@@ -292,5 +319,5 @@ const Model = (function () {
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
     drawSettings();
   }
-  return { init: init, open: open, _state: S, _diagramText: diagramText, _keyText: keyText, MARK_SYSTEM: MARK_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, MARK_SYSTEM: MARK_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
 })();
