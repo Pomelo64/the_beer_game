@@ -11,7 +11,7 @@ def canvas_js():
 fonts = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;600&display=swap">'
 page = ('<meta name="claude:viewport-fit-sides" content="cover">\n<title>Pub Supply Game</title>\n' + fonts +
         '\n<style>\n' + rd('style.css') + '</style>\n' + rd('body.html') +
-        '<script>\n' + canvas_js() + '\n' + rd('engine.js') + '\n' + rd('sfd/key.js') + '\n' + rd('sfd/process_log.js') + '\n' +
+        '<script>\n' + canvas_js() + '\n' + rd('engine.js') + '\n' + rd('sfd/key.js') + '\n' + rd('sfd/marking.js') + '\n' + rd('sfd/picture.js') + '\n' + rd('sfd/process_log.js') + '\n' +
         rd('sfd/llm_client.js') + '\n' + rd('sfd/model_ui.js') + '\n' + rd('ui.js') + '</script>\n')
 io.open(os.path.join(here, 'pub-supply-game.html'), 'w', encoding='utf-8').write(page)
 standalone = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'

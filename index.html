@@ -338,6 +338,36 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 @media (prefers-reduced-motion:reduce){#totC.heat,#totT.heat,#totW.heat{animation:none}}
 .why-cost{flex-basis:100%;font-size:.82rem;color:var(--muted)}
 .why-cost.bad b{color:var(--owed)}
+
+/* the feedback slides */
+.slides{margin-top:12px}
+.slide{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:16px 18px 14px}
+.slides.one .slide{margin-bottom:14px}
+.sl-top{display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font-size:.8rem;margin-bottom:6px}
+.sl-dots{display:flex;gap:6px}
+.sl-dots i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);display:block}
+.sl-dots i.seen{background:var(--muted)} .sl-dots i.on{background:var(--accent);border-color:var(--accent)}
+.slide h3{font-family:var(--font-head);font-size:1.15rem;margin:0 0 8px;line-height:1.3}
+.slide p{line-height:1.55;margin:0 0 10px}
+.sl-status{display:flex;flex-wrap:wrap;gap:6px 16px;padding:8px 10px;border-radius:8px;background:var(--sunk);font-size:.88rem}
+.sl-good{color:var(--hold);font-weight:600}
+.sl-list{margin:0 0 10px;padding-left:20px;line-height:1.5}
+.sl-list li{margin:4px 0}
+.sl-pic .pic{width:100%;height:auto;display:block;border-radius:10px;margin:4px 0 10px}
+.sl-answer{padding:8px 10px;border-left:4px solid var(--hold);background:color-mix(in srgb,var(--hold) 10%,var(--surface));border-radius:0 8px 8px 0}
+.sl-nav{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}
+.sl-gap{flex:1}
+.sl-switch{margin:8px 0 0;text-align:right}
+.linkish{border:0;background:none;color:var(--accent);text-decoration:underline;cursor:pointer;font:inherit;font-size:.88rem;padding:0}
+.mark-busy{display:flex;align-items:center;gap:10px;color:var(--muted);margin:12px 0}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.mstack{display:flex;flex-direction:column;gap:16px;margin:16px 0}
+/* plain block layout here: a scaled picture inside a flex column is sized at its natural height and spills out */
+.mstack > .panel{display:block}
+.mstack > .panel > * + *{margin-top:12px}
+.mstack > *{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -493,7 +523,7 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
       <div class="why-in"><input id="whyIn" type="text" placeholder="A sentence is enough"><button class="btn ghost small" id="whySave" type="button">Save</button></div>
     </div>
 
-    <div class="desk">
+    <div class="mstack">
       <div class="panel">
         <h3>Check your diagram</h3>
         <details class="aibox" id="aiBox">
@@ -766,57 +796,580 @@ if (typeof module !== 'undefined') module.exports = Engine;
 
 /* The answer keys the AI marks against, one per game.
 
-   PROVISIONAL. This key was drafted by Claude from the structure of the game
-   and the ordering rule in Sterman (1989). It is not the author's key and is to
-   be replaced. Replace `items` and `variants`, keep the shape:
-
-     task      what the learner is asked to draw (shown on screen)
-     scope     what the diagram should cover (for the AI)
-     items     what the key requires. id: short and unique; kind: stock | flow |
-               auxiliary | link; what: the element's role, in words; names: names
-               a learner might use (examples, not a closed list); level: required |
-               important | optional
-     variants  other structures to accept as correct
+   Shape of a key:
+     status     'author' (the course's own key) or 'provisional'
+     source     where the key comes from
+     task       what the learner is asked to draw (shown on screen)
+     scope      what the diagram should cover (for the AI)
+     reference  the reference stock-and-flow diagram, in the canvas's JSON format
+     inputs     what the reference treats as outside inputs. A learner may model
+                any of these instead; that is not an error
+     items      what the marking checks, derived from the reference. id: short and
+                unique; kind: stock | flow | auxiliary | link; what: the element's
+                role, in words; names: names a learner might use (examples, not a
+                closed list); level: required | important | optional
+     variants   other structures to accept as correct
 
    The word-of-mouth game has no key yet (null): the learner can draw and record,
    but the diagram cannot be marked. */
 const KEYS = {
   plain: {
-    status: 'provisional',
-    task: 'Draw a stock-and-flow diagram of your pub that explains what happened in your game: ' +
-      'how kegs reach your cellar and leave it, what happens to customers you cannot serve, and how you decide how many kegs to order. ' +
+    status: 'author',
+    source: 'The author\'s reference diagram of the supply game (20 November 2026), with one link corrected: ' +
+      '"catch up rate" is informed by "waiting to serve", not by "pub customers".',
+    task: 'Draw a stock-and-flow diagram of your pub that shows how the game works: how kegs reach your cellar and leave it, ' +
+      'what happens to customers you cannot serve, and what your cost depends on. Your orders can come from outside the diagram, as an input. ' +
       'Name things in your own words. No equations are needed.',
-    scope: 'One position in the chain: the pub. The wholesaler appears only as where deliveries come from (a cloud is enough). Structure only, no equations.',
+    scope: 'One position in the chain: the pub, as the game works. The player\'s ordering decision, the customers\' arrivals and the wholesaler\'s ' +
+      'ability to deliver are inputs from outside the diagram. Structure only, no equations.',
+    reference: {
+      stocks: [
+        { label: 'pub customers', x: 364, y: 38 }, { label: 'waiting to serve', x: 569, y: 227 }, { label: 'pub cellar', x: 647, y: 344 },
+        { label: 'cost', x: 981, y: 489 }, { label: 'registered order', x: 364, y: 344 }],
+      auxiliaries: [
+        { label: 'arrival plan by week', x: -10, y: 340 }, { label: 'wholesaler provision capacity', x: 364, y: 596 }, { label: 'player decision', x: 151, y: 435 }],
+      clouds: [
+        { label: 'cloud', x: 36, y: 38 }, { label: 'cloud', x: 876, y: 31 }, { label: 'cloud', x: 602, y: 484 },
+        { label: 'cloud', x: 993, y: 342 }, { label: 'cloud', x: 967, y: 219 }, { label: 'cloud', x: 107, y: 348 }],
+      flows: [
+        { label: 'coming in rate', from: 'cloud', to: 'pub customers' },
+        { label: 'serving rate', from: 'pub customers', to: 'cloud' },
+        { label: 'failed-to-serve rate', from: 'pub customers', to: 'waiting to serve' },
+        { label: 'cost rate', from: 'cloud', to: 'cost' },
+        { label: 'consumption rate', from: 'pub cellar', to: 'cloud' },
+        { label: 'catch up rate', from: 'waiting to serve', to: 'cloud' },
+        { label: 'beer arrival rate', from: 'registered order', to: 'pub cellar' },
+        { label: 'order rate', from: 'cloud', to: 'registered order' }],
+      connectors: [
+        { from: 'arrival plan by week', to: 'coming in rate' },
+        { from: 'pub cellar', to: 'cost rate' }, { from: 'waiting to serve', to: 'cost rate' },
+        { from: 'pub customers', to: 'serving rate' }, { from: 'pub cellar', to: 'serving rate' },
+        { from: 'pub customers', to: 'failed-to-serve rate' }, { from: 'serving rate', to: 'failed-to-serve rate' },
+        { from: 'serving rate', to: 'consumption rate' }, { from: 'catch up rate', to: 'consumption rate' },
+        { from: 'pub cellar', to: 'catch up rate' }, { from: 'waiting to serve', to: 'catch up rate' },
+        { from: 'player decision', to: 'order rate' },
+        { from: 'wholesaler provision capacity', to: 'beer arrival rate' }, { from: 'registered order', to: 'beer arrival rate' }],
+      junctions: []
+    },
+    inputs: ['player decision (how many kegs to order)', 'arrival plan by week (how many customers come)', 'wholesaler provision capacity (what the wholesaler can send)'],
     items: [
-      { id: 'S1', kind: 'stock', what: 'Kegs in the cellar (inventory on hand)', names: ['inventory', 'cellar', 'stock', 'kegs in stock'], level: 'required' },
-      { id: 'S2', kind: 'stock', what: 'Kegs owed to customers who could not be served (backlog)', names: ['backlog', 'customers waiting', 'unfilled orders', 'kegs owed'], level: 'required' },
-      { id: 'S3', kind: 'stock', what: 'Kegs ordered but not yet received (supply line), including any the wholesaler has on back order', names: ['supply line', 'on order', 'kegs on the way', 'in transit', 'pipeline'], level: 'required' },
-      { id: 'F1', kind: 'flow', what: 'Orders placed: fills the supply line', names: ['orders', 'order rate', 'ordering'], level: 'required' },
-      { id: 'F2', kind: 'flow', what: 'Deliveries: drains the supply line and fills the cellar', names: ['deliveries', 'arrivals', 'receiving'], level: 'required' },
-      { id: 'F3', kind: 'flow', what: 'Kegs served to customers: drains the cellar', names: ['shipments', 'sales', 'serving', 'kegs served'], level: 'required' },
-      { id: 'F4', kind: 'flow', what: 'Customer demand coming in: fills the backlog', names: ['incoming orders', 'customer orders', 'demand'], level: 'required' },
-      { id: 'F5', kind: 'flow', what: 'Customers served: drains the backlog (the same kegs as F3)', names: ['orders filled', 'customers served'], level: 'important' },
-      { id: 'A1', kind: 'auxiliary', what: 'Expected demand: what the player thinks customers will want, formed from recent demand', names: ['expected demand', 'forecast', 'demand estimate'], level: 'important' },
-      { id: 'A2', kind: 'auxiliary', what: 'Desired inventory: the stock the player aims to hold', names: ['desired inventory', 'target stock'], level: 'important' },
-      { id: 'A3', kind: 'auxiliary', what: 'Customer demand as an outside input (if not drawn as the flow F4 itself)', names: ['customer demand', 'customers'], level: 'optional' },
-      { id: 'L1', kind: 'link', what: 'The cellar (S1) informs the order decision (F1), directly or through a gap or adjustment auxiliary', level: 'required' },
-      { id: 'L2', kind: 'link', what: 'The backlog (S2) informs the order decision (F1), directly or through a gap or adjustment auxiliary', level: 'important' },
-      { id: 'L3', kind: 'link', what: 'The supply line (S3) informs the order decision (F1). Leaving this out is the classic error of the game: kegs already on the way are forgotten, so the player over-orders.', level: 'required' },
-      { id: 'L4', kind: 'link', what: 'Expected demand (A1) informs the order decision (F1)', level: 'important' },
-      { id: 'L5', kind: 'link', what: 'Desired inventory (A2) informs the order decision (F1), directly or through a gap auxiliary', level: 'important' },
-      { id: 'L6', kind: 'link', what: 'Customer demand informs expected demand (A1)', level: 'important' },
-      { id: 'L7', kind: 'link', what: 'The cellar (S1) and the backlog (S2) inform how many kegs are served (F3): you can serve only what you have, and up to what is wanted', level: 'important' }
+      { id: 'S1', kind: 'stock', what: 'pub cellar: kegs on hand', names: ['cellar', 'inventory', 'stock', 'kegs in stock'], level: 'required' },
+      { id: 'S2', kind: 'stock', what: 'waiting to serve: customers owed a keg (the backlog)', names: ['backlog', 'customers waiting', 'unfilled orders', 'kegs owed'], level: 'required' },
+      { id: 'S3', kind: 'stock', what: 'registered order: kegs ordered but not yet arrived, including any the wholesaler holds on back order (the supply line)', names: ['kegs on order', 'on order', 'supply line', 'in transit', 'kegs on the way'], level: 'required' },
+      { id: 'S4', kind: 'stock', what: 'cost: the total cost so far', names: ['total cost', 'cumulative cost', 'cost so far'], level: 'required' },
+      { id: 'S5', kind: 'stock', what: 'pub customers: the customers in the pub this week, before they are served or left waiting', names: ['customers', 'customers in the pub', 'demand this week'], level: 'important' },
+      { id: 'F1', kind: 'flow', what: 'order rate: fills the registered order (S3)', names: ['orders', 'ordering', 'orders placed'], level: 'required' },
+      { id: 'F2', kind: 'flow', what: 'beer arrival rate: drains the registered order (S3) into the cellar (S1)', names: ['deliveries', 'arrivals', 'receiving'], level: 'required' },
+      { id: 'F3', kind: 'flow', what: 'coming in rate: customers arriving (fills S5)', names: ['arrivals of customers', 'customer demand', 'incoming customers'], level: 'required' },
+      { id: 'F4', kind: 'flow', what: 'serving rate: customers served this week (drains S5)', names: ['serving', 'sales', 'customers served'], level: 'required' },
+      { id: 'F5', kind: 'flow', what: 'failed-to-serve rate: customers not served move from S5 into the backlog (S2)', names: ['unserved customers', 'shortfall', 'left waiting'], level: 'required' },
+      { id: 'F6', kind: 'flow', what: 'catch up rate: waiting customers served later (drains S2)', names: ['backlog served', 'catching up', 'orders filled late'], level: 'required' },
+      { id: 'F7', kind: 'flow', what: 'consumption rate: kegs leaving the cellar (drains S1), equal to serving plus catching up', names: ['shipments', 'kegs served', 'kegs out'], level: 'required' },
+      { id: 'F8', kind: 'flow', what: 'cost rate: the cost added each week (fills S4)', names: ['weekly cost', 'cost per week', 'cost increase'], level: 'required' },
+      { id: 'A1', kind: 'auxiliary', what: 'arrival plan by week: how many customers come (an outside input)', names: ['customer demand', 'demand pattern'], level: 'important' },
+      { id: 'A2', kind: 'auxiliary', what: 'wholesaler provision capacity: what the wholesaler can send (an outside input)', names: ['wholesaler stock', 'supplier capacity'], level: 'important' },
+      { id: 'A3', kind: 'auxiliary', what: 'player decision: how many kegs to order (an outside input)', names: ['order decision', 'my order'], level: 'important' },
+      { id: 'L1', kind: 'link', what: 'player decision (A3) informs the order rate (F1)', level: 'important' },
+      { id: 'L2', kind: 'link', what: 'registered order (S3) informs the beer arrival rate (F2)', level: 'required' },
+      { id: 'L3', kind: 'link', what: 'wholesaler provision capacity (A2) informs the beer arrival rate (F2): it limits what arrives, and the rest stays in S3', level: 'required' },
+      { id: 'L4', kind: 'link', what: 'arrival plan (A1) informs the coming in rate (F3)', level: 'important' },
+      { id: 'L5', kind: 'link', what: 'pub cellar (S1) informs the serving rate (F4): you can serve only what you have', level: 'required' },
+      { id: 'L6', kind: 'link', what: 'pub customers (S5) inform the serving rate (F4)', level: 'important' },
+      { id: 'L7', kind: 'link', what: 'pub customers (S5) and the serving rate (F4) inform the failed-to-serve rate (F5)', level: 'important' },
+      { id: 'L8', kind: 'link', what: 'waiting to serve (S2) informs the catch up rate (F6)', level: 'required' },
+      { id: 'L9', kind: 'link', what: 'pub cellar (S1) informs the catch up rate (F6)', level: 'required' },
+      { id: 'L10', kind: 'link', what: 'serving rate (F4) and catch up rate (F6) inform the consumption rate (F7)', level: 'important' },
+      { id: 'L11', kind: 'link', what: 'pub cellar (S1) informs the cost rate (F8): each keg in the cellar costs £0.50 a week', level: 'required' },
+      { id: 'L12', kind: 'link', what: 'waiting to serve (S2) informs the cost rate (F8): each keg owed costs £1 a week', level: 'required' },
+      { id: 'O1', kind: 'auxiliary', what: 'a delivery time (three weeks) informing the beer arrival rate (F2)', names: ['delivery delay', 'lead time'], level: 'optional' },
+      { id: 'O2', kind: 'link', what: 'catch up rate (F6) informs the serving rate (F4): waiting customers are served first', level: 'optional' }
     ],
     variants: [
-      'The supply line (S3) may be drawn as two or more stocks in a row (for example "on the road" and "nearly here", or a separate stock for the back order at the wholesaler), with flows between them. This counts as S3, and L3 then needs links from each of them, or from an auxiliary that adds them up, to the order decision.',
-      'The cellar and the backlog may be combined into one net stock that goes negative when customers are owed kegs. This counts as S1 and S2 together, and L1 and L2 as one link from it.',
-      'Gaps and adjustments may be drawn as extra auxiliaries (inventory gap, supply line adjustment, effective inventory) between the stocks and the order decision. Links through them count as the direct links.',
-      'The order decision may be drawn as an auxiliary that feeds the orders flow (F1). Links into it count as links into F1.'
+      'The registered order (S3) may be drawn as two or more stocks in a row (for example "on back order at the wholesaler" and "on the road"), with flows between them. This counts as S3, F2 and L2; the capacity limit (L3) then acts on the flow out of the first of them.',
+      'Pub customers (S5) may be left out, with the coming in rate flowing straight into the backlog (S2) and one flow out of the backlog for all customers served. This counts as S5, F3, F4, F5 and F6, provided the cellar informs that outflow.',
+      'The cellar may be drained by two flows, one for each kind of serving, instead of one consumption rate (F7) informed by both. This counts as F7 and L10.',
+      'The two cost rates (£0.50 and £1) may be drawn as constants informing the cost rate (F8). They are welcome, not required.',
+      'A learner may model the player\'s decision instead of treating it as an input, for example with links from the cellar, the backlog or the registered order into it. This is not an error and is not marked: comment on it as an extra. Leaving out a link from the registered order (S3) to such a decision is what most players of this game do, so if they model a decision without it, say so as an observation, not a fault.'
     ]
   },
   wom: null
 };
 if (typeof module !== 'undefined') module.exports = KEYS;
+
+/* Marking a learner's stock-and-flow diagram of the supply game, in three layers
+   (see the spec "Marking the supply-game diagram: rules, concepts and mechanisms"):
+
+   1. notation(d)          rules of the notation, checked by code
+   2. (the AI)             maps each of the learner's elements to concepts
+   3. mechanisms(d, map)   the game's mechanisms as patterns, checked by code
+
+   Every failure carries `evidence` for the slide's picture: which elements to
+   show (focus), which links or flows are wrong (bad, badFlows), which already
+   work (good), the fix to draw on request (ghost), short questions beside the
+   spot (notes), and `whole` when the problem has no single place.
+
+   d   = a diagram in the canvas's JSON ({stocks, auxiliaries, clouds, flows, connectors, junctions})
+   map = { "<learner element label>": ["C1", ...], ... } */
+const Marking = (function () {
+  const CONCEPTS = [
+    { id: 'C1', name: 'the cellar', kind: 'stock', what: 'kegs on hand in the pub\'s cellar', names: ['inventory', 'stock', 'kegs in stock'] },
+    { id: 'C2', name: 'kegs on order', kind: 'stock', what: 'kegs ordered but not yet arrived, including any the wholesaler holds on back order; may be drawn as several stocks in a row', names: ['supply line', 'on order', 'in transit', 'back order', 'registered order'] },
+    { id: 'C3', name: 'waiting customers', kind: 'stock', what: 'customers (kegs) owed: customers who could not be served and are waiting', names: ['backlog', 'customers waiting', 'kegs owed', 'waiting to serve'] },
+    { id: 'C4', name: 'total cost', kind: 'stock', what: 'the cost added up so far', names: ['cost', 'cost so far', 'cumulative cost'] },
+    { id: 'C5', name: 'customers this week', kind: 'stock', what: 'the customers in the pub this week, before they are served or left waiting (may be left out)', names: ['pub customers', 'customers in the pub'] },
+    { id: 'C6', name: 'orders', kind: 'flow', what: 'the pub\'s orders: the flow that fills the kegs on order', names: ['order rate', 'ordering', 'orders placed'] },
+    { id: 'C7', name: 'deliveries', kind: 'flow', what: 'kegs arriving: the flow from the kegs on order into the cellar (or between stocks of a chain of kegs on order)', names: ['arrivals', 'receiving', 'beer arrival rate', 'dispatch'] },
+    { id: 'C8', name: 'customers arriving', kind: 'flow', what: 'customers coming in each week', names: ['coming in rate', 'new customers', 'demand'] },
+    { id: 'C9', name: 'serving on arrival', kind: 'flow', what: 'customers served in the week they arrive', names: ['serving rate', 'sales', 'customers served'] },
+    { id: 'C10', name: 'failing to serve', kind: 'flow', what: 'customers not served, moving into the waiting customers', names: ['failed-to-serve rate', 'shortfall', 'unserved'] },
+    { id: 'C11', name: 'catching up', kind: 'flow', what: 'waiting customers served later: the flow that empties the waiting customers', names: ['catch up rate', 'backlog served', 'orders filled'] },
+    { id: 'C12', name: 'kegs leaving the cellar', kind: 'flow', what: 'kegs going out of the cellar to customers', names: ['consumption rate', 'shipments', 'kegs out'] },
+    { id: 'C13', name: 'cost per week', kind: 'flow', what: 'the cost added each week: the flow that fills the total cost', names: ['cost rate', 'weekly cost'] },
+    { id: 'C14', name: 'customer arrivals', kind: 'input', what: 'how many customers come each week (an outside input)', names: ['arrival plan by week', 'customer demand'] },
+    { id: 'C15', name: 'the wholesaler\'s limit', kind: 'input', what: 'what the wholesaler is able to send (an outside input)', names: ['wholesaler provision capacity', 'wholesaler stock'] },
+    { id: 'C16', name: 'the order decision', kind: 'input', what: 'how many kegs the player orders (an outside input, or modelled)', names: ['player decision', 'my order', 'order decision'] },
+    { id: 'C17', name: 'delivery time', kind: 'constant', what: 'the three weeks a delivery takes (optional)', names: ['lead time', 'delay'] },
+    { id: 'C18', name: 'cost rates', kind: 'constant', what: 'the £0.50 and £1 a week per keg (optional)', names: ['holding cost', 'waiting cost'] }
+  ];
+  const CONCEPT = {}; CONCEPTS.forEach(function (c) { CONCEPT[c.id] = c; });
+
+  /* ---------- reading a diagram ---------- */
+  function read(d) {
+    const kind = {};
+    (d.stocks || []).forEach(function (s) { kind[s.label] = 'stock'; });
+    (d.auxiliaries || []).forEach(function (a) { kind[a.label] = 'auxiliary'; });
+    (d.flows || []).forEach(function (f) { kind[f.label] = 'flow'; });
+    (d.junctions || []).forEach(function (j) { kind[j.label] = 'junction'; });
+    const links = (d.connectors || []).map(function (c) { return { from: c.from, to: c.to }; });
+    const flows = (d.flows || []).map(function (f) { return { label: f.label, from: f.from, to: f.to }; });
+    return { kind: kind, links: links, flows: flows };
+  }
+  const isEnd = function (x) { return x == null || x === 'cloud'; };
+
+  /* X informs Y: a chain of information links, through auxiliaries, flows or
+     junctions, never through a stock. Returns the links of one such chain, or null. */
+  function chain(R, a, b) {
+    const prev = new Map([[a, null]]), q = [a];
+    while (q.length) {
+      const x = q.shift();
+      for (const l of R.links) {
+        if (l.from !== x || prev.has(l.to)) continue;
+        prev.set(l.to, l);
+        if (l.to === b) { const out = []; let k = l; while (k) { out.unshift(k); k = prev.get(k.from); } return out; }
+        if (R.kind[l.to] !== 'stock') q.push(l.to);
+      }
+    }
+    return null;
+  }
+
+  /* ---------- layer 1: notation ---------- */
+  function notation(d) {
+    const R = read(d), out = [];
+    const add = function (id, type, text, ev) { out.push({ id: id, type: type, text: text, evidence: ev }); };
+    const names = (d.stocks || []).concat(d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; });
+    names.filter(function (n, i) { return names.indexOf(n) !== i; }).filter(function (n, i, a) { return a.indexOf(n) === i; })
+      .forEach(function (n) { add('N1', 'error', 'Two elements are called "' + n + '". Give each its own name.', { focus: [n], notes: [{ at: n, text: 'two of these' }] }); });
+    R.links.forEach(function (l) {
+      if (R.kind[l.to] === 'stock') add('N2', 'error', 'The link from "' + l.from + '" points into the stock "' + l.to + '". Stocks change only through flows: make it a flow, or point the link at the flow it should affect.', { focus: [l.from, l.to], bad: [l], notes: [{ at: l.to, text: 'stocks change only through flows' }] });
+      if (isEnd(l.from) || isEnd(l.to) || !R.kind[l.from] || !R.kind[l.to]) add('N3', 'error', 'A link starts or ends at a cloud. A cloud is outside your model: nothing can be read from it or sent to it by a link.', { focus: [l.from, l.to].filter(function (x) { return R.kind[x]; }), bad: [l] });
+    });
+    R.flows.forEach(function (f) {
+      [f.from, f.to].forEach(function (e) {
+        if (R.kind[e] === 'auxiliary' || R.kind[e] === 'flow') add('N4', 'error', 'The flow "' + f.label + '" runs to or from "' + e + '", which is not a stock. Flows carry material between stocks, or to and from clouds.', { focus: [f.label, e], badFlows: [f.label] });
+      });
+      if (f.from == null || f.to == null) add('N5', 'error', 'The flow "' + f.label + '" is not attached at one end.', { focus: [f.label], badFlows: [f.label] });
+      else if (R.kind[f.from] !== 'stock' && R.kind[f.to] !== 'stock') add('N6', 'error', 'The flow "' + f.label + '" fills and empties nothing: it touches no stock.', { focus: [f.label], badFlows: [f.label] });
+      if (f.from === f.to && R.kind[f.from] === 'stock') add('N7', 'error', 'The flow "' + f.label + '" leaves and enters the same stock, so it changes nothing.', { focus: [f.label, f.from], badFlows: [f.label] });
+      if (!R.links.some(function (l) { return l.to === f.label; })) add('W1', 'warning', 'Nothing informs "' + f.label + '". What sets how fast it runs? This is fine if it is meant as an outside input.', { focus: [f.label], notes: [{ at: f.label, text: 'what sets its rate?' }] });
+    });
+    (d.stocks || []).forEach(function (s) {
+      if (!R.flows.some(function (f) { return f.from === s.label || f.to === s.label; })) add('N8', 'error', 'Nothing fills or empties the stock "' + s.label + '", so it never changes.', { focus: [s.label], notes: [{ at: s.label, text: 'no flow in or out' }] });
+    });
+    (d.auxiliaries || []).forEach(function (a) {
+      if (!R.links.some(function (l) { return l.from === a.label; })) add('W2', 'warning', '"' + a.label + '" affects nothing in your diagram.', { focus: [a.label], notes: [{ at: a.label, text: 'affects nothing' }] });
+    });
+    return out;
+  }
+
+  /* ---------- layer 3: mechanisms ---------- */
+  const MECH = [
+    { id: 'M1', weight: 'required', title: 'Deliveries take time', game: 'Kegs you order take three weeks to reach your cellar. Until then they are on order.' },
+    { id: 'M2', weight: 'required', title: 'Orders pile up while you wait', game: 'Each order adds to the kegs you are waiting for.' },
+    { id: 'M3', weight: 'required', title: 'Nothing you order is lost', game: 'When the wholesaler runs short, it sends what it can and keeps the rest on back order. Those kegs still come, later.' },
+    { id: 'M4', weight: 'required', title: 'You can serve only what you have', game: 'You can hand out only the kegs in your cellar. When it is empty, customers go without.' },
+    { id: 'M5', weight: 'important', title: 'Kegs leave as customers are served', game: 'Every customer served takes one keg out of the cellar.' },
+    { id: 'M6', weight: 'required', title: 'Customers you cannot serve wait', game: 'A customer who cannot be served does not leave: they wait for their keg.' },
+    { id: 'M7', weight: 'required', title: 'Waiting customers are served later, from the cellar', game: 'Waiting customers are served first when kegs arrive. How many get served depends on how many are waiting and what is in the cellar.' },
+    { id: 'M8', weight: 'important', title: 'Customers come from outside', game: 'You do not choose how many customers come: that is an input to the pub.' },
+    { id: 'M9', weight: 'required', title: 'Your cost adds up, and never falls', game: 'Each week, every keg in the cellar costs £0.50 and every keg owed to a waiting customer costs £1. The cost so far only ever grows.' },
+    { id: 'M10', weight: 'required', title: 'Ordering costs nothing', game: 'Placing an order is free, and so are the kegs. Only kegs held and kegs owed cost money.' },
+    { id: 'O1', weight: 'optional', title: 'The delivery time is shown', game: 'Deliveries take three weeks.' },
+    { id: 'O2', weight: 'optional', title: 'Waiting customers are served first', game: 'Kegs go to waiting customers before new ones.' }
+  ];
+
+  function mechanisms(d, mapIn) {
+    const R = read(d), present = new Set(Object.keys(R.kind));
+    const map = {}; Object.keys(mapIn || {}).forEach(function (l) { if (present.has(l)) map[l] = mapIn[l]; });
+    const E = function (c) { return Object.keys(map).filter(function (l) { return map[l].indexOf(c) >= 0; }); };
+    const flowsIn = function (c) { return E(c).filter(function (l) { return R.kind[l] === 'flow'; }); };
+    const stocksIn = function (c) { return E(c).filter(function (l) { return R.kind[l] === 'stock'; }); };
+    const F = function (l) { return R.flows.find(function (f) { return f.label === l; }); };
+    const fills = function (f, s) { const x = F(f); return !!x && x.to === s; };
+    const drains = function (f, s) { const x = F(f); return !!x && x.from === s; };
+    const informs = function (a, b) { return !!chain(R, a, b); };
+    const anyInf = function (as, bs) { return as.some(function (a) { return bs.some(function (b) { return informs(a, b); }); }); };
+    const direct = function (as, b) { return R.links.filter(function (l) { return as.indexOf(l.from) >= 0 && l.to === b; }); };
+    const uniq = function (a) { return a.filter(function (x, i) { return x && a.indexOf(x) === i; }); };
+    const cellar = stocksIn('C1'), onorder = stocksIn('C2'), waiting = stocksIn('C3'), cost = stocksIn('C4');
+    const orders = flowsIn('C6'), deliv = flowsIn('C7'), arrive = flowsIn('C8'), serve = flowsIn('C9'), fail = flowsIn('C10'),
+      catchup = flowsIn('C11'), out = flowsIn('C12'), costr = flowsIn('C13');
+    const arrivals = E('C14'), limit = E('C15'), decision = E('C16'), dtime = E('C17');
+    const res = [];
+    const put = function (m, pass, ev, hint, answer) {
+      const def = MECH.find(function (x) { return x.id === m; });
+      ev = ev || {}; ev.focus = uniq(ev.focus || []);
+      res.push({ id: m, weight: def.weight, title: def.title, game: def.game, pass: !!pass, hint: pass ? '' : hint, answer: pass ? '' : answer, evidence: pass ? null : ev });
+    };
+    const first = function (a) { return a.length ? a[0] : null; };
+
+    // M1 deliveries take time
+    {
+      const ok = onorder.length && deliv.some(function (f) { return onorder.some(function (s) { return drains(f, s); }) && cellar.some(function (s) { return fills(f, s); }); });
+      const shortcut = R.flows.filter(function (f) { return cellar.indexOf(f.to) >= 0 && (orders.indexOf(f.label) >= 0 || deliv.indexOf(f.label) >= 0) && onorder.indexOf(f.from) < 0; }).map(function (f) { return f.label; });
+      put('M1', ok, onorder.length
+        ? { focus: onorder.concat(cellar, deliv), notes: [{ at: first(onorder), text: 'how do these reach the cellar?' }] }
+        : { focus: cellar.concat(shortcut, orders), badFlows: shortcut, notes: [{ at: first(shortcut) || first(cellar), text: shortcut.length ? 'arrives at once?' : 'where do kegs come from?' }], whole: !cellar.length },
+        onorder.length ? 'Your kegs on order never reach the cellar. What carries them there?'
+          : shortcut.length ? 'In your diagram, ordered kegs go straight into the cellar. In the game they take three weeks. Where are they in between?'
+            : 'In the game, kegs you order take three weeks to arrive. Where are they in your diagram while they are on their way?',
+        onorder.length ? 'Add a flow from "' + first(onorder) + '" into "' + (first(cellar) || 'the cellar') + '": the deliveries.'
+          : 'Add a stock for kegs ordered but not yet arrived. Your orders fill it, and a deliveries flow empties it into the cellar.');
+    }
+    // M2 orders pile up
+    {
+      const ok = orders.some(function (f) { return onorder.some(function (s) { return fills(f, s); }); });
+      put('M2', ok, { focus: orders.concat(onorder), notes: [{ at: first(orders) || first(onorder), text: 'where do orders go?' }], whole: !orders.length && !onorder.length },
+        'Where do your orders go before the kegs arrive?',
+        onorder.length ? 'Your orders flow should fill "' + first(onorder) + '".' : 'Orders should fill a stock of kegs on order (see the previous point).');
+    }
+    // M3 nothing ordered is lost
+    {
+      const lost = R.flows.filter(function (f) { return onorder.indexOf(f.from) >= 0 && isEnd(f.to); }).map(function (f) { return f.label; });
+      const limInf = anyInf(limit, deliv);
+      const ok = onorder.length && limInf && !lost.length;
+      const ghost = limit.length && deliv.length && !limInf ? [{ from: first(limit), to: first(deliv) }] : [];
+      put('M3', ok, { focus: limit.concat(deliv, onorder, lost), badFlows: lost, ghost: ghost,
+        notes: [lost.length ? { at: lost[0], text: 'are these kegs lost?' } : !limit.length ? { at: first(deliv) || first(onorder), text: 'what limits this?' } : { at: first(limit), text: 'what does this limit?' }],
+        whole: !onorder.length && !limit.length && !deliv.length },
+        lost.length ? 'In your diagram, kegs can leave the kegs on order without arriving. In the game, nothing you order is lost.'
+          : !onorder.length ? 'When the wholesaler runs short, where do the kegs it could not send wait in your diagram?'
+            : 'What decides how many of your kegs on order can arrive, when the wholesaler runs short?',
+        (lost.length ? 'Remove "' + lost[0] + '": kegs on order only leave by being delivered. ' : '') +
+        (limit.length && deliv.length ? 'Link "' + first(limit) + '" to "' + first(deliv) + '": the wholesaler\'s limit holds deliveries back, and the rest waits in the kegs on order.' : 'Show the wholesaler\'s limit as an input that informs the deliveries, so what it cannot send stays on order.'));
+    }
+    // M4 serve only what you have
+    {
+      const targets = serve.concat(catchup).length ? serve.concat(catchup) : out;
+      const missing = targets.filter(function (t) { return !anyInf(cellar, [t]); });
+      const ok = cellar.length && targets.length && !missing.length;
+      put('M4', ok, { focus: cellar.concat(targets), ghost: cellar.length ? missing.map(function (t) { return { from: first(cellar), to: t }; }) : [],
+        good: [].concat.apply([], targets.map(function (t) { return direct(cellar, t); })),
+        notes: [{ at: first(missing) || first(cellar), text: 'how many can be served?' }], whole: !cellar.length || !targets.length },
+        'What stops you serving more kegs than are in your cellar?',
+        cellar.length && missing.length ? 'Link "' + first(cellar) + '" to ' + missing.map(function (t) { return '"' + t + '"'; }).join(' and ') + ': you can serve only what the cellar holds.' : 'Serving needs to know what is in the cellar.');
+    }
+    // M5 kegs leave as customers are served
+    {
+      const custFlows = serve.concat(catchup);
+      const tied = function (a, b) { return a === b || informs(a, b) || informs(b, a); };
+      const loose = custFlows.filter(function (c) { return !out.some(function (o) { return tied(o, c); }); });
+      const ok = out.length && custFlows.length && !loose.length;
+      put('M5', ok, { focus: out.concat(custFlows), ghost: out.length ? loose.map(function (c) { return { from: c, to: first(out) }; }) : [],
+        notes: [{ at: first(out) || first(cellar), text: 'tied to customers served?' }], whole: !out.length && !custFlows.length },
+        'What ties the kegs leaving your cellar to the customers you serve?',
+        out.length && loose.length ? 'Link ' + loose.map(function (c) { return '"' + c + '"'; }).join(' and ') + ' to "' + first(out) + '": each customer served takes a keg.' : 'Show the kegs leaving the cellar, tied to the customers served.');
+    }
+    // M6 customers you cannot serve wait
+    {
+      const into = fail.concat(arrive).filter(function (f) { return waiting.some(function (s) { return fills(f, s); }); });
+      const leaks = R.flows.filter(function (f) { return waiting.indexOf(f.from) >= 0 && catchup.indexOf(f.label) < 0; }).map(function (f) { return f.label; });
+      const ok = into.length && !leaks.length;
+      put('M6', ok, { focus: waiting.concat(fail, leaks), badFlows: leaks, notes: [{ at: first(leaks) || first(waiting) || first(fail) || first(serve), text: leaks.length ? 'do they leave unserved?' : 'where do they go?' }], whole: !waiting.length && !fail.length && !serve.length },
+        leaks.length ? 'In your diagram, waiting customers can leave without being served. In the game they wait for their keg.'
+          : 'What happens, in your diagram, to customers you could not serve?',
+        leaks.length ? 'Remove "' + leaks[0] + '", or make it the flow that serves waiting customers.'
+          : waiting.length ? 'Customers not served should flow into "' + first(waiting) + '".' : 'Add a stock of waiting customers, filled by the customers you could not serve.');
+    }
+    // M7 waiting customers are served later, from the cellar
+    {
+      const cu = catchup.filter(function (f) { return waiting.some(function (s) { return drains(f, s); }); });
+      const t = first(cu);
+      const wInf = t && anyInf(waiting, [t]), cInf = t && anyInf(cellar, [t]);
+      const ok = t && wInf && cInf;
+      const ghost = [];
+      if (t && !wInf && waiting.length) ghost.push({ from: first(waiting), to: t });
+      if (t && !cInf && cellar.length) ghost.push({ from: first(cellar), to: t });
+      const wrong = t ? R.links.filter(function (l) { return l.to === t && R.kind[l.from] === 'stock' && waiting.indexOf(l.from) < 0 && cellar.indexOf(l.from) < 0; }) : [];
+      put('M7', ok, { focus: waiting.concat(cu.length ? cu : catchup, cellar, wrong.map(function (l) { return l.from; })), ghost: ghost, bad: wrong,
+        good: t ? direct(cellar.concat(waiting), t) : [],
+        notes: [!t ? { at: first(waiting), text: 'how do they get served?' } : !wInf ? { at: first(waiting), text: 'how many are waiting?' } : { at: first(cellar), text: 'how many kegs are there?' }],
+        whole: !waiting.length },
+        !t ? 'How do waiting customers get their kegs in your diagram?'
+          : !wInf ? 'Your "' + t + '" cannot tell how many customers are waiting.' + (wrong.length ? ' It reads "' + wrong[0].from + '" instead.' : '') + ' What would it need to know?'
+            : 'How does "' + t + '" know how many kegs are in the cellar?',
+        ghost.length ? ghost.map(function (g) { return 'Link "' + g.from + '" to "' + g.to + '".'; }).join(' ') + (wrong.length ? ' The link from "' + wrong[0].from + '" is not needed for this.' : '')
+          : 'Add a flow out of the waiting customers, informed by how many are waiting and by the cellar.');
+    }
+    // M8 customers come from outside
+    {
+      const ok = anyInf(arrivals, arrive);
+      put('M8', ok, { focus: arrivals.concat(arrive), ghost: arrivals.length && arrive.length ? [{ from: first(arrivals), to: first(arrive) }] : [],
+        notes: [{ at: first(arrive) || first(arrivals), text: 'what sets how many come?' }], whole: !arrivals.length && !arrive.length },
+        'What sets how many customers come in each week?',
+        arrivals.length && arrive.length ? 'Link "' + first(arrivals) + '" to "' + first(arrive) + '".' : 'Add the customer arrivals as an outside input that informs the customers coming in.');
+    }
+    // M9 cost adds up and never falls
+    {
+      const cr = costr.filter(function (f) { return cost.some(function (s) { return fills(f, s); }); });
+      const t = first(cr), falls = R.flows.filter(function (f) { return cost.indexOf(f.from) >= 0; }).map(function (f) { return f.label; });
+      const cInf = t && anyInf(cellar, [t]), wInf = t && anyInf(waiting, [t]);
+      const ok = t && cInf && wInf && !falls.length;
+      const ghost = [];
+      if (t && !cInf && cellar.length) ghost.push({ from: first(cellar), to: t });
+      if (t && !wInf && waiting.length) ghost.push({ from: first(waiting), to: t });
+      put('M9', ok, { focus: cost.concat(cr.length ? cr : costr, cellar, waiting, falls), ghost: ghost, badFlows: falls, good: t ? direct(cellar.concat(waiting), t) : [],
+        notes: [falls.length ? { at: falls[0], text: 'can cost fall?' } : { at: t || first(cost), text: 'what adds to the cost?' }], whole: !cost.length && !costr.length },
+        falls.length ? 'In your diagram, the cost so far can go down. In the game it only ever grows.'
+          : !t ? 'How does your cost grow each week?' : 'What adds to your cost each week?',
+        (falls.length ? 'Remove "' + falls[0] + '". ' : '') + (ghost.length ? ghost.map(function (g) { return 'Link "' + g.from + '" to "' + g.to + '".'; }).join(' ') : !t ? 'Add a flow into the cost, informed by the cellar and the waiting customers.' : ''));
+    }
+    // M10 ordering costs nothing
+    {
+      const t = first(costr.length ? costr : []);
+      const paths = t ? orders.concat(deliv).map(function (o) { return chain(R, o, t); }).filter(Boolean) : [];
+      const bad = [].concat.apply([], paths);
+      put('M10', t && !paths.length, { focus: orders.concat(deliv, costr), bad: bad, notes: [{ at: t || first(cost), text: t ? 'is ordering a cost?' : 'what adds to the cost?' }], whole: !t },
+        t ? 'In your diagram, ordering adds to the cost. In this game, ordering and deliveries are free.' : 'First show how your cost is added each week.',
+        bad.length ? 'Remove the link from "' + bad[0].from + '" toward "' + t + '": only kegs held and kegs owed cost money.' : 'Add a flow that adds to the cost each week.');
+    }
+    // optional
+    put('O1', anyInf(dtime, deliv), { focus: deliv }, '', '');
+    put('O2', anyInf(catchup, serve), { focus: catchup.concat(serve) }, '', '');
+
+    // the order decision: observed, never marked
+    let decisionNote = null;
+    const dec = first(decision);
+    if (dec && R.links.some(function (l) { return l.to === dec; })) {
+      decisionNote = anyInf(onorder, [dec]) ? 'Your order decision takes the kegs already on order into account. Most players forget them.'
+        : 'Your order decision does not take the kegs already on order into account. That is what most players of this game do, and it is why their orders swing.';
+    } else if (!dec || !R.links.some(function (l) { return l.to === dec; })) {
+      decisionNote = 'You treat the order decision as an input from outside the diagram, as the task allows.';
+    }
+    return { mechanisms: res, decisionNote: decisionNote };
+  }
+
+  /* Elements drawn as a different kind from the concept they were read as. */
+  function kindNotes(d, map) {
+    const R = read(d), out = [];
+    Object.keys(map || {}).forEach(function (l) {
+      (map[l] || []).forEach(function (c) {
+        const k = CONCEPT[c] && CONCEPT[c].kind, got = R.kind[l];
+        if (k === 'stock' && got && got !== 'stock') out.push({ element: l, text: '"' + l + '" is drawn as ' + (got === 'flow' ? 'a flow' : 'an auxiliary') + ', but ' + CONCEPT[c].name + ' accumulate: they are a stock.' });
+        if (k === 'flow' && got === 'stock') out.push({ element: l, text: '"' + l + '" is drawn as a stock, but ' + CONCEPT[c].name + ' is a rate: a flow.' });
+      });
+    });
+    return out;
+  }
+
+  /* How far the diagram is from the game: core concepts found. */
+  function coreFound(map) {
+    const core = ['C1', 'C2', 'C3', 'C4', 'C6', 'C7', 'C9', 'C11', 'C13'];
+    const got = new Set(); Object.keys(map || {}).forEach(function (l) { (map[l] || []).forEach(function (c) { got.add(c); }); });
+    return core.filter(function (c) { return got.has(c); }).length;
+  }
+
+  function score(m) {
+    const of = function (w) { const a = m.filter(function (x) { return x.weight === w; }); return { pass: a.filter(function (x) { return x.pass; }).length, of: a.length }; };
+    return { required: of('required'), important: of('important'), optional: of('optional') };
+  }
+
+  return { CONCEPTS: CONCEPTS, CONCEPT: CONCEPT, MECH: MECH, notation: notation, mechanisms: mechanisms, kindNotes: kindNotes, coreFound: coreFound, score: score, read: read };
+})();
+if (typeof module !== 'undefined') module.exports = Marking;
+
+/* A read-only picture of the learner's own diagram, in their own layout, for the
+   feedback slides: zoomed to a problem with the rest faded, or the whole diagram.
+
+   Picture.svg(d, opts) -> an <svg> string
+     opts.focus     labels to show at full strength (the rest is faded); none -> nothing faded
+     opts.whole     show the whole diagram instead of zooming to the focus
+     opts.bad       links to show as wrong (red, dashed, crossed)
+     opts.badFlows  flows to show as wrong (red pipe)
+     opts.good      links that already work (green)
+     opts.ghost     links to draw as the answer (green, dashed); shown only with opts.showGhost
+     opts.notes     [{at: label, text}] short questions beside an element
+     opts.tags      {label: text} a tag under each element (the mapping slide)
+     opts.extras    labels tagged as extras
+   Colours come from the page's variables, so the picture follows light and dark. */
+const Picture = (function () {
+  const esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  const C = { ink: 'var(--fg)', quiet: 'var(--muted)', line: 'var(--muted)', bg: 'var(--surface)', bad: 'var(--owed)', good: 'var(--hold)' };
+  const FADE = 0.16;
+  let SC = 1;   // scale of boxes and words, set for each picture
+  const stockW = function (l) { return Math.max(92, Math.round(String(l).length * 7.4 + 26)) * SC; };
+
+  function layout(d) {
+    const P = {}, K = {};
+    (d.stocks || []).forEach(function (s) { P[s.label] = [s.x || 0, s.y || 0]; K[s.label] = 'stock'; });
+    (d.auxiliaries || []).forEach(function (a) { P[a.label] = [a.x || 0, a.y || 0]; K[a.label] = 'aux'; });
+    (d.junctions || []).forEach(function (j) { P[j.label] = [j.x || 0, j.y || 0]; K[j.label] = 'junction'; });
+    (d.flows || []).forEach(function (f, i) {
+      const a = f.from_xy || P[f.from] || [0, 0], b = f.to_xy || P[f.to] || [a[0] + 120, a[1]];
+      f._a = a; f._b = b; f._v = f.valve_xy || [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      P[f.label] = f._v; K[f.label] = 'flow';
+    });
+    return { P: P, K: K };
+  }
+  // where a link leaves or meets an element: short of its centre
+  function trim(p, q, kind, label, fromEnd) {
+    const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L;
+    let r = 10;
+    if (kind === 'stock') { const w = stockW(label) / 2, h = 21 * SC; r = Math.min(Math.abs(ux) > 1e-6 ? w / Math.abs(ux) : 1e9, Math.abs(uy) > 1e-6 ? h / Math.abs(uy) : 1e9) + 3; }
+    else if (kind === 'junction') r = 3;
+    else if (kind === 'flow') r = 12;
+    else if (kind === 'aux') r = 11;
+    return [p[0] + ux * r, p[1] + uy * r];
+  }
+
+  function svg(d, o) {
+    o = o || {}; d = JSON.parse(JSON.stringify(d || {}));   // never touch the learner's diagram
+    SC = 1;
+    const L = layout(d), P = L.P, K = L.K;
+    const focus = new Set(o.focus || []), dim = focus.size > 0;
+    const on = function (l) { return !dim || focus.has(l); };
+    const key = function (l) { return l.from + '\u0000' + l.to; };
+    const badL = new Set((o.bad || []).map(key)), goodL = new Set((o.good || []).map(key)), badF = new Set(o.badFlows || []);
+    const ghosts = o.showGhost ? (o.ghost || []) : [];
+    // the frame: the whole diagram, or the focus and what is drawn on it
+    const pts = [];
+    const addEl = function (l) {
+      if (!P[l]) return;
+      const p = P[l], hw = K[l] === 'stock' ? stockW(l) / 2 : 60;
+      pts.push([p[0] - hw, p[1] - 26], [p[0] + hw, p[1] + 40]);
+    };
+    const whole = o.whole || !dim;
+    if (whole) {
+      Object.keys(P).forEach(addEl);
+      (d.flows || []).forEach(function (f) { pts.push(f._a, f._b); });
+      (d.clouds || []).forEach(function (c) { pts.push([c.x - 20, c.y - 14], [c.x + 20, c.y + 14]); });
+    } else {
+      focus.forEach(addEl);
+      (o.bad || []).concat(o.good || [], o.ghost || []).forEach(function (l) { addEl(l.from); addEl(l.to); });
+      (d.flows || []).forEach(function (f) { if (focus.has(f.label)) { pts.push(f._a, f._b); } });
+    }
+    (o.notes || []).forEach(function (n) { if (n && P[n.at]) pts.push([P[n.at][0] - n.text.length * 4.5, P[n.at][1] - 56]); if (n && P[n.at]) pts.push([P[n.at][0] + n.text.length * 4.5, P[n.at][1]]); });
+    Object.keys(o.tags || {}).concat(o.extras || []).forEach(function (l) { if (P[l]) pts.push([P[l][0], P[l][1] + 62]); });
+    if (!pts.length) pts.push([0, 0], [400, 240]);
+    let x0 = Math.min.apply(null, pts.map(function (p) { return p[0]; })) - 36, x1 = Math.max.apply(null, pts.map(function (p) { return p[0]; })) + 36;
+    let y0 = Math.min.apply(null, pts.map(function (p) { return p[1]; })) - 30, y1 = Math.max.apply(null, pts.map(function (p) { return p[1]; })) + 24;
+    const minW = 640, minH = 330;
+    if (x1 - x0 < minW) { const c = (x0 + x1) / 2; x0 = c - minW / 2; x1 = c + minW / 2; }
+    if (y1 - y0 < minH) { const c = (y0 + y1) / 2; y0 = c - minH / 2; y1 = c + minH / 2; }
+    const W = Math.round(x1 - x0), H = Math.round(y1 - y0);
+    const k = Math.max(1, Math.min(1.7, W / 820));   // a large frame is shown smaller: keep its words readable
+    const fs = function (n) { return (n * k).toFixed(1) + 'px'; };
+    SC = k;
+    const parts = { pipes: '', links: '', nodes: '', labels: '', notes: '' };
+    const markers = '<defs>' + [['n', C.line], ['r', C.bad], ['g', C.good]].map(function (m) {
+      return '<marker id="pk-' + m[0] + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" style="fill:' + m[1] + '"/></marker>';
+    }).join('') + '</defs>';
+
+    // flows: a double pipe and a valve
+    (d.flows || []).forEach(function (f) {
+      const a = f._a, b = f._b, v = f._v, bad = badF.has(f.label), op = on(f.label) || bad ? 1 : FADE;
+      const col = bad ? C.bad : C.line;
+      parts.pipes += '<g opacity="' + op + '"><line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" style="stroke:' + col + ';stroke-width:' + (bad ? 8 : 7) + '"/>' +
+        '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" style="stroke:' + C.bg + ';stroke-width:3"/>' +
+        (isEnd(f.to) ? cloud(b) : '') + (isEnd(f.from) ? cloud(a) : '') +
+        '<path d="M' + (v[0] - 10) + ' ' + v[1] + 'L' + v[0] + ' ' + (v[1] - 10) + 'L' + (v[0] + 10) + ' ' + v[1] + 'L' + v[0] + ' ' + (v[1] + 10) + 'z" style="fill:' + C.bg + ';stroke:' + col + ';stroke-width:' + (bad ? 2.5 : 1.5) + '"/>' +
+        (bad ? cross(v[0] + 16, v[1] - 16) : '') + '</g>';
+      parts.labels += '<g opacity="' + op + '">' +
+        '<text x="' + v[0] + '" y="' + (v[1] + 27) + '" text-anchor="middle" style="fill:' + (bad ? C.bad : C.ink) + ';font-size:' + fs(13) + ';font-weight:' + (bad ? 700 : 400) + ';paint-order:stroke;stroke:' + C.bg + ';stroke-width:4px">' + esc(f.label) + '</text>' + '</g>';
+    });
+    function isEnd(x) { return x == null || x === 'cloud'; }
+    function cloud(p) { return '<ellipse cx="' + p[0] + '" cy="' + p[1] + '" rx="18" ry="12" style="fill:' + C.bg + ';stroke:' + C.line + ';stroke-width:1.3"/>'; }
+    function cross(x, y) { return '<path d="M' + (x - 6) + ' ' + (y - 6) + 'L' + (x + 6) + ' ' + (y + 6) + 'M' + (x + 6) + ' ' + (y - 6) + 'L' + (x - 6) + ' ' + (y + 6) + '" style="stroke:' + C.bad + ';stroke-width:2.5"/>'; }
+
+    // links: a gentle curve from source to target
+    function link(l, kind) {
+      const a0 = P[l.from], b0 = P[l.to]; if (!a0 || !b0) return '';
+      const wps = (l.waypoints || []).map(function (w) { return [w.x, w.y]; });
+      const nextA = wps.length ? wps[0] : b0, prevB = wps.length ? wps[wps.length - 1] : a0;
+      const a = trim(a0, nextA, K[l.from], l.from), b = trim(b0, prevB, K[l.to], l.to);
+      let path;
+      if (wps.length) path = 'M' + a[0] + ' ' + a[1] + wps.map(function (w) { return 'L' + w[0] + ' ' + w[1]; }).join('') + 'L' + b[0] + ' ' + b[1];
+      else { const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.14, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.14; path = 'M' + a[0] + ' ' + a[1] + 'Q' + mx + ' ' + my + ' ' + b[0] + ' ' + b[1]; }
+      const style = kind === 'bad' ? 'stroke:' + C.bad + ';stroke-width:2.6;stroke-dasharray:7 5'
+        : kind === 'good' ? 'stroke:' + C.good + ';stroke-width:2.6'
+          : kind === 'ghost' ? 'stroke:' + C.good + ';stroke-width:2.6;stroke-dasharray:3 6;opacity:.85'
+            : 'stroke:' + C.line + ';stroke-width:1.3';
+      const op = kind === 'normal' ? (on(l.from) && on(l.to) ? 1 : FADE) : 1;
+      const mk = kind === 'bad' ? 'r' : kind === 'good' || kind === 'ghost' ? 'g' : 'n';
+      const end = l.trunk ? '' : ' marker-end="url(#pk-' + mk + ')"';
+      let s = '<path d="' + path + '" fill="none" opacity="' + op + '" style="' + style + '"' + end + '/>';
+      if (kind === 'bad' && !wps.length) { const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.07, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.07; s += cross(mx, my); }
+      if (kind === 'ghost') { const mx = (a[0] + b[0]) / 2 + (b[1] - a[1]) * 0.07, my = (a[1] + b[1]) / 2 - (b[0] - a[0]) * 0.07; s += '<text x="' + (mx + 8) + '" y="' + (my - 8) + '" style="fill:' + C.good + ';font-size:' + fs(12.5) + ';font-weight:700;paint-order:stroke;stroke:' + C.bg + ';stroke-width:4px">answer</text>'; }
+      return s;
+    }
+    (d.connectors || []).forEach(function (c) {
+      const kind = badL.has(key(c)) ? 'bad' : goodL.has(key(c)) ? 'good' : 'normal';
+      parts.links += link(c, kind);
+    });
+    ghosts.forEach(function (g) { parts.links += link(g, 'ghost'); });
+
+    // stocks, auxiliaries, junctions
+    const noted = {}; (o.notes || []).forEach(function (n) { if (n && n.at) noted[n.at] = true; });
+    (d.stocks || []).forEach(function (s) {
+      const w = stockW(s.label), hl = noted[s.label], op = on(s.label) ? 1 : FADE;
+      parts.nodes += '<g opacity="' + op + '"><rect x="' + (s.x - w / 2) + '" y="' + (s.y - 21 * SC) + '" width="' + w + '" height="' + 42 * SC + '" rx="4" style="fill:' + C.bg + ';stroke:' + (hl ? C.bad : C.line) + ';stroke-width:' + (hl ? 2.6 : 1.4) + '"/>' +
+        '<text x="' + s.x + '" y="' + (s.y + 5 * SC) + '" text-anchor="middle" style="fill:' + C.ink + ';font-size:' + fs(13) + ';font-weight:' + (hl ? 700 : 500) + '">' + esc(s.label) + '</text></g>';
+    });
+    (d.auxiliaries || []).forEach(function (a) {
+      const op = on(a.label) ? 1 : FADE, hl = noted[a.label];
+      parts.nodes += '<g opacity="' + op + '"><circle cx="' + a.x + '" cy="' + a.y + '" r="8" style="fill:' + C.bg + ';stroke:' + (hl ? C.bad : C.line) + ';stroke-width:' + (hl ? 2.4 : 1.4) + '"/>' +
+        '<text x="' + a.x + '" y="' + (a.y + 26) + '" text-anchor="middle" style="fill:' + C.ink + ';font-size:' + fs(12.5) + ';paint-order:stroke;stroke:' + C.bg + ';stroke-width:4px">' + esc(a.label) + '</text></g>';
+    });
+    (d.junctions || []).forEach(function (j) { parts.nodes += '<circle cx="' + j.x + '" cy="' + j.y + '" r="2.5" opacity="' + (on(j.label) ? 1 : FADE) + '" style="fill:' + C.line + '"/>'; });
+    (d.clouds || []).forEach(function (c) {
+      const used = (d.flows || []).some(function (f) { return (f.from_xy && f.from_xy[0] === c.x && f.from_xy[1] === c.y) || (f.to_xy && f.to_xy[0] === c.x && f.to_xy[1] === c.y); });
+      if (!used) parts.nodes += '<g opacity="' + (dim ? FADE : 1) + '">' + cloud([c.x, c.y]) + '</g>';
+    });
+
+    // notes and tags
+    const boxes = [];
+    (o.notes || []).forEach(function (n) {
+      if (!n || !n.at || !P[n.at]) return;
+      const p = P[n.at], above = K[n.at] === 'stock' ? 32 : K[n.at] === 'flow' ? 20 : 18;
+      parts.notes += '<text x="' + p[0] + '" y="' + (p[1] - above) + '" text-anchor="middle" style="fill:' + C.bad + ';font-size:' + fs(13.5) + ';font-weight:700;paint-order:stroke;stroke:' + C.bg + ';stroke-width:5px">' + esc(n.text) + '</text>';
+      boxes.push([p[0] - n.text.length * 4, p[1] - above - 16, p[0] + n.text.length * 4, p[1] - above + 4]);
+    });
+    const extras = new Set(o.extras || []);
+    Object.keys(o.tags || {}).concat(Array.from(extras)).forEach(function (l) {
+      if (!P[l]) return;
+      const p = P[l], t = extras.has(l) ? 'extra' : o.tags[l], dy = (K[l] === 'stock' ? 38 : K[l] === 'flow' ? 46 : 44) * Math.min(k, 1.25);
+      const w = (String(t).length * 6.6 + 16) * k;
+      parts.notes += '<g><rect x="' + (p[0] - w / 2) + '" y="' + (p[1] + dy - 13 * k) + '" width="' + w + '" height="' + 19 * k + '" rx="' + 9.5 * k + '" style="fill:' + (extras.has(l) ? 'var(--sunk)' : C.good) + ';fill-opacity:' + (extras.has(l) ? 1 : 0.14) + '"/>' +
+        '<text x="' + p[0] + '" y="' + (p[1] + dy + 1) + '" text-anchor="middle" style="fill:' + (extras.has(l) ? C.quiet : C.good) + ';font-size:' + fs(11.5) + ';font-weight:600">' + esc(t) + '</text></g>';
+      boxes.push([p[0] - w / 2, p[1] + dy - 13, p[0] + w / 2, p[1] + dy + 6]);
+    });
+
+    return '<svg class="pic" width="' + W + '" height="' + H + '" viewBox="' + Math.round(x0) + ' ' + Math.round(y0) + ' ' + W + ' ' + H + '" role="img" aria-label="Your diagram' + (whole ? '' : ', zoomed to the problem') + '" style="font-family:var(--font-body)">' + markers +
+      '<rect x="' + Math.round(x0) + '" y="' + Math.round(y0) + '" width="' + W + '" height="' + H + '" style="fill:var(--sunk);fill-opacity:.45"/>' +
+      parts.pipes + parts.links + parts.nodes + parts.labels + parts.notes + '</svg>';
+  }
+  return { svg: svg };
+})();
+if (typeof module !== 'undefined') module.exports = Picture;
 
 /* Modelling-process record, ported from SFD Studio's process_log.py.
 
@@ -1405,7 +1958,10 @@ const Model = (function () {
     return L.join('\n');
   }
   function keyText(k) {
-    return 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope + '\n\nKEY ITEMS:\n' +
+    return 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
+      (k.reference ? '\n\nTHE REFERENCE DIAGRAM (the educator\'s own stock-and-flow diagram of the game; the key items below are taken from it)\n' + diagramText(k.reference) : '') +
+      (k.inputs ? '\n\nOUTSIDE INPUTS IN THE REFERENCE: ' + k.inputs.join('; ') + '. A learner may model any of these instead of treating it as an input; that is not an error.' : '') +
+      '\n\nKEY ITEMS (what to check):\n' +
       k.items.map(function (it) { return it.id + ' [' + it.kind + ', ' + it.level + '] ' + it.what + (it.names ? ' (names a learner might use: ' + it.names.join(', ') + ')' : ''); }).join('\n') +
       '\n\nACCEPTED VARIANTS:\n' + k.variants.map(function (v) { return '- ' + v; }).join('\n');
   }
@@ -1429,87 +1985,208 @@ const Model = (function () {
         '.\nWhat the learner wrote at the end, before seeing the results: ' + (S.said || '(nothing)') : '');
   }
 
-  const MARK_SYSTEM = [
-    'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, and draws a stock-and-flow diagram (SFD) to explain it.',
-    'You mark the diagram against an ANSWER KEY written by the educator. The key is the standard. Do not add requirements of your own, and do not mark down anything the key or its accepted variants allow.',
-    '',
-    'How to read the diagram: it lists stocks, flows (with what each flows from and to; "cloud" is a source or sink), auxiliaries, and information links. A link into a flow\'s name goes into that flow\'s valve.',
-    'Match the learner\'s elements to the key by meaning, not by exact name: learners use their own words. An element of the right meaning but the wrong type (for example a stock drawn as an auxiliary) counts as "wrong". A flow counts only if it connects the right things. A link counts only if it runs in the right direction; a link through an intermediate auxiliary counts as the direct link where the key or its variants say so.',
-    '',
-    'For each key item give a verdict: "present", "partly" (there but incomplete or misconnected), "wrong" (drawn, but as the wrong type or with the wrong meaning) or "missing".',
-    'In each reason, name the learner\'s element you matched. For a missing or wrong item, describe the role that is missing as a hint the learner can act on, without simply naming the key\'s element. Where the learner\'s game shows why an item matters, cite a week.',
-    'Also list elements in the diagram that match no key item, and say whether each is harmless or a mistake.',
-    'Write in plain English for a beginner. Be accurate and specific; never praise vaguely.',
-    '',
-    'Reply ONLY with a JSON object, no markdown fences, of this shape:',
-    '{"overall": "<2-3 sentences>", "verdicts": [{"item": "<key item id>", "verdict": "present|partly|wrong|missing", "learner_element": "<the learner\'s element, or empty>", "reason": "<one or two sentences>"}], "extras": [{"element": "<name>", "comment": "<one sentence>"}], "suggestion": "<the single most useful next step>"}'
+  /* ---------- marking: rules (code) and two AI calls ----------
+     Layer 1 and layer 3 are decided by the rules in marking.js. The AI maps the
+     learner's elements to concepts (call 1) and words the slides (call 2). The
+     wording cannot change a verdict; if it fails, the rules' own words are used. */
+  const MAP_SYSTEM = [
+    'You read a learner\'s stock-and-flow diagram of a pub supply game and say which CONCEPT of the game each of the learner\'s elements stands for.',
+    'Judge by meaning and by the element\'s place in the structure (what a flow fills and empties, what a link informs), not by its name alone: learners use their own words.',
+    'An element may stand for several concepts when it plays several roles (one flow out of the waiting customers can be both "serving on arrival" and "catching up"). A concept may be drawn as several elements (kegs on order as two stocks in a row).',
+    'Map an element by the role it plays even if it is drawn as the wrong kind (a stock drawn as an auxiliary): the rules notice the kind themselves.',
+    'An element that stands for no concept is an extra: give a short, neutral comment on it.',
+    'You only map. Do not judge whether the diagram is right.',
+    'Reply ONLY with JSON, no markdown fences: {"elements": [{"element": "<exact name>", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"element": "<exact name>", "comment": "<one short sentence>"}]}'
+  ].join('\n');
+  const WORD_SYSTEM = [
+    'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
+    'Voice: warm, encouraging and explanatory, in plain English for a beginner. Praise only what the rules confirm, and name it specifically. Frame each problem as the next thing to understand. Never use the word "wrong". Be honest about how far the learner is.',
+    'Give hints, not answers: do not tell them which link or flow to add. You may use their own game weeks as evidence ("in week 9, 30 customers were waiting").',
+    'Reply ONLY with JSON, no markdown fences: {"headline": "<one sentence>", "overall": "<2-4 sentences>", "slides": {"<mechanism id>": "<2-3 sentences: what the game does, where they met it in their own weeks if helpful, ending with the hint question>"}, "wrap": "<1-2 sentences: the single most useful next step>"}'
   ].join('\n');
   const ASK_SYSTEM = [
-    'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, draws a stock-and-flow diagram to explain it, and has had it marked against the educator\'s answer key. Now they ask you questions.',
-    'Ground every answer in the answer key, the learner\'s current diagram and the learner\'s own game record. Cite weeks of their game where that helps: their own numbers are the best evidence they have. If the game is still being played, use only the weeks given, and never tell them what the game will do next.',
-    'Explain the errors the marking found and why they matter. Prefer a hint first; if the learner asks for the answer directly, you may give it.',
-    'If a question is not settled by the key, say so plainly, and answer briefly from general system dynamics knowledge, marked as such.',
+    'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, draws a stock-and-flow diagram to explain it, and has had it checked. The check was made by fixed rules on top of your reading of their diagram. Now they ask you questions.',
+    'Ground every answer in the reference diagram, the learner\'s current diagram, the check\'s results and the learner\'s own game record. Cite weeks of their game where that helps. If the game is still being played, use only the weeks given, and never tell them what the game will do next.',
+    'Explain why each problem matters. Prefer a hint first; if the learner asks for the answer directly, you may give it.',
+    'If the learner says their diagram was misread, take it seriously: say which element you read as what, and if they are right, tell them to check again after renaming or redrawing it so the reading is clear.',
+    'If a question is not settled by the reference, say so plainly, and answer briefly from general system dynamics knowledge, marked as such.',
     'Keep answers short: at most about 150 words, plain English, no markdown headings.'
   ].join('\n');
 
-  /* ---------- marking ---------- */
-  const LEVEL = { required: 0, important: 1, optional: 2 };
+  function conceptText() {
+    return Marking.CONCEPTS.map(function (c) { return c.id + ' ' + c.name + ' [' + c.kind + ']: ' + c.what + ' (e.g. ' + c.names.join(', ') + ')'; }).join('\n');
+  }
+  function cleanMap(raw, d) {
+    const present = new Set([].concat(d.stocks || [], d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; }));
+    const ids = new Set(Marking.CONCEPTS.map(function (c) { return c.id; }));
+    const map = {}, why = {}, extras = [];
+    (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
+      if (!e || !present.has(e.element)) return;
+      const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
+      if (cs.length) { map[e.element] = cs; why[e.element] = e.reason || ''; }
+    });
+    (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) { if (x && present.has(x.element) && !map[x.element]) extras.push({ element: x.element, comment: x.comment || '' }); });
+    present.forEach(function (l) { if (!map[l] && !extras.some(function (x) { return x.element === l; })) extras.push({ element: l, comment: '' }); });
+    return { map: map, why: why, extras: extras };
+  }
+
+  function progress(text) { $('markOut').innerHTML = '<p class="mark-busy" role="status"><span class="spin" aria-hidden="true"></span>' + text + '</p>'; }
   async function mark() {
     if (S.busy) return;
-    if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be marked.'); return; }
+    if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be checked.'); return; }
     if (!S.cfg) { showMarkMsg('Add an AI key under <b>AI settings</b> first.'); openSettings(); return; }
-    if (!S.diagram || !((S.diagram.stocks || []).length + (S.diagram.flows || []).length + (S.diagram.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
+    const d = S.diagram;
+    if (!d || !((d.stocks || []).length + (d.flows || []).length + (d.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
     busy(true, 'mark');
-    const user = 'ANSWER KEY\n' + keyText(S.key) + '\n\nTHE LEARNER\'S DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() + '\n\nMark the diagram now.';
-    const r = await LLM.completeJson(S.cfg, MARK_SYSTEM, user, 2500);
+    // layer 1: notation (code)
+    const notation = Marking.notation(d);
+    // layer 2: concepts (AI)
+    progress('Reading your diagram…');
+    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, 'CONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + diagramText(d) + '\n\nMap every element now.', 2000);
+    if (r1[1]) { busy(false); showMarkMsg(esc(r1[1])); return; }
+    const mp = cleanMap(r1[0], d);
+    // layer 3: mechanisms (code)
+    progress('Checking how it works…');
+    const mech = Marking.mechanisms(d, mp.map), M = mech.mechanisms;
+    const sc = Marking.score(M), far = Marking.coreFound(mp.map) < 3;
+    const fails = M.filter(function (m) { return !m.pass && m.weight !== 'optional'; })
+      .sort(function (a, b) { return (a.weight === 'required' ? 0 : 1) - (b.weight === 'required' ? 0 : 1); });
+    const prev = S.lastResult, now = {}; M.forEach(function (m) { now[m.id] = m.pass; });
+    const better = prev ? M.filter(function (m) { return m.pass && prev[m.id] === false && m.weight !== 'optional'; }) : [];
+    const worse = prev ? M.filter(function (m) { return !m.pass && prev[m.id] === true && m.weight !== 'optional'; }) : [];
+    // the words (AI); the rules' own words if this fails
+    progress('Writing your feedback…');
+    const facts = 'RESULTS OF THE CHECK (final)\n' +
+      'Required mechanisms working: ' + sc.required.pass + ' of ' + sc.required.of + '. Important: ' + sc.important.pass + ' of ' + sc.important.of + '.\n' +
+      'WORKING: ' + (M.filter(function (m) { return m.pass && m.weight !== 'optional'; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
+      'NOT YET WORKING (write a slide for each id):\n' + (fails.map(function (m) { return m.id + ' ' + m.title + ' [' + m.weight + ']. The game: ' + m.game + ' Rule\'s hint: ' + m.hint; }).join('\n') || 'none') + '\n' +
+      'NOTATION: ' + (notation.length ? notation.map(function (n) { return n.type + ': ' + n.text; }).join(' | ') : 'no problems') + '\n' +
+      (far ? 'The diagram shows few of the game\'s parts: be honest and kind about that, and point them to the main parts of the game.\n' : '') +
+      'OPTIONAL extras drawn: ' + (M.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
+      (prev ? 'SINCE THE LAST CHECK: now working: ' + (better.map(function (m) { return m.title; }).join('; ') || 'nothing new') + '; no longer working: ' + (worse.map(function (m) { return m.title; }).join('; ') || 'nothing') + '\n' : '') +
+      'ABOUT THE ORDER DECISION (an observation, not marked): ' + mech.decisionNote;
+    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, facts + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
     busy(false);
-    if (r[1]) { showMarkMsg(esc(r[1])); return; }
-    const a = r[0];
-    a.verdicts = Array.isArray(a.verdicts) ? a.verdicts : [];
-    // what SFD Studio's replay shows of an advisor's answer: overall, issues, suggestion
-    const byId = {}; S.key.items.forEach(function (it) { byId[it.id] = it; });
-    a.issues = a.verdicts.filter(function (v) { return v.verdict !== 'present'; })
-      .map(function (v) { return (byId[v.item] ? byId[v.item].what : v.item) + ': ' + v.reason; });
-    S.marking = a; S.chat = [];
-    if (S.rec) { const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram against the answer key.' }, a); askWhy(ev.i, ev.question); }
-    drawMarking(); drawChat(); drawRecord();
+    const words = r2[1] ? null : r2[0];
+    const res = { notation: notation, map: mp, mech: mech, score: sc, fails: fails, far: far, better: better, worse: worse, first: !prev, words: words,
+      kinds: Marking.kindNotes(d, mp.map), diagram: JSON.parse(JSON.stringify(d)), when: new Date() };
+    S.lastResult = now; S.result = res; S.chat = [];
+    // the record (what SFD Studio's replay shows of an advisor's answer: overall, issues, suggestion)
+    if (S.rec) {
+      const answer = { overall: (words && words.overall) || overallFallback(res),
+        issues: notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
+        suggestion: (words && words.wrap) || (fails[0] ? fails[0].hint : 'Your diagram works the way the game does.'),
+        score: { required: sc.required.pass + '/' + sc.required.of, important: sc.important.pass + '/' + sc.important.of },
+        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: mp.map, extras: mp.extras.map(function (x) { return x.element; }),
+        worded_by: words ? 'ai' : 'rules' };
+      const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, answer); askWhy(ev.i, ev.question);
+    }
+    buildSlides(); drawChat(); drawRecord();
+    $('askPanel').hidden = false;
   }
   function showMarkMsg(html) { $('markOut').innerHTML = '<p class="mark-msg">' + html + '</p>'; }
-  function drawMarking() {
-    const a = S.marking; if (!a) { $('markOut').innerHTML = ''; return; }
-    const byId = {}; S.key.items.forEach(function (it) { byId[it.id] = it; });
-    const ICON = { present: '✅', partly: '🟡', wrong: '❌', missing: '⬜' }, WORD = { present: 'There', partly: 'Partly', wrong: 'Wrong', missing: 'Missing' };
-    const req = S.key.items.filter(function (it) { return it.level === 'required'; });
-    const got = req.filter(function (it) { return a.verdicts.some(function (v) { return v.item === it.id && v.verdict === 'present'; }); });
-    const rows = a.verdicts.slice().sort(function (x, y) {
-      const ix = byId[x.item], iy = byId[y.item];
-      return (ix ? LEVEL[ix.level] : 3) - (iy ? LEVEL[iy.level] : 3);
-    }).map(function (v) {
-      const it = byId[v.item];
-      return '<li class="v-' + esc(v.verdict) + '"><span class="v-ico" aria-hidden="true">' + (ICON[v.verdict] || '•') + '</span><div>' +
-        '<b>' + esc(WORD[v.verdict] || v.verdict) + '</b> <span class="muted">· ' + esc(it ? it.kind + (it.level !== 'required' ? ', ' + it.level : '') : v.item) + '</span>' +
-        (v.learner_element ? ' <span class="chip">' + esc(v.learner_element) + '</span>' : '') +
-        '<div>' + esc(v.reason) + '</div></div></li>';
-    }).join('');
-    const extras = (a.extras || []).map(function (x) { return '<li><span class="chip">' + esc(x.element) + '</span> ' + esc(x.comment) + '</li>'; }).join('');
-    $('markOut').innerHTML =
-      '<p class="mark-score"><b>' + got.length + ' of ' + req.length + '</b> required parts are there.</p>' +
-      '<p>' + esc(a.overall) + '</p><ul class="verdicts">' + rows + '</ul>' +
-      (extras ? '<h4>Not in the key</h4><ul class="extras">' + extras + '</ul>' : '') +
-      (a.suggestion ? '<p class="mark-next"><b>Next step:</b> ' + esc(a.suggestion) + '</p>' : '') +
-      '<p class="muted small">Marked by ' + esc(LLM.PROVIDERS[S.cfg.provider]) + ' · ' + esc(S.cfg.model) + ' against ' + (S.key.status === 'provisional' ? 'a provisional answer key' : 'the answer key') + '. The AI can be wrong: if a verdict looks wrong, ask about it below.</p>';
-    $('askPanel').hidden = false;
+  function overallFallback(r) {
+    const ok = r.mech.mechanisms.filter(function (m) { return m.pass && m.weight !== 'optional'; });
+    if (!r.fails.length) return 'Your diagram works the way the game does: every mechanism the check looks for is there.';
+    const said = ok.slice(0, 3).map(function (m) { return m.title.charAt(0).toLowerCase() + m.title.slice(1); });
+    return (said.length ? 'Your diagram already shows that ' + (said.length > 1 ? said.slice(0, -1).join(', ') + ' and ' + said[said.length - 1] : said[0]) + '. ' : '') +
+      (r.fails.length === 1 ? 'One part of the game is not there yet.' : r.fails.length + ' parts of the game are not there yet.') + ' Let\'s look at them one at a time.';
+  }
+
+  /* ---------- the slides ---------- */
+  function buildSlides() {
+    const r = S.result, d = r.diagram, w = r.words || {}, sc = r.score, slides = [];
+    const errs = r.notation.filter(function (n) { return n.type === 'error'; }), warns = r.notation.filter(function (n) { return n.type === 'warning'; });
+    const nEl = Object.keys(r.map.map).length;
+    const status = '<p class="sl-status"><span>' + (errs.length ? '⚠ ' + errs.length + ' notation ' + (errs.length === 1 ? 'problem' : 'problems') : '✓ notation clean') + '</span>' +
+      '<span>' + nEl + ' element' + (nEl === 1 ? '' : 's') + ' read</span><span><b>' + sc.required.pass + ' of ' + sc.required.of + '</b> required mechanisms work</span></p>';
+    // 1. overall
+    slides.push({ label: 'Overall', title: w.headline || (r.fails.length ? 'A good start. Let\'s see how it can be improved.' : 'Your diagram works the way the game does.'),
+      html: status + '<p>' + esc(w.overall || overallFallback(r)) + '</p>' +
+        (r.better.length ? '<p class="sl-good">Since your last check, now working: ' + r.better.map(function (m) { return esc(m.title); }).join('; ') + '.</p>' : ''),
+      next: r.fails.length || errs.length ? 'Let\'s see how it can be improved →' : 'See how I read your diagram →' });
+    // 2. how I read your diagram
+    const tags = {}; Object.keys(r.map.map).forEach(function (l) { tags[l] = r.map.map[l].map(function (c) { return Marking.CONCEPT[c].name; }).join(' + '); });
+    slides.push({ label: 'How I read your diagram', title: 'Before we go on, here is how I understood your diagram',
+      html: '<p>Each part of your diagram is tagged with the part of the game I read it as. If I read something wrongly, tell me in <b>Ask about your diagram</b> below: the rest of the check builds on this reading.</p>' +
+        (r.kinds.length ? '<ul class="sl-list">' + r.kinds.map(function (k) { return '<li>' + esc(k.text) + '</li>'; }).join('') + '</ul>' : '') +
+        (r.map.extras.filter(function (x) { return x.comment; }).length ? '<p class="muted small">Not part of the game\'s mechanics: ' + r.map.extras.filter(function (x) { return x.comment; }).map(function (x) { return '<b>' + esc(x.element) + '</b> (' + esc(x.comment) + ')'; }).join('; ') + '</p>' : ''),
+      pic: { whole: true, tags: tags, extras: r.map.extras.map(function (x) { return x.element; }) } });
+    // 3. notation, when there is something to fix
+    if (r.notation.length) {
+      const ev = { focus: [], bad: [], badFlows: [], notes: [] };
+      r.notation.forEach(function (n) { const e = n.evidence || {}; ['focus', 'bad', 'badFlows', 'notes'].forEach(function (k) { ev[k] = ev[k].concat(e[k] || []); }); });
+      slides.push({ label: 'Notation', title: errs.length ? 'A few things about how the diagram is drawn' : 'Two small things to look at',
+        html: '<p>These are about the notation itself, before what the diagram means.</p><ul class="sl-list">' +
+          errs.map(function (n) { return '<li><b>To fix:</b> ' + esc(n.text) + '</li>'; }).join('') + warns.map(function (n) { return '<li><b>To check:</b> ' + esc(n.text) + '</li>'; }).join('') + '</ul>',
+        pic: { whole: true, focus: [], bad: ev.bad, badFlows: ev.badFlows, notes: ev.notes.slice(0, 4) } });
+    }
+    // 4. one slide per mechanism not working yet, or one slide when the diagram shows little of the game
+    if (r.far && r.fails.length > 3) {
+      slides.push({ label: 'How it can be improved', title: 'What the game needs in your diagram',
+        html: '<p>' + esc('Your diagram shows only a few of the game\'s parts so far. Here is what happens in the game, as a guide to what your diagram needs to show. Start with the first and build from there.') + '</p><ul class="sl-list">' +
+          r.fails.filter(function (m) { return m.weight === 'required'; }).map(function (m) { return '<li><b>' + esc(m.title) + '.</b> ' + esc(m.game) + '</li>'; }).join('') + '</ul>',
+        pic: { whole: true } });
+    } else {
+      r.fails.forEach(function (m) {
+        slides.push({ label: 'How it can be improved', title: m.title,
+          html: '<p>' + esc((w.slides && w.slides[m.id]) || (m.game + ' ' + m.hint)) + '</p>' + (m.weight === 'important' ? '<p class="muted small">This one completes the picture; it is not one of the required mechanisms.</p>' : ''),
+          pic: Object.assign({}, m.evidence), answer: m.answer, ghost: (m.evidence.ghost || []).length > 0 });
+      });
+    }
+    // 5. wrap-up
+    slides.push({ label: 'Next step', title: r.fails.length ? 'Your next step' : 'Well done',
+      html: '<p>' + esc(w.wrap || (r.fails[0] ? r.fails[0].hint : 'Your diagram now works the way the game does: that is the structure behind the swings you saw.')) + '</p>' +
+        '<p class="muted">' + esc(r.mech.decisionNote) + ' <span class="small">(An observation, not marked.)</span></p>' +
+        (!r.first ? '<p>' + (r.better.length || r.worse.length ? 'Since your last check: ' + (r.better.length ? 'now working, ' + r.better.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + (r.better.length && r.worse.length ? '. ' : '') + (r.worse.length ? 'no longer working, ' + r.worse.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + '.' : 'Since your last check, the results are the same.') + '</p>' : '') +
+        '<p class="muted small">Checked by rules, with ' + esc(LLM.PROVIDERS[S.cfg.provider]) + ' · ' + esc(S.cfg.model) + ' reading your diagram' + (r.words ? ' and writing these words' : '') + '. The reading can be wrong: if it is, say so below.</p>',
+      last: true });
+    S.slides = slides; S.slide = 0; S.onePage = false;
+    drawSlides();
+  }
+  function slideHTML(s, i, n, one) {
+    const pic = s.pic ? '<div class="sl-pic">' + Picture.svg(S.result.diagram, Object.assign({}, s.pic, { showGhost: !!s.shown })) + '</div>' : '';
+    const ans = s.answer && s.shown ? '<p class="sl-answer"><b>Answer:</b> ' + esc(s.answer) + '</p>' : '';
+    const tools = (s.answer ? '<button class="btn ghost small" type="button" data-act="answer" data-i="' + i + '">' + (s.shown ? 'Hide the answer' : 'Show me the answer') + '</button>' : '') +
+      (s.pic && s.label === 'How it can be improved' || s.label === 'Notation' ? '<button class="btn ghost small" type="button" data-act="canvas">Try it on the canvas</button>' : '');
+    const nav = one ? (tools ? '<div class="sl-nav">' + tools + '</div>' : '') :
+      '<div class="sl-nav">' + (i > 0 ? '<button class="btn ghost small" type="button" data-act="back">← Back</button>' : '') + tools + '<span class="sl-gap"></span>' +
+      (s.last ? '<button class="btn" type="button" data-act="again">Check again</button>' : '<button class="btn" type="button" data-act="next">' + esc(s.next || 'Next →') + '</button>') + '</div>';
+    const dots = one ? '' : '<span class="sl-dots" aria-hidden="true">' + S.slides.map(function (_, k) { return '<i class="' + (k === i ? 'on' : k < i ? 'seen' : '') + '"></i>'; }).join('') + '</span>';
+    return '<section class="slide" aria-label="' + esc(s.label) + ', ' + (i + 1) + ' of ' + n + '"><div class="sl-top"><span>' + esc(s.label) + ' · ' + (i + 1) + ' of ' + n + '</span>' + dots + '</div>' +
+      '<h3>' + esc(s.title) + '</h3>' + s.html + pic + ans + nav + '</section>';
+  }
+  function drawSlides() {
+    if (!S.slides) { $('markOut').innerHTML = ''; return; }
+    const n = S.slides.length;
+    const body = S.onePage ? S.slides.map(function (s, i) { return slideHTML(s, i, n, true); }).join('') : slideHTML(S.slides[S.slide], S.slide, n, false);
+    $('markOut').innerHTML = '<div class="slides' + (S.onePage ? ' one' : '') + '" aria-live="polite">' + body + '</div>' +
+      '<p class="sl-switch"><button class="linkish" type="button" data-act="toggle">' + (S.onePage ? 'Back to the slides' : 'See everything on one page') + '</button></p>';
+  }
+  function slideAction(e) {
+    const b = e.target.closest('button[data-act]'); if (!b || !S.slides) return;
+    const act = b.getAttribute('data-act');
+    if (act === 'next' && S.slide < S.slides.length - 1) { S.slide++; drawSlides(); $('markOut').scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    else if (act === 'back' && S.slide > 0) { S.slide--; drawSlides(); }
+    else if (act === 'answer') { const s = S.slides[+b.getAttribute('data-i')]; s.shown = !s.shown; drawSlides(); }
+    else if (act === 'canvas') frame().scrollIntoView({ block: 'center', behavior: 'smooth' });
+    else if (act === 'again') mark();
+    else if (act === 'toggle') { S.onePage = !S.onePage; drawSlides(); }
   }
 
   /* ---------- questions ---------- */
   async function ask() {
     const q = $('askIn').value.trim();
-    if (!q || S.busy) return;
+    if (!q || S.busy || !S.result) return;
     if (!S.cfg) { openSettings(); return; }
     S.chat.push({ role: 'user', content: q }); $('askIn').value = ''; drawChat();
     busy(true, 'ask');
-    const ctx = 'ANSWER KEY\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
-      '\n\nTHE MARKING THEY RECEIVED\n' + JSON.stringify({ overall: S.marking.overall, verdicts: S.marking.verdicts, suggestion: S.marking.suggestion });
+    const R = S.result;
+    const ctx = 'THE REFERENCE\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
+      '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(R.map.map) +
+      '\nNotation: ' + (R.notation.map(function (n) { return n.text; }).join(' | ') || 'no problems') +
+      '\nMechanisms: ' + R.mech.mechanisms.map(function (m) { return m.id + ' ' + m.title + ': ' + (m.pass ? 'works' : 'not yet. Hint: ' + m.hint + ' Answer, if asked: ' + m.answer); }).join('\n') +
+      '\nOrder decision: ' + R.mech.decisionNote;
     const msgs = [{ role: 'user', content: ctx + '\n\n(The learner\'s questions follow.)' }, { role: 'assistant', content: 'Understood. I will answer as their teaching assistant.' }].concat(S.chat);
     const r = await LLM.complete(S.cfg, ASK_SYSTEM, msgs, 700, false);
     busy(false);
@@ -1628,6 +2305,7 @@ const Model = (function () {
     $('aiModel').addEventListener('input', readSettings);
     $('aiTest').addEventListener('click', testConn);
     $('markBtn').addEventListener('click', mark);
+    $('markOut').addEventListener('click', slideAction);
     $('askBtn').addEventListener('click', ask);
     $('askIn').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } });
     $('whySave').addEventListener('click', saveWhy);
@@ -1636,7 +2314,7 @@ const Model = (function () {
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
     drawSettings();
   }
-  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, MARK_SYSTEM: MARK_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
 })();
 
 /* Drawing and interaction. Reads the engine's state; never changes the rules. */
