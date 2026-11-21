@@ -139,6 +139,9 @@
   function tourSteps() {
     const w = wom();
     return [
+      { t: [byId('topStats')], h: 'Your goal',
+        b: w ? 'Serve as many customers as you can. A customer you cannot serve is turned away and tells others, so fewer come next time. Your cellar holds ' + CAP + ' kegs: kegs that do not fit are sent back and lost. These counts blink red when they go up.'
+             : 'Keep your total cost as low as you can. Only two things add to it, every week: each keg in your cellar costs ' + money(CFG.holdCost) + ', and each keg you owe a waiting customer costs ' + money(CFG.backlogCost) + '. Ordering is free, and so are the kegs. So serve your customers on time, without keeping more beer than you need. The cost blinks red each time it goes up.' },
       { t: [inChain('[data-k="n0"]')], h: 'Your pub',
         b: 'This is you. The number is how many kegs are in your cellar right now.' + (w ? ' Your cellar holds ' + CAP + ' kegs at most.' : '') },
       { t: [inChain('[data-k="cin"]')], h: 'Customers coming in',
@@ -164,8 +167,7 @@
         b: 'A record of every week so far. Numbers in red mark trouble: customers ' + (w ? 'turned away, kegs sent back,' : 'left waiting,') + ' or kegs the wholesaler could not send.' },
       { t: [byId('tabModel')], h: 'Your model',
         b: 'Draw your stock-and-flow diagram of the game here, and have it checked. The tab is open the whole time: draw while you play, after it, or both, and switch back and forth as you like.' },
-      { t: [byId('topStats')], h: 'Your score',
-        b: w ? 'Customers served so far. Serve as many as you can.' : 'Your cost so far. Keep it as low as you can.' }
+
     ];
   }
   function rectOf(fns) {
@@ -360,6 +362,32 @@
     if (n > 0) al.innerHTML = '<span class="alert-ico" aria-hidden="true">⚠️</span><div><b>Your cellar is full.</b> It holds ' + CAP + ' kegs. ' +
       (n === 1 ? '<b>1 keg</b> of this week\'s delivery did not fit and was' : '<b>' + n + ' kegs</b> of this week\'s delivery did not fit and were') + ' sent back.</div>';
   }
+  /* The reminder: the score blinks from white to red when it gets worse, redder for a
+     worse week, and the line beside it says what made it go up. */
+  function blink(el, heat) {
+    heat = Math.max(0.2, Math.min(1, heat));
+    const mix = function (a, b) { return Math.round(a + (b - a) * heat); };
+    el.style.setProperty('--hot', 'rgb(' + mix(255, 200) + ',' + mix(214, 20) + ',' + mix(205, 12) + ')');
+    el.style.setProperty('--hotInk', heat > 0.45 ? '#fff' : '#3a0a06');
+    el.style.setProperty('--warm', 'color-mix(in srgb, var(--owed) ' + Math.round(40 + 60 * heat) + '%, var(--fg))');
+    el.classList.remove('heat', 'warm'); void el.offsetWidth; el.classList.add('heat', 'warm');
+  }
+  function cool() { ['totC', 'totT', 'totW'].forEach(function (id) { $(id).classList.remove('heat', 'warm'); }); }
+  function costLine(me, week) {
+    if (wom()) {
+      const bits = [];
+      if (me && me.turned > 0) bits.push('<b>' + me.turned + ' turned away</b> in week ' + week + ': they tell others, so fewer will come');
+      if (me && me.back > 0) bits.push('<b>' + me.back + ' kegs sent back</b> in week ' + week + ': your cellar holds ' + CAP);
+      $('whyCost').innerHTML = bits.length ? bits.join(' · ') : 'Turned away: customers you cannot serve · Sent back: kegs that do not fit your cellar of ' + CAP;
+      $('whyCost').classList.toggle('bad', bits.length > 0);
+      return;
+    }
+    if (me && me.weekCost > 0)
+      $('whyCost').innerHTML = '<b>+' + money(me.weekCost) + '</b> in week ' + week + ': ' +
+        [me.stock > 0 ? 'cellar ' + me.stock + ' × ' + money(CFG.holdCost) : '', me.owed > 0 ? 'waiting ' + me.owed + ' × ' + money(CFG.backlogCost) : ''].filter(Boolean).join(' + ');
+    else $('whyCost').innerHTML = 'Adds to your cost each week: ' + money(CFG.holdCost) + ' per keg in the cellar · ' + money(CFG.backlogCost) + ' per keg owed to a waiting customer';
+    $('whyCost').classList.toggle('bad', !!(me && me.weekCost > 0));
+  }
   function totals(served, turned, wasted) {
     $('tot').textContent = served; $('totT').textContent = turned; $('totW').textContent = wasted;
   }
@@ -399,12 +427,21 @@
         (me.turned > 0 ? ' and turned ' + me.turned + ' away.' : me.asked > 0 ? ', all of them.' : '.');
       $('sumWk').innerHTML = '<b>Customers served so far</b> <span>' + (me.served - me.sent) + ' + ' + me.sent + ' = <b>' + me.served + '</b></span>' +
         '<span class="sofar">' + (me.turned > 0 ? 'People who left without a keg tell others. Expect a smaller crowd.' : 'Everyone was served. Word gets around, and the crowd grows.') + '</span>';
-      if (!keepTotals) totals(me.served, me.turnedAll, me.wasted);
+      if (!keepTotals) {
+        totals(me.served, me.turnedAll, me.wasted);
+        if (me.turned > 0) blink($('totT'), me.turned / 6);
+        if (me.back > 0) blink($('totW'), me.back / 8);
+        costLine(me, rec.week);
+      }
     } else {
       $('lastWk').textContent = 'Week ' + rec.week + ': you served ' + me.sent + (me.owed > 0 ? ' and still owe ' + me.owed : ', nobody left waiting') + '.';
       // the week's cost written out from its two parts
       $('sumWk').innerHTML = '<b>Week ' + rec.week + ' cost</b> <span>cellar ' + me.stock + ' × ' + money(CFG.holdCost) + ' = ' + money(me.stock * CFG.holdCost) + '</span> <span>+ waiting ' + me.owed + ' × ' + money(CFG.backlogCost) + ' = ' + money(me.owed * CFG.backlogCost) + '</span> <span>= <b>' + money(me.weekCost) + '</b></span> <span class="sofar">Cost so far ' + money(me.cost - me.weekCost) + ' + ' + money(me.weekCost) + ' = <b>' + money(me.cost) + '</b></span>';
-      if (!keepTotals) $('totC').textContent = money(me.cost);
+      if (!keepTotals) {
+        $('totC').textContent = money(me.cost);
+        if (me.weekCost > 0) blink($('totC'), me.weekCost / 24);   // an ordinary week (about £6) pale, £24 or more the hottest red
+        costLine(me, rec.week);
+      }
     }
   }
   /* served = false: the view before this week's customers get their kegs.
@@ -429,6 +466,7 @@
     Model.startGame(G); TAB = 'game';
     syncView(rec, false); reply(rec); wasteAlert(0); drawLane(); drawFacts(rec);
     $('order').value = CFG.startFlow; $('why').value = '';
+    cool(); costLine(null);
     closeBubble(); B.seen = {}; B.hintQueue = [];
     show('play'); pubEnd(); lock(false);
     let toured = false; try { toured = localStorage.getItem('pubgame.toured') === '1'; } catch (e) {}

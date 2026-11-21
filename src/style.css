@@ -313,3 +313,18 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .msg.failed{color:var(--owed)}
 .rec-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:8px 0}
 .rec-row label{display:flex;flex-direction:column;gap:3px;font-size:.85rem;color:var(--muted);flex:1;min-width:180px}
+
+/* the goal reminder: the score blinks from white to red when it gets worse */
+#totC,#totT,#totW{display:inline-block;padding:0 6px;border-radius:6px}
+#totC.warm,#totT.warm,#totW.warm{color:var(--warm)}
+#totC.heat,#totT.heat,#totW.heat{animation:heat 1.8s ease-out 1}
+@keyframes heat{
+  0%{background:#fff;color:#3a0a06}
+  18%{background:var(--hot);color:var(--hotInk)}
+  36%{background:#fff;color:#3a0a06}
+  56%{background:var(--hot);color:var(--hotInk)}
+  100%{background:transparent;color:var(--warm)}
+}
+@media (prefers-reduced-motion:reduce){#totC.heat,#totT.heat,#totW.heat{animation:none}}
+.why-cost{flex-basis:100%;font-size:.82rem;color:var(--muted)}
+.why-cost.bad b{color:var(--owed)}

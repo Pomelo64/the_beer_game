@@ -8,7 +8,9 @@ The game is the first part of an exercise in system dynamics. To do the exercise
 
 ## Help on screen
 
-The first time someone plays, a short tour of speech bubbles points to each part of the screen and says what it shows. The **Show me around** button repeats it at any time. During a game, a bubble also appears the first time something important happens: the wholesaler runs short, customers are left waiting or turned away, or the cellar overflows.
+The first time someone plays, a short tour of speech bubbles points to each part of the screen and says what it shows. It opens with the goal of the game and what counts against it. The **Show me around** button repeats it at any time. During a game, a bubble also appears the first time something important happens: the wholesaler runs short, customers are left waiting or turned away, or the cellar overflows.
+
+Throughout the game, a line under the score says what adds to it. Each time the cost goes up (or, in word of mouth, each time customers are turned away or kegs sent back), the number blinks from white to red: pale for an ordinary week, hot red for a bad one.
 
 ## Two games
 
