@@ -40,6 +40,15 @@ p{margin:0;max-width:65ch}
   border-bottom:1px solid var(--line);padding-bottom:12px}
 .top .tag{color:var(--muted);font-size:.85rem}
 .top-stats{display:flex;gap:20px;color:var(--muted)}
+/* The figures have a row of their own under the title, and the reminder line keeps a fixed
+   height, so nothing in the header moves when its text changes. */
+.top-stats{flex:1 1 100%;align-items:baseline}
+.top-stats > span:not(.why-cost){white-space:nowrap}
+.top-stats b{display:inline-block;min-width:3ch}
+#totC{min-width:7ch}
+/* lines kept for the reminder: its longest text at each width */
+@media (max-width:767px){.why-cost{--whyLines:2}}
+@media (max-width:413px){.is-wom .why-cost{--whyLines:3}}
 .top-stats b{color:var(--fg);font-family:var(--font-head);font-size:1.15rem;font-variant-numeric:tabular-nums}
 section{display:flex;flex-direction:column;gap:16px}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;
@@ -326,7 +335,8 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
   100%{background:transparent;color:var(--warm)}
 }
 @media (prefers-reduced-motion:reduce){#totC.heat,#totT.heat,#totW.heat{animation:none}}
-.why-cost{flex-basis:100%;font-size:.82rem;color:var(--muted)}
+.why-cost{flex-basis:100%;font-size:.82rem;line-height:1.35;color:var(--muted);min-height:calc(1.35em * var(--whyLines,1))}
+.top-stats .why-cost b{display:inline;min-width:0;font:inherit;font-weight:600;color:inherit}
 .why-cost.bad b{color:var(--owed)}
 
 /* the feedback slides */

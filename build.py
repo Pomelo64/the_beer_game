@@ -7,6 +7,12 @@ def canvas_js():
     html = rd('sfd/canvas.html')
     assert html.count('</head>') == 1
     html = html.replace('</head>', '<style>/* added by the Pub Supply Game: no equations in this exercise */ #modeToggle{display:none!important}</style>\n</head>')
+    # Flow pipes are always straight. With 'bezier', cytoscape 3.30 groups a pipe with an
+    # information link that joins the same two elements and bends them apart whenever both
+    # are redrawn together (for example on hovering the stock). 'straight' is never grouped.
+    old = "{ selector: 'edge[type=\"flowseg\"]', style: {\n        'curve-style': 'bezier',"
+    assert html.count(old) == 1
+    html = html.replace(old, "{ selector: 'edge[type=\"flowseg\"]', style: {\n        'curve-style': 'straight', /* the Pub Supply Game: was 'bezier' */")
     return 'const CANVAS_HTML = ' + json.dumps(html).replace('</', '<\\/') + ';'
 fonts = '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;600&display=swap">'
 page = ('<meta name="claude:viewport-fit-sides" content="cover">\n<title>Pub Supply Game</title>\n' + fonts +

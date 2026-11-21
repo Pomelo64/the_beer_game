@@ -266,6 +266,7 @@
     const w = wom();
     document.querySelectorAll('.st-plain').forEach(function (e) { e.hidden = w; });
     document.querySelectorAll('.st-wom').forEach(function (e) { e.hidden = !w; });
+    $('topStats').classList.toggle('is-wom', w);
     $('tag').textContent = 'Prototype. ' + (w ? 'Word of mouth.' : 'The supply game.') + ' One player, running the pub.';
     $('whyLabel').textContent = w ? 'What made it hard to serve every customer?' : 'What made it hard to keep your costs down?';
     $('logHead').innerHTML = w
