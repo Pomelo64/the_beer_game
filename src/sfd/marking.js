@@ -48,6 +48,49 @@ const Marking = (function () {
   }
   const isEnd = function (x) { return x == null || x === 'cloud'; };
 
+  /* Same-named elements. The canvas saves every reference by name, so two elements
+     called alike cannot be told apart in the saved diagram. For the check, the second
+     and later copies get invisible marks (zero-width spaces) after their name: they look
+     the same on screen but are separate elements. A flow's ends are matched by position.
+     A link to a shared name cannot be resolved from the saved diagram, so it goes to the
+     copy nearest where it comes from (its last bend point, or the element at its other
+     end): links nearly always join nearby elements. N1 still asks the learner to rename them. */
+  const ZW = '\u200B';
+  const base = function (l) { return l == null ? l : String(l).split(ZW).join(''); };
+  const copyNo = function (l) { return l == null ? 0 : String(l).split(ZW).length - 1; };
+  /* a name for text: "arrival rate", "arrival rate (2)" */
+  const shown = function (l) { return copyNo(l) ? base(l) + ' (' + (copyNo(l) + 1) + ')' : base(l); };
+  function unique(d) {
+    const c = JSON.parse(JSON.stringify(d || {}));
+    ['stocks', 'auxiliaries', 'flows', 'clouds', 'junctions', 'connectors'].forEach(function (k) { c[k] = c[k] || []; });
+    const els = [].concat(c.stocks, c.auxiliaries, c.flows), seen = {}, copies = {};
+    els.forEach(function (e) {
+      const n = seen[e.label] = (seen[e.label] || 0) + 1;
+      if (n > 1) e.label = e.label + ZW.repeat(n - 1);
+      (copies[base(e.label)] = copies[base(e.label)] || []).push(e);
+    });
+    const shared = function (l) { return copies[l] && copies[l].length > 1; };
+    if (!Object.keys(copies).some(shared)) return c;
+    const pos = function (e) { return e.valve_xy || [e.x, e.y]; };
+    const at = {}; els.concat(c.junctions).forEach(function (e) { if (!(e.label in at)) at[e.label] = pos(e); });   // a name's position (its first copy)
+    const near = function (l, xy, stocksOnly) {     // the copy of l nearest a position
+      const cs = copies[l].filter(function (e) { return !stocksOnly || c.stocks.indexOf(e) >= 0; });
+      if (!xy || !cs.length) return l;
+      return cs.reduce(function (b, e) { const p = pos(e), q = pos(b); return Math.hypot(p[0] - xy[0], p[1] - xy[1]) < Math.hypot(q[0] - xy[0], q[1] - xy[1]) ? e : b; }).label;
+    };
+    c.flows.forEach(function (f) {
+      if (shared(f.from)) f.from = near(f.from, f.from_xy, true);
+      if (shared(f.to)) f.to = near(f.to, f.to_xy, true);
+    });
+    c.connectors.forEach(function (k) {
+      const w = k.waypoints || [], first = w.length ? [w[0].x, w[0].y] : null, last = w.length ? [w[w.length - 1].x, w[w.length - 1].y] : null;
+      const from0 = k.from;
+      if (shared(k.from)) k.from = near(k.from, first || at[k.to]);
+      if (shared(k.to)) k.to = near(k.to, last || at[from0]);
+    });
+    return c;
+  }
+
   /* X informs Y: a chain of information links, through auxiliaries, flows or
      junctions, never through a stock. Returns the links of one such chain, or null. */
   function chain(R, a, b) {
@@ -68,9 +111,13 @@ const Marking = (function () {
   function notation(d) {
     const R = read(d), out = [];
     const add = function (id, type, text, ev) { out.push({ id: id, type: type, text: text, evidence: ev }); };
-    const names = (d.stocks || []).concat(d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; });
-    names.filter(function (n, i) { return names.indexOf(n) !== i; }).filter(function (n, i, a) { return a.indexOf(n) === i; })
-      .forEach(function (n) { add('N1', 'error', 'Two elements are called "' + n + '". Give each its own name.', { focus: [n], notes: [{ at: n, text: 'two of these' }] }); });
+    // N1 by the names the learner sees (copies made separate by unique() still count)
+    const labels = (d.stocks || []).concat(d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; }), byName = {};
+    labels.forEach(function (l) { (byName[base(l)] = byName[base(l)] || []).push(l); });
+    Object.keys(byName).filter(function (n) { return byName[n].length > 1; }).forEach(function (n) {
+      add('N1', 'error', (byName[n].length === 2 ? 'Two' : byName[n].length) + ' elements are called "' + n + '". Give each its own name, so anyone reading your diagram, and the check, can tell which one a link goes to.',
+        { focus: byName[n], notes: byName[n].map(function (l) { return { at: l, text: 'same name' }; }) });
+    });
     R.links.forEach(function (l) {
       if (R.kind[l.to] === 'stock') add('N2', 'error', 'The link from "' + l.from + '" points into the stock "' + l.to + '". Stocks change only through flows: make it a flow, or point the link at the flow it should affect.', { focus: [l.from, l.to], bad: [l], notes: [{ at: l.to, text: 'stocks change only through flows' }] });
       if (isEnd(l.from) || isEnd(l.to) || !R.kind[l.from] || !R.kind[l.to]) add('N3', 'error', 'A link starts or ends at a cloud. A cloud is outside your model: nothing can be read from it or sent to it by a link.', { focus: [l.from, l.to].filter(function (x) { return R.kind[x]; }), bad: [l] });
@@ -295,6 +342,6 @@ const Marking = (function () {
     return { required: of('required'), important: of('important'), optional: of('optional') };
   }
 
-  return { CONCEPTS: CONCEPTS, CONCEPT: CONCEPT, MECH: MECH, notation: notation, mechanisms: mechanisms, kindNotes: kindNotes, coreFound: coreFound, score: score, read: read };
+  return { CONCEPTS: CONCEPTS, CONCEPT: CONCEPT, MECH: MECH, notation: notation, mechanisms: mechanisms, kindNotes: kindNotes, coreFound: coreFound, score: score, read: read, unique: unique, base: base, shown: shown };
 })();
 if (typeof module !== 'undefined') module.exports = Marking;

@@ -87,8 +87,38 @@ const Model = (function () {
     L.push('INFORMATION LINKS (from -> to; a link into a flow\'s name goes into its valve): ' + (links.join('; ') || 'none'));
     return L.join('\n');
   }
+  /* The diagram as the reading call sees it: every stock, flow and auxiliary gets a
+     number, and the AI answers with the numbers. Names are shown but never matched on,
+     so a copied line, a reworded name or two elements with the same name cannot lose
+     an element. d is the diagram after Marking.unique. */
+  function elementList(d) {
+    const ids = {}, num = {}, kind = {}; let n = 0;
+    [['stocks', 'stock'], ['flows', 'flow'], ['auxiliaries', 'auxiliary']].forEach(function (k) {
+      (d[k[0]] || []).forEach(function (e) { const id = 'E' + (++n); ids[id] = e.label; num[e.label] = id; kind[id] = k[1]; });
+    });
+    const B = Marking.base;
+    const ref = function (l) { return l == null ? '(unattached)' : l === 'cloud' ? 'a cloud (outside the model)' : num[l] ? num[l] + ' "' + B(l) + '"' : '"' + B(l) + '"'; };
+    const L = ['ELEMENTS'];
+    Object.keys(ids).forEach(function (id) {
+      const l = ids[id];
+      if (kind[id] !== 'flow') { L.push(id + ' ' + kind[id] + ' "' + B(l) + '"'); return; }
+      const f = d.flows.find(function (x) { return x.label === l; });
+      L.push(id + ' flow "' + B(l) + '", from ' + ref(f.from) + ' to ' + ref(f.to));
+    });
+    const J = new Set((d.junctions || []).map(function (j) { return j.label; })), links = [];
+    const addLink = function (a, b) { const t = ref(a) + ' -> ' + ref(b); if (links.indexOf(t) < 0) links.push(t); };
+    (d.connectors || []).forEach(function (c) { if (!J.has(c.from) && !J.has(c.to)) addLink(c.from, c.to); });
+    J.forEach(function (j) {   // merged links: trunk -> junction -> forks
+      const a = (d.connectors || []).filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
+      const b = (d.connectors || []).filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
+      a.forEach(function (x) { b.forEach(function (y) { addLink(x, y); }); });
+    });
+    L.push('', 'INFORMATION LINKS (from -> to; a link into a flow goes into its valve)');
+    L.push(links.length ? links.join('\n') : 'none');
+    return { text: L.join('\n'), ids: ids };
+  }
   function keyText(k) {
-    return 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
+    return (k.game ? 'HOW THE GAME WORKS: ' + k.game + '\n' : '') + 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
       (k.reference ? '\n\nTHE REFERENCE DIAGRAM (the educator\'s own stock-and-flow diagram of the game; the key items below are taken from it)\n' + diagramText(k.reference) : '') +
       (k.inputs ? '\n\nOUTSIDE INPUTS IN THE REFERENCE: ' + k.inputs.join('; ') + '. A learner may model any of these instead of treating it as an input; that is not an error.' : '') +
       '\n\nKEY ITEMS (what to check):\n' +
@@ -126,7 +156,9 @@ const Model = (function () {
     'Map an element by the role it plays even if it is drawn as the wrong kind (a stock drawn as an auxiliary): the rules notice the kind themselves.',
     'An element that stands for no concept is an extra: give a short, neutral comment on it.',
     'You only map. Do not judge whether the diagram is right.',
-    'Reply ONLY with JSON, no markdown fences: {"elements": [{"element": "<exact name>", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"element": "<exact name>", "comment": "<one short sentence>"}]}'
+    'Every element has a number (E1, E2, ...). Refer to elements only by their numbers. Two elements may have the same name: the numbers tell them apart, and so do a flow\'s ends.',
+    'Answer for every element: each number appears exactly once, either in "elements" or in "extras".',
+    'Reply ONLY with JSON, no markdown fences: {"elements": [{"id": "E1", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"id": "E2", "comment": "<one short sentence>"}]}'
   ].join('\n');
   const WORD_SYSTEM = [
     'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
@@ -146,18 +178,45 @@ const Model = (function () {
   function conceptText() {
     return Marking.CONCEPTS.map(function (c) { return c.id + ' ' + c.name + ' [' + c.kind + ']: ' + c.what + ' (e.g. ' + c.names.join(', ') + ')'; }).join('\n');
   }
-  function cleanMap(raw, d) {
-    const present = new Set([].concat(d.stocks || [], d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; }));
+  /* The AI's reading, by element number. raws: one or more answers; a later answer only
+     fills elements an earlier one left out. An entry that gives a name instead of a
+     number is accepted when the name (or the part before ":" or "(") fits one element. */
+  function cleanMap(raws, list) {
     const ids = new Set(Marking.CONCEPTS.map(function (c) { return c.id; }));
-    const map = {}, why = {}, extras = [];
-    (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
-      if (!e || !present.has(e.element)) return;
-      const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
-      if (cs.length) { map[e.element] = cs; why[e.element] = e.reason || ''; }
+    const norm = function (t) { return Marking.base(String(t)).toLowerCase().replace(/\s+/g, ' ').trim(); };
+    const idOf = function (x) {
+      if (!x) return null;
+      const t = String(x.id != null ? x.id : x.element != null ? x.element : '').trim(), m = t.match(/^E(\d+)\b/i);
+      if (m && list.ids['E' + m[1]]) return 'E' + m[1];
+      const tries = [t, t.split(':')[0], t.split('(')[0]].map(norm);
+      for (let i = 0; i < tries.length; i++) {
+        const hit = Object.keys(list.ids).filter(function (id) { return norm(list.ids[id]) === tries[i]; });
+        if (hit.length === 1) return hit[0];
+      }
+      return null;
+    };
+    const got = {}, cons = {}, why = {}, note = {};
+    raws.forEach(function (raw) {
+      const fresh = {};
+      (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
+        const id = idOf(e); if (!id || (got[id] && !fresh[id])) return;
+        const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
+        fresh[id] = got[id] = true;
+        if (cs.length) { cons[id] = (cons[id] || []).concat(cs.filter(function (c) { return (cons[id] || []).indexOf(c) < 0; })); why[id] = e.reason || ''; }
+      });
+      (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) {
+        const id = idOf(x); if (!id || (got[id] && !fresh[id])) return;
+        fresh[id] = got[id] = true; if (!cons[id]) note[id] = x.comment || '';
+      });
     });
-    (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) { if (x && present.has(x.element) && !map[x.element]) extras.push({ element: x.element, comment: x.comment || '' }); });
-    present.forEach(function (l) { if (!map[l] && !extras.some(function (x) { return x.element === l; })) extras.push({ element: l, comment: '' }); });
-    return { map: map, why: why, extras: extras };
+    const map = {}, whyL = {}, extras = [], missing = [];
+    Object.keys(list.ids).forEach(function (id) {
+      const l = list.ids[id];
+      if (!got[id]) missing.push(id);
+      else if (cons[id]) { map[l] = cons[id]; whyL[l] = why[id]; }
+      else extras.push({ element: l, comment: note[id] || '' });
+    });
+    return { map: map, why: whyL, extras: extras, missing: missing };
   }
 
   function progress(text) { $('markOut').innerHTML = '<p class="mark-busy" role="status"><span class="spin" aria-hidden="true"></span>' + text + '</p>'; }
@@ -165,16 +224,34 @@ const Model = (function () {
     if (S.busy) return;
     if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be checked.'); return; }
     if (!S.cfg) { showMarkMsg('Add an AI key under <b>AI settings</b> first.'); openSettings(); return; }
-    const d = S.diagram;
-    if (!d || !((d.stocks || []).length + (d.flows || []).length + (d.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
+    if (!S.diagram || !((S.diagram.stocks || []).length + (S.diagram.flows || []).length + (S.diagram.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
+    const d = Marking.unique(S.diagram), list = elementList(d), shown = Marking.shown;
     busy(true, 'mark');
     // layer 1: notation (code)
     const notation = Marking.notation(d);
     // layer 2: concepts (AI)
     progress('Reading your diagram…');
-    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, 'CONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + diagramText(d) + '\n\nMap every element now.', 2000);
+    const ask1 = 'HOW THE GAME WORKS\n' + S.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + S.key.task +
+      '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
+    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', 2500);
     if (r1[1]) { busy(false); showMarkMsg(esc(r1[1])); return; }
-    const mp = cleanMap(r1[0], d);
+    const raws = [r1[0]];
+    let mp = cleanMap(raws, list);
+    if (mp.missing.length) {     // an element got no reading: ask once more for those
+      progress('Reading the rest of your diagram…');
+      const r1b = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
+        '. Answer again for every element, by number.', 2500);
+      if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
+    }
+    if (mp.missing.length) {     // never build verdicts on a gap
+      busy(false);
+      const names = mp.missing.map(function (id) { return '"' + shown(list.ids[id]) + '"'; });
+      showMarkMsg('I could not read all of your diagram: ' + names.join(', ') + (names.length === 1 ? ' was' : ' were') + ' left out of my reading, so a check now would be built on a gap. ' +
+        'Please press <b>Check my diagram</b> again. If it keeps happening, try another model under <b>AI settings</b>.');
+      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, { overall: 'The diagram could not be fully read, so no check was given.', unread: mp.missing.map(function (id) { return shown(list.ids[id]); }) });
+      drawRecord();
+      return;
+    }
     // layer 3: mechanisms (code)
     progress('Checking how it works…');
     const mech = Marking.mechanisms(d, mp.map), M = mech.mechanisms;
@@ -195,7 +272,7 @@ const Model = (function () {
       'OPTIONAL extras drawn: ' + (M.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
       (prev ? 'SINCE THE LAST CHECK: now working: ' + (better.map(function (m) { return m.title; }).join('; ') || 'nothing new') + '; no longer working: ' + (worse.map(function (m) { return m.title; }).join('; ') || 'nothing') + '\n' : '') +
       'ABOUT THE ORDER DECISION (an observation, not marked): ' + mech.decisionNote;
-    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, facts + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
+    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, Marking.base(facts) + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
     busy(false);
     const words = r2[1] ? null : r2[0];
     const res = { notation: notation, map: mp, mech: mech, score: sc, fails: fails, far: far, better: better, worse: worse, first: !prev, words: words,
@@ -207,13 +284,16 @@ const Model = (function () {
         issues: notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
         suggestion: (words && words.wrap) || (fails[0] ? fails[0].hint : 'Your diagram works the way the game does.'),
         score: { required: sc.required.pass + '/' + sc.required.of, important: sc.important.pass + '/' + sc.important.of },
-        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: mp.map, extras: mp.extras.map(function (x) { return x.element; }),
+        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
+        retried: raws.length > 1,
         worded_by: words ? 'ai' : 'rules' };
       const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, answer); askWhy(ev.i, ev.question);
     }
     buildSlides(); drawChat(); drawRecord();
     $('askPanel').hidden = false;
   }
+  /* a reading for text and the record: "arrival rate (2)" for a second element of that name */
+  function shownMap(m) { const o = {}; Object.keys(m).forEach(function (l) { o[Marking.shown(l)] = m[l]; }); return o; }
   function showMarkMsg(html) { $('markOut').innerHTML = '<p class="mark-msg">' + html + '</p>'; }
   function overallFallback(r) {
     const ok = r.mech.mechanisms.filter(function (m) { return m.pass && m.weight !== 'optional'; });
@@ -312,11 +392,12 @@ const Model = (function () {
     S.chat.push({ role: 'user', content: q }); $('askIn').value = ''; drawChat();
     busy(true, 'ask');
     const R = S.result;
-    const ctx = 'THE REFERENCE\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
-      '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(R.map.map) +
+    let ctx = 'THE REFERENCE\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
+      '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(shownMap(R.map.map)) +
       '\nNotation: ' + (R.notation.map(function (n) { return n.text; }).join(' | ') || 'no problems') +
       '\nMechanisms: ' + R.mech.mechanisms.map(function (m) { return m.id + ' ' + m.title + ': ' + (m.pass ? 'works' : 'not yet. Hint: ' + m.hint + ' Answer, if asked: ' + m.answer); }).join('\n') +
       '\nOrder decision: ' + R.mech.decisionNote;
+    ctx = Marking.base(ctx);
     const msgs = [{ role: 'user', content: ctx + '\n\n(The learner\'s questions follow.)' }, { role: 'assistant', content: 'Understood. I will answer as their teaching assistant.' }].concat(S.chat);
     const r = await LLM.complete(S.cfg, ASK_SYSTEM, msgs, 700, false);
     busy(false);
@@ -444,5 +525,5 @@ const Model = (function () {
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
     drawSettings();
   }
-  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
 })();

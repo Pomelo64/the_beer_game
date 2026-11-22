@@ -1,0 +1,28 @@
+{
+  "note": "Rebuilt by hand from screenshots of a test diagram (21 Nov 2026): two flows both called \"arrival rate\", an L-shaped \"catch up rate\" into a stock of customers served, and no cost. Positions are approximate.",
+  "stocks": [
+    {"label": "customers arrived", "x": 520, "y": 930}, {"label": "customers waiting", "x": 525, "y": 640},
+    {"label": "customers served", "x": 915, "y": 920}, {"label": "ordered kegs", "x": 685, "y": 1130},
+    {"label": "kegs at the pub", "x": 1165, "y": 1125}],
+  "auxiliaries": [
+    {"label": "exogenous table", "x": 197, "y": 695}, {"label": "player's decision", "x": 253, "y": 1296},
+    {"label": "wholesaler provision capability", "x": 432, "y": 1300}, {"label": "delay factor", "x": 832, "y": 1307}],
+  "clouds": [{"label": "cloud", "x": 150, "y": 930}, {"label": "cloud", "x": 205, "y": 1130}, {"label": "cloud", "x": 1720, "y": 1125}],
+  "flows": [
+    {"label": "arrival rate", "from": "cloud", "to": "customers arrived", "from_xy": [150, 930], "to_xy": [520, 930], "valve_xy": [313, 927]},
+    {"label": "serving rate", "from": "customers arrived", "to": "customers served", "from_xy": [520, 930], "to_xy": [915, 920], "valve_xy": [700, 925]},
+    {"label": "fail to serve rate", "from": "customers arrived", "to": "customers waiting", "from_xy": [520, 930], "to_xy": [525, 640], "valve_xy": [528, 805]},
+    {"label": "catch up rate", "from": "customers waiting", "to": "customers served", "from_xy": [525, 640], "to_xy": [915, 920], "valve_xy": [913, 640]},
+    {"label": "order rate", "from": "cloud", "to": "ordered kegs", "from_xy": [205, 1130], "to_xy": [685, 1130], "valve_xy": [384, 1130]},
+    {"label": "arrival rate", "from": "ordered kegs", "to": "kegs at the pub", "from_xy": [685, 1130], "to_xy": [1165, 1125], "valve_xy": [893, 1125]},
+    {"label": "consumption rate", "from": "kegs at the pub", "to": "cloud", "from_xy": [1165, 1125], "to_xy": [1720, 1125], "valve_xy": [1415, 1125]}],
+  "connectors": [
+    {"from": "exogenous table", "to": "fail to serve rate"}, {"from": "customers arrived", "to": "serving rate"},
+    {"from": "kegs at the pub", "to": "serving rate"}, {"from": "customers arrived", "to": "fail to serve rate"},
+    {"from": "serving rate", "to": "fail to serve rate"}, {"from": "customers waiting", "to": "catch up rate"},
+    {"from": "kegs at the pub", "to": "catch up rate"}, {"from": "serving rate", "to": "consumption rate"},
+    {"from": "catch up rate", "to": "consumption rate"}, {"from": "player's decision", "to": "order rate"},
+    {"from": "wholesaler provision capability", "to": "order rate"}, {"from": "ordered kegs", "to": "arrival rate"},
+    {"from": "delay factor", "to": "arrival rate"}, {"from": "serving rate", "to": "arrival rate"}],
+  "junctions": []
+}

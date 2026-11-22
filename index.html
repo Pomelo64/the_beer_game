@@ -809,6 +809,7 @@ if (typeof module !== 'undefined') module.exports = Engine;
    Shape of a key:
      status     'author' (the course's own key) or 'provisional'
      source     where the key comes from
+     game       how the game works, in words (for the AI that reads the learner's diagram)
      task       what the learner is asked to draw (shown on screen)
      scope      what the diagram should cover (for the AI)
      reference  the reference stock-and-flow diagram, in the canvas's JSON format
@@ -827,6 +828,13 @@ const KEYS = {
     status: 'author',
     source: 'The author\'s reference diagram of the supply game (20 November 2026), with one link corrected: ' +
       '"catch up rate" is informed by "waiting to serve", not by "pub customers".',
+    // how the game works, as the player is told it on screen; given to the AI that reads the diagram
+    game: 'The learner plays the pub in a one-player supply game (brewery, distributor, wholesaler, pub). Each week customers come in, and each wants one keg. ' +
+      'The pub serves them from its cellar and orders more kegs from its wholesaler. The wholesaler gets the order at once and says what it can send; ' +
+      'the kegs reach the pub three weeks later. When the wholesaler runs short it sends what it can and keeps the rest on back order, to send later: nothing ordered is lost. ' +
+      'A customer the pub cannot serve does not leave: they wait, and are served first when kegs arrive. ' +
+      'Each week every keg in the cellar costs £0.50 and every keg owed to a waiting customer costs £1. These are the only costs: ordering and the kegs themselves are free. ' +
+      'The player\'s one decision each week is how many kegs to order, and the goal is to keep the total cost low.',
     task: 'Draw a stock-and-flow diagram of your pub that shows how the game works: how kegs reach your cellar and leave it, ' +
       'what happens to customers you cannot serve, and what your cost depends on. Your orders can come from outside the diagram, as an input. ' +
       'Name things in your own words. No equations are needed.',
@@ -956,6 +964,49 @@ const Marking = (function () {
   }
   const isEnd = function (x) { return x == null || x === 'cloud'; };
 
+  /* Same-named elements. The canvas saves every reference by name, so two elements
+     called alike cannot be told apart in the saved diagram. For the check, the second
+     and later copies get invisible marks (zero-width spaces) after their name: they look
+     the same on screen but are separate elements. A flow's ends are matched by position.
+     A link to a shared name cannot be resolved from the saved diagram, so it goes to the
+     copy nearest where it comes from (its last bend point, or the element at its other
+     end): links nearly always join nearby elements. N1 still asks the learner to rename them. */
+  const ZW = '\u200B';
+  const base = function (l) { return l == null ? l : String(l).split(ZW).join(''); };
+  const copyNo = function (l) { return l == null ? 0 : String(l).split(ZW).length - 1; };
+  /* a name for text: "arrival rate", "arrival rate (2)" */
+  const shown = function (l) { return copyNo(l) ? base(l) + ' (' + (copyNo(l) + 1) + ')' : base(l); };
+  function unique(d) {
+    const c = JSON.parse(JSON.stringify(d || {}));
+    ['stocks', 'auxiliaries', 'flows', 'clouds', 'junctions', 'connectors'].forEach(function (k) { c[k] = c[k] || []; });
+    const els = [].concat(c.stocks, c.auxiliaries, c.flows), seen = {}, copies = {};
+    els.forEach(function (e) {
+      const n = seen[e.label] = (seen[e.label] || 0) + 1;
+      if (n > 1) e.label = e.label + ZW.repeat(n - 1);
+      (copies[base(e.label)] = copies[base(e.label)] || []).push(e);
+    });
+    const shared = function (l) { return copies[l] && copies[l].length > 1; };
+    if (!Object.keys(copies).some(shared)) return c;
+    const pos = function (e) { return e.valve_xy || [e.x, e.y]; };
+    const at = {}; els.concat(c.junctions).forEach(function (e) { if (!(e.label in at)) at[e.label] = pos(e); });   // a name's position (its first copy)
+    const near = function (l, xy, stocksOnly) {     // the copy of l nearest a position
+      const cs = copies[l].filter(function (e) { return !stocksOnly || c.stocks.indexOf(e) >= 0; });
+      if (!xy || !cs.length) return l;
+      return cs.reduce(function (b, e) { const p = pos(e), q = pos(b); return Math.hypot(p[0] - xy[0], p[1] - xy[1]) < Math.hypot(q[0] - xy[0], q[1] - xy[1]) ? e : b; }).label;
+    };
+    c.flows.forEach(function (f) {
+      if (shared(f.from)) f.from = near(f.from, f.from_xy, true);
+      if (shared(f.to)) f.to = near(f.to, f.to_xy, true);
+    });
+    c.connectors.forEach(function (k) {
+      const w = k.waypoints || [], first = w.length ? [w[0].x, w[0].y] : null, last = w.length ? [w[w.length - 1].x, w[w.length - 1].y] : null;
+      const from0 = k.from;
+      if (shared(k.from)) k.from = near(k.from, first || at[k.to]);
+      if (shared(k.to)) k.to = near(k.to, last || at[from0]);
+    });
+    return c;
+  }
+
   /* X informs Y: a chain of information links, through auxiliaries, flows or
      junctions, never through a stock. Returns the links of one such chain, or null. */
   function chain(R, a, b) {
@@ -976,9 +1027,13 @@ const Marking = (function () {
   function notation(d) {
     const R = read(d), out = [];
     const add = function (id, type, text, ev) { out.push({ id: id, type: type, text: text, evidence: ev }); };
-    const names = (d.stocks || []).concat(d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; });
-    names.filter(function (n, i) { return names.indexOf(n) !== i; }).filter(function (n, i, a) { return a.indexOf(n) === i; })
-      .forEach(function (n) { add('N1', 'error', 'Two elements are called "' + n + '". Give each its own name.', { focus: [n], notes: [{ at: n, text: 'two of these' }] }); });
+    // N1 by the names the learner sees (copies made separate by unique() still count)
+    const labels = (d.stocks || []).concat(d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; }), byName = {};
+    labels.forEach(function (l) { (byName[base(l)] = byName[base(l)] || []).push(l); });
+    Object.keys(byName).filter(function (n) { return byName[n].length > 1; }).forEach(function (n) {
+      add('N1', 'error', (byName[n].length === 2 ? 'Two' : byName[n].length) + ' elements are called "' + n + '". Give each its own name, so anyone reading your diagram, and the check, can tell which one a link goes to.',
+        { focus: byName[n], notes: byName[n].map(function (l) { return { at: l, text: 'same name' }; }) });
+    });
     R.links.forEach(function (l) {
       if (R.kind[l.to] === 'stock') add('N2', 'error', 'The link from "' + l.from + '" points into the stock "' + l.to + '". Stocks change only through flows: make it a flow, or point the link at the flow it should affect.', { focus: [l.from, l.to], bad: [l], notes: [{ at: l.to, text: 'stocks change only through flows' }] });
       if (isEnd(l.from) || isEnd(l.to) || !R.kind[l.from] || !R.kind[l.to]) add('N3', 'error', 'A link starts or ends at a cloud. A cloud is outside your model: nothing can be read from it or sent to it by a link.', { focus: [l.from, l.to].filter(function (x) { return R.kind[x]; }), bad: [l] });
@@ -1203,7 +1258,7 @@ const Marking = (function () {
     return { required: of('required'), important: of('important'), optional: of('optional') };
   }
 
-  return { CONCEPTS: CONCEPTS, CONCEPT: CONCEPT, MECH: MECH, notation: notation, mechanisms: mechanisms, kindNotes: kindNotes, coreFound: coreFound, score: score, read: read };
+  return { CONCEPTS: CONCEPTS, CONCEPT: CONCEPT, MECH: MECH, notation: notation, mechanisms: mechanisms, kindNotes: kindNotes, coreFound: coreFound, score: score, read: read, unique: unique, base: base, shown: shown };
 })();
 if (typeof module !== 'undefined') module.exports = Marking;
 
@@ -1226,7 +1281,7 @@ const Picture = (function () {
   const C = { ink: 'var(--fg)', quiet: 'var(--muted)', line: 'var(--muted)', bg: 'var(--surface)', bad: 'var(--owed)', good: 'var(--hold)' };
   const FADE = 0.16;
   let SC = 1;   // scale of boxes and words, set for each picture
-  const stockW = function (l) { return Math.max(92, Math.round(String(l).length * 7.4 + 26)) * SC; };
+  const stockW = function (l) { return Math.max(92, Math.round(String(l).replace(/\u200B/g, '').length * 7.4 + 26)) * SC; };
 
   function layout(d) {
     const P = {}, K = {};
@@ -1277,7 +1332,9 @@ const Picture = (function () {
       (o.bad || []).concat(o.good || [], o.ghost || []).forEach(function (l) { addEl(l.from); addEl(l.to); });
       (d.flows || []).forEach(function (f) { if (focus.has(f.label)) { pts.push(f._a, f._b); } });
     }
-    (o.notes || []).forEach(function (n) { if (n && P[n.at]) pts.push([P[n.at][0] - n.text.length * 4.5, P[n.at][1] - 56]); if (n && P[n.at]) pts.push([P[n.at][0] + n.text.length * 4.5, P[n.at][1]]); });
+    const seen = {};
+    (o.notes || []).forEach(function (n) { if (!n || !P[n.at]) return; const i = seen[n.at] = (seen[n.at] || 0) + 1;
+      pts.push([P[n.at][0] - n.text.length * 4.5, P[n.at][1] - 56 - (i - 1) * 24]); pts.push([P[n.at][0] + n.text.length * 4.5, P[n.at][1]]); });
     Object.keys(o.tags || {}).concat(o.extras || []).forEach(function (l) { if (P[l]) pts.push([P[l][0], P[l][1] + 62]); });
     if (!pts.length) pts.push([0, 0], [400, 240]);
     let x0 = Math.min.apply(null, pts.map(function (p) { return p[0]; })) - 36, x1 = Math.max.apply(null, pts.map(function (p) { return p[0]; })) + 36;
@@ -1298,8 +1355,10 @@ const Picture = (function () {
     (d.flows || []).forEach(function (f) {
       const a = f._a, b = f._b, v = f._v, bad = badF.has(f.label), op = on(f.label) || bad ? 1 : FADE;
       const col = bad ? C.bad : C.line;
-      parts.pipes += '<g opacity="' + op + '"><line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" style="stroke:' + col + ';stroke-width:' + (bad ? 8 : 7) + '"/>' +
-        '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" style="stroke:' + C.bg + ';stroke-width:3"/>' +
+      // two straight segments meeting at the valve, as on the canvas (an L-shaped flow is a valve at the corner)
+      const pts = a[0] + ',' + a[1] + ' ' + v[0] + ',' + v[1] + ' ' + b[0] + ',' + b[1];
+      parts.pipes += '<g opacity="' + op + '"><polyline points="' + pts + '" style="fill:none;stroke-linejoin:round;stroke:' + col + ';stroke-width:' + (bad ? 8 : 7) + '"/>' +
+        '<polyline points="' + pts + '" style="fill:none;stroke-linejoin:round;stroke:' + C.bg + ';stroke-width:3"/>' +
         (isEnd(f.to) ? cloud(b) : '') + (isEnd(f.from) ? cloud(a) : '') +
         '<path d="M' + (v[0] - 10) + ' ' + v[1] + 'L' + v[0] + ' ' + (v[1] - 10) + 'L' + (v[0] + 10) + ' ' + v[1] + 'L' + v[0] + ' ' + (v[1] + 10) + 'z" style="fill:' + C.bg + ';stroke:' + col + ';stroke-width:' + (bad ? 2.5 : 1.5) + '"/>' +
         (bad ? cross(v[0] + 16, v[1] - 16) : '') + '</g>';
@@ -1356,10 +1415,11 @@ const Picture = (function () {
     });
 
     // notes and tags
-    const boxes = [];
+    const boxes = [], stack = {};   // several notes on one element sit one above another
     (o.notes || []).forEach(function (n) {
       if (!n || !n.at || !P[n.at]) return;
-      const p = P[n.at], above = K[n.at] === 'stock' ? 32 : K[n.at] === 'flow' ? 20 : 18;
+      const i = stack[n.at] = (stack[n.at] || 0) + 1;
+      const p = P[n.at], above = (K[n.at] === 'stock' ? 32 : K[n.at] === 'flow' ? 20 : 18) + (i - 1) * 19 * k;
       parts.notes += '<text x="' + p[0] + '" y="' + (p[1] - above) + '" text-anchor="middle" style="fill:' + C.bad + ';font-size:' + fs(13.5) + ';font-weight:700;paint-order:stroke;stroke:' + C.bg + ';stroke-width:5px">' + esc(n.text) + '</text>';
       boxes.push([p[0] - n.text.length * 4, p[1] - above - 16, p[0] + n.text.length * 4, p[1] - above + 4]);
     });
@@ -1967,8 +2027,38 @@ const Model = (function () {
     L.push('INFORMATION LINKS (from -> to; a link into a flow\'s name goes into its valve): ' + (links.join('; ') || 'none'));
     return L.join('\n');
   }
+  /* The diagram as the reading call sees it: every stock, flow and auxiliary gets a
+     number, and the AI answers with the numbers. Names are shown but never matched on,
+     so a copied line, a reworded name or two elements with the same name cannot lose
+     an element. d is the diagram after Marking.unique. */
+  function elementList(d) {
+    const ids = {}, num = {}, kind = {}; let n = 0;
+    [['stocks', 'stock'], ['flows', 'flow'], ['auxiliaries', 'auxiliary']].forEach(function (k) {
+      (d[k[0]] || []).forEach(function (e) { const id = 'E' + (++n); ids[id] = e.label; num[e.label] = id; kind[id] = k[1]; });
+    });
+    const B = Marking.base;
+    const ref = function (l) { return l == null ? '(unattached)' : l === 'cloud' ? 'a cloud (outside the model)' : num[l] ? num[l] + ' "' + B(l) + '"' : '"' + B(l) + '"'; };
+    const L = ['ELEMENTS'];
+    Object.keys(ids).forEach(function (id) {
+      const l = ids[id];
+      if (kind[id] !== 'flow') { L.push(id + ' ' + kind[id] + ' "' + B(l) + '"'); return; }
+      const f = d.flows.find(function (x) { return x.label === l; });
+      L.push(id + ' flow "' + B(l) + '", from ' + ref(f.from) + ' to ' + ref(f.to));
+    });
+    const J = new Set((d.junctions || []).map(function (j) { return j.label; })), links = [];
+    const addLink = function (a, b) { const t = ref(a) + ' -> ' + ref(b); if (links.indexOf(t) < 0) links.push(t); };
+    (d.connectors || []).forEach(function (c) { if (!J.has(c.from) && !J.has(c.to)) addLink(c.from, c.to); });
+    J.forEach(function (j) {   // merged links: trunk -> junction -> forks
+      const a = (d.connectors || []).filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
+      const b = (d.connectors || []).filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
+      a.forEach(function (x) { b.forEach(function (y) { addLink(x, y); }); });
+    });
+    L.push('', 'INFORMATION LINKS (from -> to; a link into a flow goes into its valve)');
+    L.push(links.length ? links.join('\n') : 'none');
+    return { text: L.join('\n'), ids: ids };
+  }
   function keyText(k) {
-    return 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
+    return (k.game ? 'HOW THE GAME WORKS: ' + k.game + '\n' : '') + 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
       (k.reference ? '\n\nTHE REFERENCE DIAGRAM (the educator\'s own stock-and-flow diagram of the game; the key items below are taken from it)\n' + diagramText(k.reference) : '') +
       (k.inputs ? '\n\nOUTSIDE INPUTS IN THE REFERENCE: ' + k.inputs.join('; ') + '. A learner may model any of these instead of treating it as an input; that is not an error.' : '') +
       '\n\nKEY ITEMS (what to check):\n' +
@@ -2006,7 +2096,9 @@ const Model = (function () {
     'Map an element by the role it plays even if it is drawn as the wrong kind (a stock drawn as an auxiliary): the rules notice the kind themselves.',
     'An element that stands for no concept is an extra: give a short, neutral comment on it.',
     'You only map. Do not judge whether the diagram is right.',
-    'Reply ONLY with JSON, no markdown fences: {"elements": [{"element": "<exact name>", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"element": "<exact name>", "comment": "<one short sentence>"}]}'
+    'Every element has a number (E1, E2, ...). Refer to elements only by their numbers. Two elements may have the same name: the numbers tell them apart, and so do a flow\'s ends.',
+    'Answer for every element: each number appears exactly once, either in "elements" or in "extras".',
+    'Reply ONLY with JSON, no markdown fences: {"elements": [{"id": "E1", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"id": "E2", "comment": "<one short sentence>"}]}'
   ].join('\n');
   const WORD_SYSTEM = [
     'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
@@ -2026,18 +2118,45 @@ const Model = (function () {
   function conceptText() {
     return Marking.CONCEPTS.map(function (c) { return c.id + ' ' + c.name + ' [' + c.kind + ']: ' + c.what + ' (e.g. ' + c.names.join(', ') + ')'; }).join('\n');
   }
-  function cleanMap(raw, d) {
-    const present = new Set([].concat(d.stocks || [], d.auxiliaries || [], d.flows || []).map(function (e) { return e.label; }));
+  /* The AI's reading, by element number. raws: one or more answers; a later answer only
+     fills elements an earlier one left out. An entry that gives a name instead of a
+     number is accepted when the name (or the part before ":" or "(") fits one element. */
+  function cleanMap(raws, list) {
     const ids = new Set(Marking.CONCEPTS.map(function (c) { return c.id; }));
-    const map = {}, why = {}, extras = [];
-    (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
-      if (!e || !present.has(e.element)) return;
-      const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
-      if (cs.length) { map[e.element] = cs; why[e.element] = e.reason || ''; }
+    const norm = function (t) { return Marking.base(String(t)).toLowerCase().replace(/\s+/g, ' ').trim(); };
+    const idOf = function (x) {
+      if (!x) return null;
+      const t = String(x.id != null ? x.id : x.element != null ? x.element : '').trim(), m = t.match(/^E(\d+)\b/i);
+      if (m && list.ids['E' + m[1]]) return 'E' + m[1];
+      const tries = [t, t.split(':')[0], t.split('(')[0]].map(norm);
+      for (let i = 0; i < tries.length; i++) {
+        const hit = Object.keys(list.ids).filter(function (id) { return norm(list.ids[id]) === tries[i]; });
+        if (hit.length === 1) return hit[0];
+      }
+      return null;
+    };
+    const got = {}, cons = {}, why = {}, note = {};
+    raws.forEach(function (raw) {
+      const fresh = {};
+      (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
+        const id = idOf(e); if (!id || (got[id] && !fresh[id])) return;
+        const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
+        fresh[id] = got[id] = true;
+        if (cs.length) { cons[id] = (cons[id] || []).concat(cs.filter(function (c) { return (cons[id] || []).indexOf(c) < 0; })); why[id] = e.reason || ''; }
+      });
+      (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) {
+        const id = idOf(x); if (!id || (got[id] && !fresh[id])) return;
+        fresh[id] = got[id] = true; if (!cons[id]) note[id] = x.comment || '';
+      });
     });
-    (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) { if (x && present.has(x.element) && !map[x.element]) extras.push({ element: x.element, comment: x.comment || '' }); });
-    present.forEach(function (l) { if (!map[l] && !extras.some(function (x) { return x.element === l; })) extras.push({ element: l, comment: '' }); });
-    return { map: map, why: why, extras: extras };
+    const map = {}, whyL = {}, extras = [], missing = [];
+    Object.keys(list.ids).forEach(function (id) {
+      const l = list.ids[id];
+      if (!got[id]) missing.push(id);
+      else if (cons[id]) { map[l] = cons[id]; whyL[l] = why[id]; }
+      else extras.push({ element: l, comment: note[id] || '' });
+    });
+    return { map: map, why: whyL, extras: extras, missing: missing };
   }
 
   function progress(text) { $('markOut').innerHTML = '<p class="mark-busy" role="status"><span class="spin" aria-hidden="true"></span>' + text + '</p>'; }
@@ -2045,16 +2164,34 @@ const Model = (function () {
     if (S.busy) return;
     if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be checked.'); return; }
     if (!S.cfg) { showMarkMsg('Add an AI key under <b>AI settings</b> first.'); openSettings(); return; }
-    const d = S.diagram;
-    if (!d || !((d.stocks || []).length + (d.flows || []).length + (d.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
+    if (!S.diagram || !((S.diagram.stocks || []).length + (S.diagram.flows || []).length + (S.diagram.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
+    const d = Marking.unique(S.diagram), list = elementList(d), shown = Marking.shown;
     busy(true, 'mark');
     // layer 1: notation (code)
     const notation = Marking.notation(d);
     // layer 2: concepts (AI)
     progress('Reading your diagram…');
-    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, 'CONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + diagramText(d) + '\n\nMap every element now.', 2000);
+    const ask1 = 'HOW THE GAME WORKS\n' + S.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + S.key.task +
+      '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
+    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', 2500);
     if (r1[1]) { busy(false); showMarkMsg(esc(r1[1])); return; }
-    const mp = cleanMap(r1[0], d);
+    const raws = [r1[0]];
+    let mp = cleanMap(raws, list);
+    if (mp.missing.length) {     // an element got no reading: ask once more for those
+      progress('Reading the rest of your diagram…');
+      const r1b = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
+        '. Answer again for every element, by number.', 2500);
+      if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
+    }
+    if (mp.missing.length) {     // never build verdicts on a gap
+      busy(false);
+      const names = mp.missing.map(function (id) { return '"' + shown(list.ids[id]) + '"'; });
+      showMarkMsg('I could not read all of your diagram: ' + names.join(', ') + (names.length === 1 ? ' was' : ' were') + ' left out of my reading, so a check now would be built on a gap. ' +
+        'Please press <b>Check my diagram</b> again. If it keeps happening, try another model under <b>AI settings</b>.');
+      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, { overall: 'The diagram could not be fully read, so no check was given.', unread: mp.missing.map(function (id) { return shown(list.ids[id]); }) });
+      drawRecord();
+      return;
+    }
     // layer 3: mechanisms (code)
     progress('Checking how it works…');
     const mech = Marking.mechanisms(d, mp.map), M = mech.mechanisms;
@@ -2075,7 +2212,7 @@ const Model = (function () {
       'OPTIONAL extras drawn: ' + (M.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
       (prev ? 'SINCE THE LAST CHECK: now working: ' + (better.map(function (m) { return m.title; }).join('; ') || 'nothing new') + '; no longer working: ' + (worse.map(function (m) { return m.title; }).join('; ') || 'nothing') + '\n' : '') +
       'ABOUT THE ORDER DECISION (an observation, not marked): ' + mech.decisionNote;
-    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, facts + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
+    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, Marking.base(facts) + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
     busy(false);
     const words = r2[1] ? null : r2[0];
     const res = { notation: notation, map: mp, mech: mech, score: sc, fails: fails, far: far, better: better, worse: worse, first: !prev, words: words,
@@ -2087,13 +2224,16 @@ const Model = (function () {
         issues: notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
         suggestion: (words && words.wrap) || (fails[0] ? fails[0].hint : 'Your diagram works the way the game does.'),
         score: { required: sc.required.pass + '/' + sc.required.of, important: sc.important.pass + '/' + sc.important.of },
-        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: mp.map, extras: mp.extras.map(function (x) { return x.element; }),
+        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
+        retried: raws.length > 1,
         worded_by: words ? 'ai' : 'rules' };
       const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, answer); askWhy(ev.i, ev.question);
     }
     buildSlides(); drawChat(); drawRecord();
     $('askPanel').hidden = false;
   }
+  /* a reading for text and the record: "arrival rate (2)" for a second element of that name */
+  function shownMap(m) { const o = {}; Object.keys(m).forEach(function (l) { o[Marking.shown(l)] = m[l]; }); return o; }
   function showMarkMsg(html) { $('markOut').innerHTML = '<p class="mark-msg">' + html + '</p>'; }
   function overallFallback(r) {
     const ok = r.mech.mechanisms.filter(function (m) { return m.pass && m.weight !== 'optional'; });
@@ -2192,11 +2332,12 @@ const Model = (function () {
     S.chat.push({ role: 'user', content: q }); $('askIn').value = ''; drawChat();
     busy(true, 'ask');
     const R = S.result;
-    const ctx = 'THE REFERENCE\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
-      '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(R.map.map) +
+    let ctx = 'THE REFERENCE\n' + keyText(S.key) + '\n\nTHE LEARNER\'S CURRENT DIAGRAM\n' + diagramText(S.diagram) + '\n\n' + gameText() +
+      '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(shownMap(R.map.map)) +
       '\nNotation: ' + (R.notation.map(function (n) { return n.text; }).join(' | ') || 'no problems') +
       '\nMechanisms: ' + R.mech.mechanisms.map(function (m) { return m.id + ' ' + m.title + ': ' + (m.pass ? 'works' : 'not yet. Hint: ' + m.hint + ' Answer, if asked: ' + m.answer); }).join('\n') +
       '\nOrder decision: ' + R.mech.decisionNote;
+    ctx = Marking.base(ctx);
     const msgs = [{ role: 'user', content: ctx + '\n\n(The learner\'s questions follow.)' }, { role: 'assistant', content: 'Understood. I will answer as their teaching assistant.' }].concat(S.chat);
     const r = await LLM.complete(S.cfg, ASK_SYSTEM, msgs, 700, false);
     busy(false);
@@ -2324,7 +2465,7 @@ const Model = (function () {
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
     drawSettings();
   }
-  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
 })();
 
 /* Drawing and interaction. Reads the engine's state; never changes the rules. */

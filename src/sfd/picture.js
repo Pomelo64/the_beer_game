@@ -17,7 +17,7 @@ const Picture = (function () {
   const C = { ink: 'var(--fg)', quiet: 'var(--muted)', line: 'var(--muted)', bg: 'var(--surface)', bad: 'var(--owed)', good: 'var(--hold)' };
   const FADE = 0.16;
   let SC = 1;   // scale of boxes and words, set for each picture
-  const stockW = function (l) { return Math.max(92, Math.round(String(l).length * 7.4 + 26)) * SC; };
+  const stockW = function (l) { return Math.max(92, Math.round(String(l).replace(/\u200B/g, '').length * 7.4 + 26)) * SC; };
 
   function layout(d) {
     const P = {}, K = {};
@@ -68,7 +68,9 @@ const Picture = (function () {
       (o.bad || []).concat(o.good || [], o.ghost || []).forEach(function (l) { addEl(l.from); addEl(l.to); });
       (d.flows || []).forEach(function (f) { if (focus.has(f.label)) { pts.push(f._a, f._b); } });
     }
-    (o.notes || []).forEach(function (n) { if (n && P[n.at]) pts.push([P[n.at][0] - n.text.length * 4.5, P[n.at][1] - 56]); if (n && P[n.at]) pts.push([P[n.at][0] + n.text.length * 4.5, P[n.at][1]]); });
+    const seen = {};
+    (o.notes || []).forEach(function (n) { if (!n || !P[n.at]) return; const i = seen[n.at] = (seen[n.at] || 0) + 1;
+      pts.push([P[n.at][0] - n.text.length * 4.5, P[n.at][1] - 56 - (i - 1) * 24]); pts.push([P[n.at][0] + n.text.length * 4.5, P[n.at][1]]); });
     Object.keys(o.tags || {}).concat(o.extras || []).forEach(function (l) { if (P[l]) pts.push([P[l][0], P[l][1] + 62]); });
     if (!pts.length) pts.push([0, 0], [400, 240]);
     let x0 = Math.min.apply(null, pts.map(function (p) { return p[0]; })) - 36, x1 = Math.max.apply(null, pts.map(function (p) { return p[0]; })) + 36;
@@ -89,8 +91,10 @@ const Picture = (function () {
     (d.flows || []).forEach(function (f) {
       const a = f._a, b = f._b, v = f._v, bad = badF.has(f.label), op = on(f.label) || bad ? 1 : FADE;
       const col = bad ? C.bad : C.line;
-      parts.pipes += '<g opacity="' + op + '"><line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" style="stroke:' + col + ';stroke-width:' + (bad ? 8 : 7) + '"/>' +
-        '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '" style="stroke:' + C.bg + ';stroke-width:3"/>' +
+      // two straight segments meeting at the valve, as on the canvas (an L-shaped flow is a valve at the corner)
+      const pts = a[0] + ',' + a[1] + ' ' + v[0] + ',' + v[1] + ' ' + b[0] + ',' + b[1];
+      parts.pipes += '<g opacity="' + op + '"><polyline points="' + pts + '" style="fill:none;stroke-linejoin:round;stroke:' + col + ';stroke-width:' + (bad ? 8 : 7) + '"/>' +
+        '<polyline points="' + pts + '" style="fill:none;stroke-linejoin:round;stroke:' + C.bg + ';stroke-width:3"/>' +
         (isEnd(f.to) ? cloud(b) : '') + (isEnd(f.from) ? cloud(a) : '') +
         '<path d="M' + (v[0] - 10) + ' ' + v[1] + 'L' + v[0] + ' ' + (v[1] - 10) + 'L' + (v[0] + 10) + ' ' + v[1] + 'L' + v[0] + ' ' + (v[1] + 10) + 'z" style="fill:' + C.bg + ';stroke:' + col + ';stroke-width:' + (bad ? 2.5 : 1.5) + '"/>' +
         (bad ? cross(v[0] + 16, v[1] - 16) : '') + '</g>';
@@ -147,10 +151,11 @@ const Picture = (function () {
     });
 
     // notes and tags
-    const boxes = [];
+    const boxes = [], stack = {};   // several notes on one element sit one above another
     (o.notes || []).forEach(function (n) {
       if (!n || !n.at || !P[n.at]) return;
-      const p = P[n.at], above = K[n.at] === 'stock' ? 32 : K[n.at] === 'flow' ? 20 : 18;
+      const i = stack[n.at] = (stack[n.at] || 0) + 1;
+      const p = P[n.at], above = (K[n.at] === 'stock' ? 32 : K[n.at] === 'flow' ? 20 : 18) + (i - 1) * 19 * k;
       parts.notes += '<text x="' + p[0] + '" y="' + (p[1] - above) + '" text-anchor="middle" style="fill:' + C.bad + ';font-size:' + fs(13.5) + ';font-weight:700;paint-order:stroke;stroke:' + C.bg + ';stroke-width:5px">' + esc(n.text) + '</text>';
       boxes.push([p[0] - n.text.length * 4, p[1] - above - 16, p[0] + n.text.length * 4, p[1] - above + 4]);
     });

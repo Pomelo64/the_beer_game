@@ -51,4 +51,23 @@ assert.equal(M.kindNotes({ stocks: [], auxiliaries: [{ label: 'cost' }], flows: 
 assert.ok(/input from outside/.test(M.mechanisms(K.reference, MAP).decisionNote));
 const dm = JSON.parse(JSON.stringify(altA)); dm.connectors.push({ from: 'Inventory', to: 'Order decision' }); assert.ok(/does not take the kegs already on order/.test(M.mechanisms(dm, mapA).decisionNote));
 dm.connectors.push({ from: 'Supply line', to: 'Order decision' }); assert.ok(/takes the kegs already on order/.test(M.mechanisms(dm, mapA).decisionNote));
+// two elements with the same name, and an L-shaped flow (a learner's test diagram, rebuilt from screenshots)
+{
+  const L = require('./fixtures/learner_lshape.json'), U = M.unique(L), Z = '​';
+  assert.deepEqual(U.flows.map(f => M.shown(f.label)).filter(l => /arrival/.test(l)), ['arrival rate', 'arrival rate (2)']);
+  assert.equal(U.flows.find(f => f.label === 'arrival rate' + Z).from, 'ordered kegs');               // the copies keep their own ends
+  // a link to the shared name goes to the copy nearest its source: all three here are the kegs' arrival rate
+  assert.deepEqual(U.connectors.filter(c => M.base(c.to) === 'arrival rate').map(c => c.from + ' -> ' + M.shown(c.to)),
+    ['ordered kegs -> arrival rate (2)', 'delay factor -> arrival rate (2)', 'serving rate -> arrival rate (2)']);
+  assert.equal(U.connectors.length, L.connectors.length);
+  assert.equal(M.unique(K.reference).flows.length, K.reference.flows.length);                         // nothing changes without duplicates
+  assert.deepEqual(M.notation(U).map(n => n.id), ['N1', 'W1']);   // W1: nothing informs the customers' arrival rate
+  assert.deepEqual(M.notation(U)[0].evidence.focus, ['arrival rate', 'arrival rate' + Z]);
+  const mapL = { 'customers arrived': ['C5'], 'customers waiting': ['C3'], 'ordered kegs': ['C2'], 'kegs at the pub': ['C1'], 'exogenous table': ['C14'],
+    "player's decision": ['C16'], 'wholesaler provision capability': ['C15'], 'delay factor': ['C17'], 'arrival rate': ['C8'], 'serving rate': ['C9'],
+    'fail to serve rate': ['C10'], 'catch up rate': ['C11'], 'order rate': ['C6'], ['arrival rate' + Z]: ['C7'], 'consumption rate': ['C12'] };
+  const fl = fails(U, mapL);
+  assert.deepEqual(fl, ['M3', 'M8', 'M9', 'M10']);           // the limit informs orders, arrivals not linked, no cost
+  console.log('  same names, L-shaped'.padEnd(24), 'notation', JSON.stringify(M.notation(U).map(n => n.id)).padEnd(14), 'fails', JSON.stringify(fl));
+}
 console.log('marking: all tests passed');

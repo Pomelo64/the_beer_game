@@ -3,6 +3,7 @@
    Shape of a key:
      status     'author' (the course's own key) or 'provisional'
      source     where the key comes from
+     game       how the game works, in words (for the AI that reads the learner's diagram)
      task       what the learner is asked to draw (shown on screen)
      scope      what the diagram should cover (for the AI)
      reference  the reference stock-and-flow diagram, in the canvas's JSON format
@@ -21,6 +22,13 @@ const KEYS = {
     status: 'author',
     source: 'The author\'s reference diagram of the supply game (20 November 2026), with one link corrected: ' +
       '"catch up rate" is informed by "waiting to serve", not by "pub customers".',
+    // how the game works, as the player is told it on screen; given to the AI that reads the diagram
+    game: 'The learner plays the pub in a one-player supply game (brewery, distributor, wholesaler, pub). Each week customers come in, and each wants one keg. ' +
+      'The pub serves them from its cellar and orders more kegs from its wholesaler. The wholesaler gets the order at once and says what it can send; ' +
+      'the kegs reach the pub three weeks later. When the wholesaler runs short it sends what it can and keeps the rest on back order, to send later: nothing ordered is lost. ' +
+      'A customer the pub cannot serve does not leave: they wait, and are served first when kegs arrive. ' +
+      'Each week every keg in the cellar costs £0.50 and every keg owed to a waiting customer costs £1. These are the only costs: ordering and the kegs themselves are free. ' +
+      'The player\'s one decision each week is how many kegs to order, and the goal is to keep the total cost low.',
     task: 'Draw a stock-and-flow diagram of your pub that shows how the game works: how kegs reach your cellar and leave it, ' +
       'what happens to customers you cannot serve, and what your cost depends on. Your orders can come from outside the diagram, as an input. ' +
       'Name things in your own words. No equations are needed.',
