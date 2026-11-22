@@ -1,4 +1,6 @@
-# Pub Supply Game
+# Beer Game Lab
+
+*Play the beer game, then model it.*
 
 A one-player supply chain game. You run a pub and order kegs from a wholesaler. The wholesaler, distributor and brewery are played by the computer.
 

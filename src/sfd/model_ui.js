@@ -548,7 +548,7 @@ const Model = (function () {
      they happen, between the modelling steps, so a reader can see when the
      learner drew what. The diagram carries over from one game to the next. */
   function startGame(game) {
-    if (!S.rec) S.rec = PL.newRecord('Pub Supply Game');
+    if (!S.rec) S.rec = PL.newRecord('Beer Game Lab');
     S.game = game; S.mode = game.mode; S.key = KEYS[game.mode] || null;
     S.n += 1; S.done = -1; S.finished = false; S.said = '';
     PL.addEvent(S.rec, { kind: 'game', game: S.n, mode: game.mode });
