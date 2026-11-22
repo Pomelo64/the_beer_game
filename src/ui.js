@@ -267,7 +267,7 @@
     document.querySelectorAll('.st-plain').forEach(function (e) { e.hidden = w; });
     document.querySelectorAll('.st-wom').forEach(function (e) { e.hidden = !w; });
     $('topStats').classList.toggle('is-wom', w);
-    $('tag').textContent = 'Prototype. ' + (w ? 'Word of mouth.' : 'The supply game.') + ' One player, running the pub.';
+    $('tag').textContent = (w ? 'Word of mouth.' : 'The supply game.') + ' One player, running the pub.';
     $('whyLabel').textContent = w ? 'What made it hard to serve every customer?' : 'What made it hard to keep your costs down?';
     $('logHead').innerHTML = w
       ? '<tr><th rowspan="2">Week</th><th colspan="6" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler\'s answer</th><th class="grp">Score</th></tr>' +
@@ -474,7 +474,7 @@
     let toured = false; try { toured = localStorage.getItem('pubgame.toured') === '1'; } catch (e) {}
     if (!toured) requestAnimationFrame(tour);
   }
-  function home() { clearInterval(timer); closeBubble(); G = null; TAB = 'game'; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
+  function home() { clearInterval(timer); closeBubble(); G = null; TAB = 'game'; $('tag').textContent = 'One player, running the pub.'; show('intro'); }
   /* This week's customers get their kegs from the cellar. Where customers wait (plain), the
      longest wait comes first: kegs go to those already waiting, then to this week's customers.
      Where they do not (wom), nobody is waiting, and those left without a keg are turned away. */

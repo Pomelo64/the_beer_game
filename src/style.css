@@ -392,3 +392,6 @@ details.fold[open] > summary{margin-bottom:12px}
 .refmode{margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .refmode > summary{cursor:pointer;font-weight:600}
 .refmode[open] > summary{margin-bottom:12px}
+
+/* credit line, on every screen */
+.credit{margin:32px 0 0;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}

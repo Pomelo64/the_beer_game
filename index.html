@@ -402,6 +402,9 @@ details.fold[open] > summary{margin-bottom:12px}
 .refmode{margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .refmode > summary{cursor:pointer;font-weight:600}
 .refmode[open] > summary{margin-bottom:12px}
+
+/* credit line, on every screen */
+.credit{margin:32px 0 0;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -409,7 +412,7 @@ details.fold[open] > summary{margin-bottom:12px}
   <header class="top">
     <div>
       <h1>Pub Supply Game</h1>
-      <span class="tag" id="tag">Prototype. One player, running the pub.</span>
+      <span class="tag" id="tag">One player, running the pub.</span>
     </div>
     <div class="top-stats" id="topStats" hidden>
       <span>Week <b id="wk">1</b></span>
@@ -544,7 +547,7 @@ details.fold[open] > summary{margin-bottom:12px}
     </div>
     <div class="panel">
       <p id="taskText"></p>
-      <p class="note" id="keyNote">Prototype: the answer key is a provisional draft, to be replaced by the course's own.</p>
+      <p class="note" id="keyNote">Note: the answer key is a provisional draft, to be replaced by the course's own.</p>
       <p class="note" id="noKey" hidden>The answer key for this game has not been written yet. You can draw and record your model, but it cannot be marked.</p>
       <details class="howto">
         <summary>How to draw</summary>
@@ -552,7 +555,7 @@ details.fold[open] > summary{margin-bottom:12px}
       </details>
     </div>
     <details class="refmode" id="refPanel" hidden>
-      <summary>Your reference mode: what your model should explain</summary>
+      <summary>Your reference mode: the pattern your diagram should help explain</summary>
       <div class="pair">
         <div>
           <h3>Customers and orders</h3>
@@ -650,8 +653,8 @@ details.fold[open] > summary{margin-bottom:12px}
         <p class="said-ai" id="saidAi" aria-live="polite"></p>
       </div>
       <div class="callout">
-        <p><b>Modelling your pub can help you understand these problems better.</b> Your results, below and in the <b>Model your pub</b> tab, are your <i>reference mode</i>: the behaviour your model should be able to explain.</p>
-        <div class="order-row"><button class="btn" id="modelBtn" type="button">Model your pub</button></div>
+        <p><b>Modelling your pub can help you understand these problems better.</b> Your results, below and in the <b>Model your pub</b> tab, are your <i>reference mode</i>: the pattern over time your diagram should help explain. The diagram will not run, since it has no equations, but it can show which stocks, flows and links lie behind what you saw: customers waiting, kegs arriving weeks after you ordered them, and your cost climbing.</p>
+        <div class="order-row"><button class="btn" id="modelBtn" type="button">Make sense of it!</button></div>
       </div>
     </div>
 
@@ -693,6 +696,8 @@ details.fold[open] > summary{margin-bottom:12px}
 
     <div class="order-row results-end"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
   </section>
+
+  <footer class="credit">Idea and design by Shahin Ashkiani. Code written by Claude (Anthropic) under his supervision.</footer>
 </div>
 <div id="fx" aria-hidden="true"></div>
 <script>
@@ -2879,7 +2884,7 @@ const Model = (function () {
     document.querySelectorAll('.st-plain').forEach(function (e) { e.hidden = w; });
     document.querySelectorAll('.st-wom').forEach(function (e) { e.hidden = !w; });
     $('topStats').classList.toggle('is-wom', w);
-    $('tag').textContent = 'Prototype. ' + (w ? 'Word of mouth.' : 'The supply game.') + ' One player, running the pub.';
+    $('tag').textContent = (w ? 'Word of mouth.' : 'The supply game.') + ' One player, running the pub.';
     $('whyLabel').textContent = w ? 'What made it hard to serve every customer?' : 'What made it hard to keep your costs down?';
     $('logHead').innerHTML = w
       ? '<tr><th rowspan="2">Week</th><th colspan="6" class="grp">Your pub</th><th colspan="3" class="grp">Your order and the wholesaler\'s answer</th><th class="grp">Score</th></tr>' +
@@ -3086,7 +3091,7 @@ const Model = (function () {
     let toured = false; try { toured = localStorage.getItem('pubgame.toured') === '1'; } catch (e) {}
     if (!toured) requestAnimationFrame(tour);
   }
-  function home() { clearInterval(timer); closeBubble(); G = null; TAB = 'game'; $('tag').textContent = 'Prototype. One player, running the pub.'; show('intro'); }
+  function home() { clearInterval(timer); closeBubble(); G = null; TAB = 'game'; $('tag').textContent = 'One player, running the pub.'; show('intro'); }
   /* This week's customers get their kegs from the cellar. Where customers wait (plain), the
      longest wait comes first: kegs go to those already waiting, then to this week's customers.
      Where they do not (wom), nobody is waiting, and those left without a keg are turned away. */

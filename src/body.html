@@ -2,7 +2,7 @@
   <header class="top">
     <div>
       <h1>Pub Supply Game</h1>
-      <span class="tag" id="tag">Prototype. One player, running the pub.</span>
+      <span class="tag" id="tag">One player, running the pub.</span>
     </div>
     <div class="top-stats" id="topStats" hidden>
       <span>Week <b id="wk">1</b></span>
@@ -137,7 +137,7 @@
     </div>
     <div class="panel">
       <p id="taskText"></p>
-      <p class="note" id="keyNote">Prototype: the answer key is a provisional draft, to be replaced by the course's own.</p>
+      <p class="note" id="keyNote">Note: the answer key is a provisional draft, to be replaced by the course's own.</p>
       <p class="note" id="noKey" hidden>The answer key for this game has not been written yet. You can draw and record your model, but it cannot be marked.</p>
       <details class="howto">
         <summary>How to draw</summary>
@@ -145,7 +145,7 @@
       </details>
     </div>
     <details class="refmode" id="refPanel" hidden>
-      <summary>Your reference mode: what your model should explain</summary>
+      <summary>Your reference mode: the pattern your diagram should help explain</summary>
       <div class="pair">
         <div>
           <h3>Customers and orders</h3>
@@ -243,8 +243,8 @@
         <p class="said-ai" id="saidAi" aria-live="polite"></p>
       </div>
       <div class="callout">
-        <p><b>Modelling your pub can help you understand these problems better.</b> Your results, below and in the <b>Model your pub</b> tab, are your <i>reference mode</i>: the behaviour your model should be able to explain.</p>
-        <div class="order-row"><button class="btn" id="modelBtn" type="button">Model your pub</button></div>
+        <p><b>Modelling your pub can help you understand these problems better.</b> Your results, below and in the <b>Model your pub</b> tab, are your <i>reference mode</i>: the pattern over time your diagram should help explain. The diagram will not run, since it has no equations, but it can show which stocks, flows and links lie behind what you saw: customers waiting, kegs arriving weeks after you ordered them, and your cost climbing.</p>
+        <div class="order-row"><button class="btn" id="modelBtn" type="button">Make sense of it!</button></div>
       </div>
     </div>
 
@@ -286,5 +286,7 @@
 
     <div class="order-row results-end"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
   </section>
+
+  <footer class="credit">Idea and design by Shahin Ashkiani. Code written by Claude (Anthropic) under his supervision.</footer>
 </div>
 <div id="fx" aria-hidden="true"></div>
