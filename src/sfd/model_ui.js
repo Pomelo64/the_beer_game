@@ -33,9 +33,10 @@ const Model = (function () {
     if (!f || e.source !== f.contentWindow) return;
     const d = e.data;
     if (!d || !d.isStreamlitMessage) return;
-    if (d.type === 'streamlit:componentReady')
-      f.contentWindow.postMessage({ type: 'streamlit:render', args: { initial: {}, confirmed: [] } }, '*');
-    else if (d.type === 'streamlit:setFrameHeight' && d.height) f.style.height = Math.max(380, Math.ceil(d.height)) + 'px';
+    if (d.type === 'streamlit:componentReady') {      // an imported diagram waits in S.pendingInitial
+      f.contentWindow.postMessage({ type: 'streamlit:render', args: { initial: S.pendingInitial || {}, confirmed: [] } }, '*');
+      S.pendingInitial = null;
+    } else if (d.type === 'streamlit:setFrameHeight' && d.height) f.style.height = Math.max(380, Math.ceil(d.height)) + 'px';
     else if (d.type === 'streamlit:setComponentValue' && d.value) fromCanvas(d.value);
   });
   function fromCanvas(v) {
@@ -48,6 +49,41 @@ const Model = (function () {
     const ev = PL.observe(S.rec, dg, {}, null, action);
     if (ev && ev.kind === 'step') askWhy(ev.i, ev.question || null);
     drawRecord();
+  }
+
+  /* ---------- importing a diagram ----------
+     A diagram saved from this page or from SFD Studio (my-model.json), or a modelling
+     record, from which the last diagram is taken. The canvas is reloaded with it, the way
+     SFD Studio hands a saved diagram to its canvas, and the record gets an "import" step. */
+  function importMsg(t) { $('importMsg').textContent = t; }
+  function hasDrawing(d) { return !!d && ((d.stocks || []).length + (d.auxiliaries || []).length + (d.flows || []).length) > 0; }
+  function importDiagram(file) {
+    const rd = new FileReader();
+    rd.onerror = function () { importMsg('The file could not be read.'); };
+    rd.onload = function () {
+      let o;
+      try { o = JSON.parse(rd.result); } catch (e) { importMsg('"' + file.name + '" is not a JSON file.'); return; }
+      if (o && o.format === 'bluejay-modelling-process') {
+        const ev = (o.events || []).filter(function (e) { return e && e.snapshot && e.snapshot.diagram; }).pop();
+        o = ev ? ev.snapshot.diagram : null;
+      }
+      if (!o || typeof o !== 'object' || !(Array.isArray(o.stocks) || Array.isArray(o.auxiliaries))) {
+        importMsg('"' + file.name + '" does not hold a stock-and-flow diagram saved from this page or from SFD Studio.'); return;
+      }
+      const dg = {};
+      ['stocks', 'auxiliaries', 'clouds', 'flows', 'connectors', 'junctions'].forEach(function (k) { dg[k] = Array.isArray(o[k]) ? o[k] : []; });
+      if (!dg.stocks.length && !dg.auxiliaries.length) { importMsg('The diagram in "' + file.name + '" is empty.'); return; }
+      if (hasDrawing(S.diagram) && !window.confirm('Replace the diagram on the canvas with "' + file.name + '"? Your current diagram stays in your modelling record.')) return;
+      S.diagram = dg; S.pendingInitial = dg;
+      frame().srcdoc = CANVAS_HTML;                 // the canvas restarts and draws it
+      if (S.rec) {
+        const ev = PL.observe(S.rec, dg, {}, 'import', null);
+        if (ev && ev.kind === 'step') askWhy(ev.i, ev.question || null);
+        drawRecord();
+      }
+      importMsg('Imported "' + file.name + '": ' + dg.stocks.length + ' stocks, ' + dg.flows.length + ' flows, ' + dg.auxiliaries.length + ' auxiliaries.');
+    };
+    rd.readAsText(file);
   }
 
   /* ---------- reasons ---------- */
@@ -523,6 +559,8 @@ const Model = (function () {
     $('whyIn').addEventListener('keydown', function (e) { if (e.key === 'Enter') saveWhy(); });
     $('recBtn').addEventListener('click', downloadRecord);
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
+    $('importBtn').addEventListener('click', function () { $('importFile').value = ''; $('importFile').click(); });
+    $('importFile').addEventListener('change', function () { const f = this.files && this.files[0]; if (f) importDiagram(f); });
     drawSettings();
   }
   return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };

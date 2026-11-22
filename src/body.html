@@ -178,7 +178,10 @@
       <p class="note">Every change to your diagram, every exchange with the AI and every reason you give is recorded, with your game. The file opens in SFD Studio, which replays it step by step.</p>
       <div class="rec-row"><label><span>Your name <span class="muted">(optional)</span></span> <input id="recName" type="text" autocomplete="name"></label>
         <button class="btn" id="recBtn" type="button">Download my modelling process</button>
-        <button class="btn ghost small" id="jsonBtn" type="button">Download the diagram (JSON)</button></div>
+        <button class="btn ghost small" id="jsonBtn" type="button">Download the diagram (JSON)</button>
+          <button class="btn ghost small" id="importBtn" type="button">Import a diagram (JSON)</button>
+          <input type="file" id="importFile" accept=".json,application/json" hidden></div>
+        <p class="muted small" id="importMsg" aria-live="polite"></p>
       <p class="note">The record lives only in this page until you download it. Download it before you close or reload the page. The canvas's SVG button downloads a picture of the diagram.</p>
     </div>
   </section>
