@@ -34,6 +34,10 @@ console.log('net stock min', minNet.join(' '), ' max', maxNet.join(' '));
 console.log('costs        ', g.pos.map(p=>p.cost).join(' '), ' total', g.pos.reduce((s,p)=>s+p.cost,0));
 console.log('pub orders   ', g.log.map(r=>r.pos[0].order).join(' '));
 console.log('brewery brews', g.log.map(r=>r.pos[3].order).join(' '));
+// 6. The benchmark: its orders give its cost, with nobody ever waiting.
+{ const b = E.newGame(0); for (let w = 0; w < E.CFG.weeksPlayed; w++) { E.beginWeek(b); E.endWeek(b, { 0: E.CFG.best.orders[w] }); }
+  assert.equal(b.pos[0].cost, E.CFG.best.cost); assert.ok(b.log.every(r => r.pos[0].owed === 0));
+  console.log('benchmark    ', 'cost', b.pos[0].cost, '| first three weeks', b.log.slice(0, 3).reduce((s, r) => s + r.pos[0].weekCost, 0)); }
 console.log('plain scenario: all tests passed');
 }
 // ---------- word-of-mouth scenario ----------

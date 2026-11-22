@@ -34,6 +34,11 @@ const Engine = (function () {
     holdCost: 0.5,            // per keg in stock, per week
     backlogCost: 1.0,         // per keg owed, per week
     demand: function (week) { return week < 5 ? 4 : 8; },   // one step, in week 5
+    // The lowest cost found for the pub, with hindsight (knowing every week's customers), by a
+    // computer search over the pub's orders in this engine, the other three positions playing by
+    // the rule. £18 of it is fixed: the first three weeks' deliveries were ordered before the game.
+    // The search started from 44 order plans and reached £31 to £35; test_engine.js replays these orders.
+    best: { cost: 31, orders: [2, 5, 7, 5, 5, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8] },
     // --- word-of-mouth scenario: design choices of this game ---
     cellar: 20,               // most kegs the pub's cellar can hold
     crowdStart: 4,            // customers a week at the start

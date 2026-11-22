@@ -30,6 +30,10 @@ The opening screen offers two games. The supply game is the default.
 - A customer you cannot serve leaves. Word gets around: the crowd shrinks with each customer turned away, and grows after a week in which everyone was served. Lost regulars come back quickly, one a week. New customers are won more slowly.
 - The score is the number of customers served. There is no money in this game.
 
+## After the game: how your pub did
+
+The results open with a message built from the player's own game: their cost against the lowest the game allows (£31, found by a computer search over the pub's orders with hindsight, in `CFG.best`), how much of it came from kegs held and how much from customers kept waiting, and, where they happened, weeks of waiting customers, kegs piling up or sitting idle, orders far above demand and weeks the wholesaler ran short. In the word-of-mouth game it reports customers served, turned away and kegs sent back. A highlighted line then invites the player to model the pub, and to look first at their results, their reference mode.
+
 ## After the game: modelling it
 
 Once a game starts, the page has two tabs: **The game** and **Your model**. In the model tab the learner draws a stock-and-flow diagram of the pub, has it marked by an AI against an answer key, and can ask the AI questions about it. The tab is open from the first week to the end, so the learner can draw while playing, after it, or both. The diagram carries over to the next game.

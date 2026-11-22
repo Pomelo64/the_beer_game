@@ -370,3 +370,8 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .mstack > .panel{display:block}
 .mstack > .panel > * + *{margin-top:12px}
 .mstack > *{flex-shrink:0}
+
+/* the personal message after the game */
+.story-list{margin:10px 0 0;padding-left:1.2em;max-width:65ch}
+.story-list li + li{margin-top:6px}
+.callout{margin:16px 0 0;padding:12px 14px;border-left:4px solid var(--accent);border-radius:var(--r);background:color-mix(in srgb, var(--accent) 12%, var(--surface))}

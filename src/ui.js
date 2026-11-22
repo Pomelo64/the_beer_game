@@ -610,6 +610,55 @@
   function kpis(id, list) {
     $(id).innerHTML = list.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
   }
+  /* ---------- the personal message after the game ----------
+     Built from the player's own record: what cost them money (against the lowest cost the
+     game allows, CFG.best), customers kept waiting, kegs piled up, orders far above demand,
+     and weeks the wholesaler ran short. */
+  function story() {
+    const L = G.log, P = [];
+    const span = function (ws) { return ws.length === 1 ? 'in week ' + ws[0] : 'in ' + ws.length + ' weeks, between week ' + ws[0] + ' and week ' + ws[ws.length - 1]; };
+    const top = function (rows, f) { return rows.reduce(function (b, r) { return f(r) > f(b) ? r : b; }); };
+    const weeks = function (f) { return L.filter(f).map(function (r) { return r.week; }); };
+    let head;
+    if (wom()) {
+      const T = G.turned, W = G.wasted, tw = weeks(function (r) { return r.pos[0].turned > 0; });
+      head = 'You served <b>' + G.served + '</b> customers.';
+      if (T) {
+        const low = Math.min.apply(null, L.filter(function (r) { return r.week > tw[0]; }).map(function (r) { return r.demand; }).concat([L[L.length - 1].demand]));
+        P.push(T + (T === 1 ? ' customer was' : ' customers were') + ' turned away, the first in week ' + tw[0] + '. Each one put others off, so your crowd fell to ' + low + ' a week at its lowest. ' +
+          'In this game, as in a real pub, a customer you cannot serve is gone.');
+      } else P.push('You never turned anyone away, so word of mouth worked for you: your crowd grew from ' + CFG.crowdStart + ' to ' + Math.max.apply(null, L.map(function (r) { return r.demand; })) + ' a week.');
+      if (W) P.push(W + (W === 1 ? ' keg was' : ' kegs were') + ' sent back because your cellar holds only ' + CAP + '.');
+    } else {
+      const C = G.pos[0].cost, B = CFG.best.cost;
+      const hold = L.reduce(function (t, r) { return t + CFG.holdCost * r.pos[0].stock; }, 0), owe = L.reduce(function (t, r) { return t + CFG.backlogCost * r.pos[0].owed; }, 0);
+      head = 'Your total cost was <b>' + money(C) + '</b>. ' +
+        (C <= B + 0.01 ? 'That is as low as this game goes, even with hindsight. Well played.'
+          : C <= B * 1.15 ? 'That is close to the lowest this game allows, about ' + money(B) + ' even with hindsight. Well played.'
+            : 'With hindsight, knowing every week\'s customers in advance, this game can be played for about ' + money(B) + ', so about ' + money(C - B) + ' of yours could have been avoided.') +
+        (owe === 0 ? ' All of your cost came from kegs sitting in your cellar.' : hold === 0 ? ' All of your cost came from customers waiting for kegs.'
+          : ' Of your cost, ' + money(owe) + ' came from customers waiting for kegs and ' + money(hold) + ' from kegs sitting in your cellar.');
+      P.push('In week 5 your customers doubled, from 4 to 8 a week, and stayed there.');
+      const ws = weeks(function (r) { return r.pos[0].owed > 0; });
+      if (ws.length) {
+        const pk = top(L, function (r) { return r.pos[0].owed; });
+        P.push('Your customers had to wait ' + span(ws) + '. At the worst, in week ' + pk.week + ', ' + pk.pos[0].owed + ' were waiting for a keg. ' +
+          'Here they wait patiently. In a real pub, many would have walked out, and some would not have come back.');
+      }
+      const late = L.filter(function (r) { return r.week >= 5; }), pile = top(late, function (r) { return r.pos[0].stock; });
+      const mean = late.reduce(function (t, r) { return t + r.pos[0].stock; }, 0) / late.length;
+      const piled = pile.pos[0].stock > 16, idle = !piled && mean > 8;     // a peak of over two weeks of customers, or over a week on average
+      if (piled) P.push('Kegs piled up: in week ' + pile.week + ' your cellar held ' + pile.pos[0].stock + ' kegs, more than two weeks of customers.' +
+        (ws.length ? ' So your cellar swung between too few kegs and too many. That swing is what this game is known for.' : ''));
+      if (idle) P.push('Kegs sat in your cellar week after week: from week 5 on it held ' + Math.round(mean) + ' on average, more than a week of customers. Each one cost ' + money(CFG.holdCost) + ' a week.');
+      const po = top(L, function (r) { return r.pos[0].order || 0; });
+      if (po.pos[0].order > 12) P.push('You ordered up to ' + po.pos[0].order + ' kegs in a week (week ' + po.week + '), though customers never wanted more than 8.');
+      const ss = weeks(function (r) { return r.pos[1].owed > 0; });
+      if (ss.length) P.push('Your wholesaler ran short ' + span(ss) + ', so part of what you ordered came late. A sudden jump in orders can do that, all the way up the chain.');
+      if (!ws.length && !piled && !idle) P.push('Your customers never had to wait, and your cellar never held much more than you needed.');
+    }
+    $('story').innerHTML = '<p>' + head + '</p><ul class="story-list">' + P.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ul>';
+  }
   function results() {
     show('results');
     const n = CFG.weeksPlayed, demand = G.log.map(function (r) { return r.demand; });
@@ -632,6 +681,7 @@
     const said = $('why').value.trim();
     $('said').textContent = said || 'You left this blank.';
     drawChain(n);
+    story();
   }
   function replay() {
     clearInterval(timer);
