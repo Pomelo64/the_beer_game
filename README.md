@@ -32,11 +32,15 @@ The opening screen offers two games. The supply game is the default.
 
 ## After the game: how your pub did
 
-The results open with a message built from the player's own game: their cost against the lowest the game allows (£31, found by a computer search over the pub's orders with hindsight, in `CFG.best`), how much of it came from kegs held and how much from customers kept waiting, and, where they happened, weeks of waiting customers, kegs piling up or sitting idle, orders far above demand and weeks the wholesaler ran short. In the word-of-mouth game it reports customers served, turned away and kegs sent back. A highlighted line then invites the player to model the pub, and to look first at their results, their reference mode.
+The results open with a message built from the player's own game: their cost against the lowest the game allows (£31, found by a computer search over the pub's orders with hindsight, in `CFG.best`), how much of it came from kegs held and how much from customers kept waiting, and, where they happened, weeks of waiting customers, kegs piling up or sitting idle, orders far above demand and weeks the wholesaler ran short. In the word-of-mouth game it reports customers served, turned away and kegs sent back.
+
+Below it, the player's answer to the end-of-game question (written before seeing any results) is shown with an AI comment on it: what the explanation gets right, what it leaves out set against the facts of their own game, and a question that leads into modelling. The comment uses only the game record and the summary, and is recorded as an exchange with the AI. Without an AI key, a note says where to add one, and the comment follows once the key works. A highlighted box then invites the player to model the pub, with the **Model your pub** button. Below come the two charts of the pub, the reference mode, and the whole chain, folded away.
+
+In the **Model your pub** tab, a *Your reference mode* panel above the canvas holds the same two charts, the player's words and the AI's comment, once a game has ended. The evaluation's final slide connects the player's words to their diagram: what of their explanation the diagram already shows, and what it does not show yet.
 
 ## After the game: modelling it
 
-Once a game starts, the page has two tabs: **The game** and **Your model**. In the model tab the learner draws a stock-and-flow diagram of the pub, has it marked by an AI against an answer key, and can ask the AI questions about it. The tab is open from the first week to the end, so the learner can draw while playing, after it, or both. The diagram carries over to the next game.
+Once a game starts, the page has two tabs: **Run your pub** and **Model your pub**. In the model tab the learner draws a stock-and-flow diagram of the pub, has it marked by an AI against an answer key, and can ask the AI questions about it. The tab is open from the first week to the end, so the learner can draw while playing, after it, or both. The diagram carries over to the next game.
 
 While a game is running, the AI is given only the weeks already completed, and nothing from the distributor or brewery, which the player cannot see.
 

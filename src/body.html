@@ -14,8 +14,8 @@
     </div>
   </header>
   <div class="tabs" id="tabs" role="tablist" aria-label="View" hidden>
-    <button type="button" role="tab" id="tabGame" aria-selected="true">The game</button>
-    <button type="button" role="tab" id="tabModel" aria-selected="false">Your model</button>
+    <button type="button" role="tab" id="tabGame" aria-selected="true">Run your pub</button>
+    <button type="button" role="tab" id="tabModel" aria-selected="false">Model your pub</button>
   </div>
 
   <section id="intro">
@@ -132,7 +132,7 @@
 
   <section id="model" hidden>
     <div class="playbar">
-      <h2>Your model</h2>
+      <h2>Model your pub</h2>
       <span class="note" id="modelWhen"></span>
     </div>
     <div class="panel">
@@ -144,6 +144,26 @@
         <p>Pick a tool in the toolbar, then click the canvas to place a stock, auxiliary or cloud. For a flow or a link, click where it starts, then where it ends. To feed a flow with information, end the link on the flow's valve (the diamond). Double-click to rename, right-click to delete.</p>
       </details>
     </div>
+    <details class="refmode" id="refPanel" hidden>
+      <summary>Your reference mode: what your model should explain</summary>
+      <div class="pair">
+        <div>
+          <h3>Customers and orders</h3>
+          <div class="legend"><span class="l-dem"><i></i>Customers who came</span><span class="l-pub"><i></i>You ordered</span></div>
+          <div class="chart" id="cRefOrders"></div>
+        </div>
+        <div>
+          <h3 id="hRefStock">Stock</h3>
+          <div class="legend"><span class="l-pub"><i></i><span id="lRefStock"></span></span></div>
+          <div class="chart" id="cRefStock"></div>
+        </div>
+      </div>
+      <div class="said">
+        <h3>What you wrote at the end of the game</h3>
+        <p class="quote" id="refSaid"></p>
+        <p class="said-ai" id="refAi" aria-live="polite"></p>
+      </div>
+    </details>
     <div class="canvas-bar">
       <button class="btn ghost small" id="importBtn" type="button">Import a diagram (JSON)</button>
       <button class="btn ghost small" id="jsonBtn" type="button">Download the diagram (JSON)</button>
@@ -158,7 +178,7 @@
 
     <div class="mstack">
       <div class="panel">
-        <h3>Check your diagram</h3>
+        <h3>Evaluate your diagram</h3>
         <details class="aibox" id="aiBox">
           <summary>AI settings <span class="muted">(<span id="aiSum">no key</span>)</span></summary>
           <label>Provider <select id="aiProv"></select></label>
@@ -217,12 +237,19 @@
     <div class="panel">
       <h2>How your pub did</h2>
       <div id="story"></div>
-      <p class="callout"><b>Modelling your pub can help you understand these problems better.</b> Before you start, look at your results below: how your customers, your orders and your cellar moved week by week. In system dynamics this is your <i>reference mode</i>: the behaviour your model should be able to explain.</p>
+      <div class="said">
+        <h3>What you wrote before seeing this</h3>
+        <p class="quote" id="said"></p>
+        <p class="said-ai" id="saidAi" aria-live="polite"></p>
+      </div>
+      <div class="callout">
+        <p><b>Modelling your pub can help you understand these problems better.</b> Your results, below and in the <b>Model your pub</b> tab, are your <i>reference mode</i>: the behaviour your model should be able to explain.</p>
+        <div class="order-row"><button class="btn" id="modelBtn" type="button">Model your pub</button></div>
+      </div>
     </div>
 
     <div class="panel">
       <h2>Your results, week by week</h2>
-      <dl class="kpis" id="kTop"></dl>
       <div class="pair">
         <div>
           <h3>Customers and orders</h3>
@@ -237,8 +264,8 @@
       </div>
     </div>
 
-    <div class="panel">
-      <h2>The whole chain</h2>
+    <details class="panel fold">
+      <summary>See the whole chain</summary>
       <p>Your orders went to a wholesaler, who ordered from a distributor, who ordered from a brewery. Replay the game and watch all four.</p>
       <div class="replay">
         <button class="btn" id="playBtn" type="button">Play</button>
@@ -255,15 +282,9 @@
       <h3>Stock in the selected week</h3>
       <p class="note" id="barsNote"></p>
       <div class="bars" id="bars"></div>
-      <dl class="kpis" id="kBottom"></dl>
-    </div>
+    </details>
 
-    <div class="panel">
-      <h2>What you wrote before seeing this</h2>
-      <p class="quote" id="said"></p>
-      <p>Now explain what you saw: draw or finish your stock-and-flow diagram in the <b>Your model</b> tab, and submit it for evaluation.</p>
-      <div class="order-row"><button class="btn" id="modelBtn" type="button">Go to your model</button><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
-    </div>
+    <div class="order-row results-end"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
   </section>
 </div>
 <div id="fx" aria-hidden="true"></div>

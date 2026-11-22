@@ -200,7 +200,15 @@ const Model = (function () {
     'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
     'Voice: warm, encouraging and explanatory, in plain English for a beginner. Praise only what the rules confirm, and name it specifically. Frame each problem as the next thing to understand. Never use the word "wrong". Be honest about how far the learner is.',
     'Give hints, not answers: do not tell them which link or flow to add. You may use their own game weeks as evidence ("in week 9, 30 customers were waiting").',
+    'If their game record includes what they wrote at the end of the game, use one sentence of "wrap" to connect it to their diagram: what of their own explanation the diagram already shows, and what it does not show yet, going only by the verdicts.',
     'Reply ONLY with JSON, no markdown fences: {"headline": "<one sentence>", "overall": "<2-4 sentences>", "slides": {"<mechanism id>": "<2-3 sentences: what the game does, where they met it in their own weeks if helpful, ending with the hint question>"}, "wrap": "<1-2 sentences: the single most useful next step>"}'
+  ].join('\n');
+  /* The comment on what the learner wrote at the end of the game, before seeing any results. */
+  const COMMENT_SYSTEM = [
+    'You are a teaching assistant in a system dynamics course. A learner has just finished a one-player supply game in which they ran a pub. Before seeing any results, they wrote in their own words what made the game hard. You reply to what they wrote.',
+    'Use only the facts you are given: the summary of their game and their week-by-week record. Never invent numbers or events.',
+    'Write 3 or 4 sentences in plain English, addressed to the learner as "you". First acknowledge, specifically, what their explanation gets right. Then set what it leaves out or misreads against the facts of their own game, citing weeks or numbers. Many players blame the customers; if they do, point out gently how the customers actually behaved. End with one question that invites them to model their pub: what a diagram of the pub would need to show to explain what happened. Do not answer that question.',
+    'Never use the word "wrong". Do not give the model away: do not list stocks, flows or links. No markdown, headings or lists.'
   ].join('\n');
   const ASK_SYSTEM = [
     'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, draws a stock-and-flow diagram to explain it, and has had it checked. The check was made by fixed rules on top of your reading of their diagram. Now they ask you questions.',
@@ -477,8 +485,41 @@ const Model = (function () {
     const r = await LLM.testConnection(S.cfg);
     $('aiTest').disabled = false; $('aiTest').textContent = 'Test the connection';
     S.conn = r[0] ? true : r[1]; drawSettings();
+    if (S.conn === true && S.pendingComment) gameComment();   // the comment waited for a key
   }
   function openSettings() { $('aiBox').open = true; $('aiKey').focus(); }
+
+  /* ---------- a comment on what the learner wrote at the end of the game ----------
+     ui.js calls gameComment with the text of the personal message once the results are
+     shown. The comment appears under the learner's words on the results screen and in the
+     reference-mode panel of this tab. Without a key, a note says where to add one; the
+     comment then follows as soon as the connection is tested. */
+  function sayComment(state, html) {
+    ['saidAi', 'refAi'].forEach(function (id) { const el = $(id); if (el) { el.className = 'said-ai ' + state; el.innerHTML = html; } });
+  }
+  async function gameComment(summary) {
+    if (summary) S.summary = summary;
+    if (!S.finished) return;
+    if (!S.said) { sayComment('none', ''); return; }
+    if (S.comment && S.comment.n === S.n) { sayComment('done', esc(S.comment.text)); return; }
+    readSettings();
+    if (!S.cfg) {
+      S.pendingComment = true;
+      sayComment('note', 'Add an AI key under <b>AI settings</b> in the <b>Model your pub</b> tab, and you will get a comment on your explanation here.');
+      return;
+    }
+    S.pendingComment = false;
+    const n = S.n;
+    sayComment('busy', '<span class="spin"></span> The AI is reading what you wrote…');
+    const r = await LLM.complete(S.cfg, COMMENT_SYSTEM,
+      'WHAT THE LEARNER WROTE AT THE END, BEFORE SEEING ANY RESULTS\n' + S.said + '\n\nSUMMARY OF THEIR GAME\n' + (S.summary || '') +
+      (S.key && S.key.game ? '\n\nHOW THE GAME WORKS\n' + S.key.game : '') + '\n\n' + gameText() + '\n\nWrite your reply now.', 400);
+    if (n !== S.n) return;                         // a new game began meanwhile
+    if (r[1]) { sayComment('note', 'The AI could not comment: ' + esc(r[1]) + ' <button class="linkish" type="button" data-act="comment">Try again</button>'); return; }
+    S.comment = { n: n, text: r[0] };
+    sayComment('done', esc(r[0]));
+    if (S.rec) { PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Comment on what the learner wrote at the end of game ' + n + '.' }, { comment: r[0], said: S.said }); drawRecord(); }
+  }
 
   /* ---------- the record ---------- */
   function drawRecord() {
@@ -560,8 +601,9 @@ const Model = (function () {
     $('recBtn').addEventListener('click', downloadRecord);
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
     $('importBtn').addEventListener('click', function () { $('importFile').value = ''; $('importFile').click(); });
+    ['saidAi', 'refAi'].forEach(function (id) { $(id).addEventListener('click', function (e) { if (e.target.closest('[data-act="comment"]')) gameComment(); }); });
     $('importFile').addEventListener('change', function () { const f = this.files && this.files[0]; if (f) importDiagram(f); });
     drawSettings();
   }
-  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, gameComment: gameComment, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM, COMMENT_SYSTEM: COMMENT_SYSTEM };
 })();

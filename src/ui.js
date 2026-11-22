@@ -165,7 +165,7 @@
         b: 'Your only decision each week: how many kegs to order. Type a number or use − and +, then press Send order.' },
       { t: [byId('panelLog')], h: 'Week by week',
         b: 'A record of every week so far. Numbers in red mark trouble: customers ' + (w ? 'turned away, kegs sent back,' : 'left waiting,') + ' or kegs the wholesaler could not send.' },
-      { t: [byId('tabModel')], h: 'Your model',
+      { t: [byId('tabModel')], h: 'Model your pub',
         b: 'Draw your stock-and-flow diagram of the game here, and submit it for evaluation. The tab is open the whole time: draw while you play, after it, or both, and switch back and forth as you like.' },
 
     ];
@@ -277,8 +277,8 @@
     $('logBody').parentNode.className = 'log ' + (w ? 'log-wom' : 'log-plain');
     $('logNote').textContent = 'Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.' +
       (w ? ' "Sent back" counts kegs that did not fit in your cellar.' : '');
-    $('hStock').textContent = w ? 'Cellar' : 'Stock';
-    $('lStock').textContent = w ? 'Kegs in your cellar at the end of each week. It holds ' + CAP + '.' : 'Kegs in your cellar, minus kegs owed';
+    $('hStock').textContent = $('hRefStock').textContent = w ? 'Cellar' : 'Stock';
+    $('lStock').textContent = $('lRefStock').textContent = w ? 'Kegs in your cellar at the end of each week. It holds ' + CAP + '.' : 'Kegs in your cellar, minus kegs owed';
     $('barsNote').textContent = w ? 'Right of the line is stock. Left of the line is kegs on back order to the next position.' : 'Right of the line is stock. Left of the line is kegs owed.';
   }
   /* One row a week, newest first. A row fills in as the week goes on: customers and the
@@ -462,6 +462,7 @@
   function start() {
     clearInterval(timer);
     G = Engine.newGame(0, MODE);
+    $('refPanel').hidden = true;     // a new game: the reference mode returns when it ends
     setMode();
     const rec = Engine.beginWeek(G);
     Model.startGame(G); TAB = 'game';
@@ -607,9 +608,7 @@
     }).join('');
   }
 
-  function kpis(id, list) {
-    $(id).innerHTML = list.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
-  }
+
   /* ---------- the personal message after the game ----------
      Built from the player's own record: what cost them money (against the lowest cost the
      game allows, CFG.best), customers kept waiting, kegs piled up, orders far above demand,
@@ -659,29 +658,33 @@
     }
     $('story').innerHTML = '<p>' + head + '</p><ul class="story-list">' + P.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ul>';
   }
-  function results() {
-    show('results');
+  /* the pub's two charts, the reference mode: on the results screen and in the modelling tab */
+  function drawPub(idOrders, idStock) {
     const n = CFG.weeksPlayed, demand = G.log.map(function (r) { return r.demand; });
     const myOrders = col(0, 'order');
     const peak = function (a) { return Math.max.apply(null, a.filter(function (q) { return q != null; })); };
     const top = Math.max(8, peak(myOrders), peak(demand));
-    lineChart($('cMineOrders'), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(top, top > 40 ? 20 : top > 20 ? 10 : 4));
+    lineChart($(idOrders), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(top, top > 40 ? 20 : top > 20 ? 10 : 4));
     if (wom()) {
       const myStock = col(0, 'stock');
-      kpis('kTop', [['Customers served', G.served], ['Customers turned away', G.turned], ['Kegs sent back', G.wasted]]);
-      kpis('kBottom', [['Biggest crowd in a week', peak(demand)], ['Smallest crowd in a week', Math.min.apply(null, demand)], ['Largest order by the brewery', peak(col(3, 'order'))]]);
-      lineChart($('cMineStock'), [{ key: 'pub', label: 'Cellar', vals: myStock }], n, 0, nice(Math.max(CAP, peak(myStock)), 4));
+      lineChart($(idStock), [{ key: 'pub', label: 'Cellar', vals: myStock }], n, 0, nice(Math.max(CAP, peak(myStock)), 4));
     } else {
       const myNet = col(0, 'net');
-      kpis('kTop', [['Your total cost', money(G.pos[0].cost)], ['Most customers ever wanted in a week', peak(demand)], ['Most you ordered in a week', peak(myOrders)]]);
-      kpis('kBottom', [['Largest order by the brewery', peak(col(3, 'order'))], ['Cost of the whole chain', money(G.pos.reduce(function (s, p) { return s + p.cost; }, 0))], ['Times customer demand changed', 1]]);
       const lo = Math.min(0, Math.min.apply(null, myNet)), hi = Math.max(12, Math.max.apply(null, myNet)), st = hi - lo > 50 ? 20 : 10;
-      lineChart($('cMineStock'), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
+      lineChart($(idStock), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
     }
+  }
+  let refOpened = false;   // the reference-mode panel opens by itself once; after that it stays as the player leaves it
+  function results() {
+    show('results');
+    drawPub('cMineOrders', 'cMineStock'); drawPub('cRefOrders', 'cRefStock');
     const said = $('why').value.trim();
-    $('said').textContent = said || 'You left this blank.';
-    drawChain(n);
+    $('said').textContent = $('refSaid').textContent = said || 'You left this blank.';
+    $('refPanel').hidden = false;
+    if (!refOpened) { $('refPanel').open = true; refOpened = true; }
+    drawChain(CFG.weeksPlayed);
     story();
+    Model.gameComment($('story').innerText);     // the AI's comment on what they wrote, set against the summary
   }
   function replay() {
     clearInterval(timer);
@@ -695,6 +698,8 @@
   /* ---------- wiring ---------- */
   $('cMineOrders').setAttribute('data-label', 'Customer demand and your orders by week');
   $('cMineStock').setAttribute('data-label', 'Your stock by week');
+  $('cRefOrders').setAttribute('data-label', 'Customer demand and your orders by week');
+  $('cRefStock').setAttribute('data-label', 'Your stock by week');
   $('cChain').setAttribute('data-label', 'Orders placed each week by all four positions');
   $('startBtn').addEventListener('click', start);
   $('sendBtn').addEventListener('click', send);

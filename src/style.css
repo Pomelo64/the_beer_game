@@ -375,3 +375,20 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .story-list{margin:10px 0 0;padding-left:1.2em;max-width:65ch}
 .story-list li + li{margin-top:6px}
 .callout{margin:16px 0 0;padding:12px 14px;border-left:4px solid var(--accent);border-radius:var(--r);background:color-mix(in srgb, var(--accent) 12%, var(--surface))}
+
+/* the learner's own words and the AI's comment on them */
+.said{margin:16px 0 0;max-width:65ch}
+.said h3{margin:0 0 6px}
+.said-ai{margin-top:8px}
+.said-ai.done{padding:10px 12px;border-radius:var(--r);background:var(--sunk)}
+.said-ai.note,.said-ai.busy{color:var(--muted);font-size:.9rem}
+.said-ai.none{display:none}
+.callout p{margin:0}
+.callout .order-row{margin-top:12px}
+/* folded extras and the reference mode in the modelling tab */
+details.fold > summary{cursor:pointer;font-family:var(--font-head);font-weight:600;font-size:1.15rem}
+details.fold[open] > summary{margin-bottom:12px}
+.results-end{margin:16px 0 0}
+.refmode{margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.refmode > summary{cursor:pointer;font-weight:600}
+.refmode[open] > summary{margin-bottom:12px}

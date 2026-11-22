@@ -385,6 +385,23 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 .story-list{margin:10px 0 0;padding-left:1.2em;max-width:65ch}
 .story-list li + li{margin-top:6px}
 .callout{margin:16px 0 0;padding:12px 14px;border-left:4px solid var(--accent);border-radius:var(--r);background:color-mix(in srgb, var(--accent) 12%, var(--surface))}
+
+/* the learner's own words and the AI's comment on them */
+.said{margin:16px 0 0;max-width:65ch}
+.said h3{margin:0 0 6px}
+.said-ai{margin-top:8px}
+.said-ai.done{padding:10px 12px;border-radius:var(--r);background:var(--sunk)}
+.said-ai.note,.said-ai.busy{color:var(--muted);font-size:.9rem}
+.said-ai.none{display:none}
+.callout p{margin:0}
+.callout .order-row{margin-top:12px}
+/* folded extras and the reference mode in the modelling tab */
+details.fold > summary{cursor:pointer;font-family:var(--font-head);font-weight:600;font-size:1.15rem}
+details.fold[open] > summary{margin-bottom:12px}
+.results-end{margin:16px 0 0}
+.refmode{margin:16px 0 0;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.refmode > summary{cursor:pointer;font-weight:600}
+.refmode[open] > summary{margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -404,8 +421,8 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
     </div>
   </header>
   <div class="tabs" id="tabs" role="tablist" aria-label="View" hidden>
-    <button type="button" role="tab" id="tabGame" aria-selected="true">The game</button>
-    <button type="button" role="tab" id="tabModel" aria-selected="false">Your model</button>
+    <button type="button" role="tab" id="tabGame" aria-selected="true">Run your pub</button>
+    <button type="button" role="tab" id="tabModel" aria-selected="false">Model your pub</button>
   </div>
 
   <section id="intro">
@@ -522,7 +539,7 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 
   <section id="model" hidden>
     <div class="playbar">
-      <h2>Your model</h2>
+      <h2>Model your pub</h2>
       <span class="note" id="modelWhen"></span>
     </div>
     <div class="panel">
@@ -534,6 +551,26 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
         <p>Pick a tool in the toolbar, then click the canvas to place a stock, auxiliary or cloud. For a flow or a link, click where it starts, then where it ends. To feed a flow with information, end the link on the flow's valve (the diamond). Double-click to rename, right-click to delete.</p>
       </details>
     </div>
+    <details class="refmode" id="refPanel" hidden>
+      <summary>Your reference mode: what your model should explain</summary>
+      <div class="pair">
+        <div>
+          <h3>Customers and orders</h3>
+          <div class="legend"><span class="l-dem"><i></i>Customers who came</span><span class="l-pub"><i></i>You ordered</span></div>
+          <div class="chart" id="cRefOrders"></div>
+        </div>
+        <div>
+          <h3 id="hRefStock">Stock</h3>
+          <div class="legend"><span class="l-pub"><i></i><span id="lRefStock"></span></span></div>
+          <div class="chart" id="cRefStock"></div>
+        </div>
+      </div>
+      <div class="said">
+        <h3>What you wrote at the end of the game</h3>
+        <p class="quote" id="refSaid"></p>
+        <p class="said-ai" id="refAi" aria-live="polite"></p>
+      </div>
+    </details>
     <div class="canvas-bar">
       <button class="btn ghost small" id="importBtn" type="button">Import a diagram (JSON)</button>
       <button class="btn ghost small" id="jsonBtn" type="button">Download the diagram (JSON)</button>
@@ -548,7 +585,7 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
 
     <div class="mstack">
       <div class="panel">
-        <h3>Check your diagram</h3>
+        <h3>Evaluate your diagram</h3>
         <details class="aibox" id="aiBox">
           <summary>AI settings <span class="muted">(<span id="aiSum">no key</span>)</span></summary>
           <label>Provider <select id="aiProv"></select></label>
@@ -607,12 +644,19 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
     <div class="panel">
       <h2>How your pub did</h2>
       <div id="story"></div>
-      <p class="callout"><b>Modelling your pub can help you understand these problems better.</b> Before you start, look at your results below: how your customers, your orders and your cellar moved week by week. In system dynamics this is your <i>reference mode</i>: the behaviour your model should be able to explain.</p>
+      <div class="said">
+        <h3>What you wrote before seeing this</h3>
+        <p class="quote" id="said"></p>
+        <p class="said-ai" id="saidAi" aria-live="polite"></p>
+      </div>
+      <div class="callout">
+        <p><b>Modelling your pub can help you understand these problems better.</b> Your results, below and in the <b>Model your pub</b> tab, are your <i>reference mode</i>: the behaviour your model should be able to explain.</p>
+        <div class="order-row"><button class="btn" id="modelBtn" type="button">Model your pub</button></div>
+      </div>
     </div>
 
     <div class="panel">
       <h2>Your results, week by week</h2>
-      <dl class="kpis" id="kTop"></dl>
       <div class="pair">
         <div>
           <h3>Customers and orders</h3>
@@ -627,8 +671,8 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
       </div>
     </div>
 
-    <div class="panel">
-      <h2>The whole chain</h2>
+    <details class="panel fold">
+      <summary>See the whole chain</summary>
       <p>Your orders went to a wholesaler, who ordered from a distributor, who ordered from a brewery. Replay the game and watch all four.</p>
       <div class="replay">
         <button class="btn" id="playBtn" type="button">Play</button>
@@ -645,15 +689,9 @@ textarea{width:100%;min-height:96px;background:var(--bg);color:var(--fg);border:
       <h3>Stock in the selected week</h3>
       <p class="note" id="barsNote"></p>
       <div class="bars" id="bars"></div>
-      <dl class="kpis" id="kBottom"></dl>
-    </div>
+    </details>
 
-    <div class="panel">
-      <h2>What you wrote before seeing this</h2>
-      <p class="quote" id="said"></p>
-      <p>Now explain what you saw: draw or finish your stock-and-flow diagram in the <b>Your model</b> tab, and submit it for evaluation.</p>
-      <div class="order-row"><button class="btn" id="modelBtn" type="button">Go to your model</button><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
-    </div>
+    <div class="order-row results-end"><button class="btn ghost" id="againBtn" type="button">Play again</button><button class="btn ghost" id="homeBtn" type="button">Choose another game</button></div>
   </section>
 </div>
 <div id="fx" aria-hidden="true"></div>
@@ -2164,7 +2202,15 @@ const Model = (function () {
     'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
     'Voice: warm, encouraging and explanatory, in plain English for a beginner. Praise only what the rules confirm, and name it specifically. Frame each problem as the next thing to understand. Never use the word "wrong". Be honest about how far the learner is.',
     'Give hints, not answers: do not tell them which link or flow to add. You may use their own game weeks as evidence ("in week 9, 30 customers were waiting").',
+    'If their game record includes what they wrote at the end of the game, use one sentence of "wrap" to connect it to their diagram: what of their own explanation the diagram already shows, and what it does not show yet, going only by the verdicts.',
     'Reply ONLY with JSON, no markdown fences: {"headline": "<one sentence>", "overall": "<2-4 sentences>", "slides": {"<mechanism id>": "<2-3 sentences: what the game does, where they met it in their own weeks if helpful, ending with the hint question>"}, "wrap": "<1-2 sentences: the single most useful next step>"}'
+  ].join('\n');
+  /* The comment on what the learner wrote at the end of the game, before seeing any results. */
+  const COMMENT_SYSTEM = [
+    'You are a teaching assistant in a system dynamics course. A learner has just finished a one-player supply game in which they ran a pub. Before seeing any results, they wrote in their own words what made the game hard. You reply to what they wrote.',
+    'Use only the facts you are given: the summary of their game and their week-by-week record. Never invent numbers or events.',
+    'Write 3 or 4 sentences in plain English, addressed to the learner as "you". First acknowledge, specifically, what their explanation gets right. Then set what it leaves out or misreads against the facts of their own game, citing weeks or numbers. Many players blame the customers; if they do, point out gently how the customers actually behaved. End with one question that invites them to model their pub: what a diagram of the pub would need to show to explain what happened. Do not answer that question.',
+    'Never use the word "wrong". Do not give the model away: do not list stocks, flows or links. No markdown, headings or lists.'
   ].join('\n');
   const ASK_SYSTEM = [
     'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, draws a stock-and-flow diagram to explain it, and has had it checked. The check was made by fixed rules on top of your reading of their diagram. Now they ask you questions.',
@@ -2441,8 +2487,41 @@ const Model = (function () {
     const r = await LLM.testConnection(S.cfg);
     $('aiTest').disabled = false; $('aiTest').textContent = 'Test the connection';
     S.conn = r[0] ? true : r[1]; drawSettings();
+    if (S.conn === true && S.pendingComment) gameComment();   // the comment waited for a key
   }
   function openSettings() { $('aiBox').open = true; $('aiKey').focus(); }
+
+  /* ---------- a comment on what the learner wrote at the end of the game ----------
+     ui.js calls gameComment with the text of the personal message once the results are
+     shown. The comment appears under the learner's words on the results screen and in the
+     reference-mode panel of this tab. Without a key, a note says where to add one; the
+     comment then follows as soon as the connection is tested. */
+  function sayComment(state, html) {
+    ['saidAi', 'refAi'].forEach(function (id) { const el = $(id); if (el) { el.className = 'said-ai ' + state; el.innerHTML = html; } });
+  }
+  async function gameComment(summary) {
+    if (summary) S.summary = summary;
+    if (!S.finished) return;
+    if (!S.said) { sayComment('none', ''); return; }
+    if (S.comment && S.comment.n === S.n) { sayComment('done', esc(S.comment.text)); return; }
+    readSettings();
+    if (!S.cfg) {
+      S.pendingComment = true;
+      sayComment('note', 'Add an AI key under <b>AI settings</b> in the <b>Model your pub</b> tab, and you will get a comment on your explanation here.');
+      return;
+    }
+    S.pendingComment = false;
+    const n = S.n;
+    sayComment('busy', '<span class="spin"></span> The AI is reading what you wrote…');
+    const r = await LLM.complete(S.cfg, COMMENT_SYSTEM,
+      'WHAT THE LEARNER WROTE AT THE END, BEFORE SEEING ANY RESULTS\n' + S.said + '\n\nSUMMARY OF THEIR GAME\n' + (S.summary || '') +
+      (S.key && S.key.game ? '\n\nHOW THE GAME WORKS\n' + S.key.game : '') + '\n\n' + gameText() + '\n\nWrite your reply now.', 400);
+    if (n !== S.n) return;                         // a new game began meanwhile
+    if (r[1]) { sayComment('note', 'The AI could not comment: ' + esc(r[1]) + ' <button class="linkish" type="button" data-act="comment">Try again</button>'); return; }
+    S.comment = { n: n, text: r[0] };
+    sayComment('done', esc(r[0]));
+    if (S.rec) { PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Comment on what the learner wrote at the end of game ' + n + '.' }, { comment: r[0], said: S.said }); drawRecord(); }
+  }
 
   /* ---------- the record ---------- */
   function drawRecord() {
@@ -2524,10 +2603,11 @@ const Model = (function () {
     $('recBtn').addEventListener('click', downloadRecord);
     $('jsonBtn').addEventListener('click', function () { if (S.diagram) download('my-model.json', JSON.stringify(S.diagram, null, 1), 'application/json'); });
     $('importBtn').addEventListener('click', function () { $('importFile').value = ''; $('importFile').click(); });
+    ['saidAi', 'refAi'].forEach(function (id) { $(id).addEventListener('click', function (e) { if (e.target.closest('[data-act="comment"]')) gameComment(); }); });
     $('importFile').addEventListener('change', function () { const f = this.files && this.files[0]; if (f) importDiagram(f); });
     drawSettings();
   }
-  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM };
+  return { init: init, show: show, startGame: startGame, weeksUpTo: weeksUpTo, gameEnd: gameEnd, gameComment: gameComment, _state: S, _diagramText: diagramText, _keyText: keyText, _elementList: elementList, _cleanMap: cleanMap, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM, ASK_SYSTEM: ASK_SYSTEM, COMMENT_SYSTEM: COMMENT_SYSTEM };
 })();
 
 /* Drawing and interaction. Reads the engine's state; never changes the rules. */
@@ -2697,7 +2777,7 @@ const Model = (function () {
         b: 'Your only decision each week: how many kegs to order. Type a number or use − and +, then press Send order.' },
       { t: [byId('panelLog')], h: 'Week by week',
         b: 'A record of every week so far. Numbers in red mark trouble: customers ' + (w ? 'turned away, kegs sent back,' : 'left waiting,') + ' or kegs the wholesaler could not send.' },
-      { t: [byId('tabModel')], h: 'Your model',
+      { t: [byId('tabModel')], h: 'Model your pub',
         b: 'Draw your stock-and-flow diagram of the game here, and submit it for evaluation. The tab is open the whole time: draw while you play, after it, or both, and switch back and forth as you like.' },
 
     ];
@@ -2809,8 +2889,8 @@ const Model = (function () {
     $('logBody').parentNode.className = 'log ' + (w ? 'log-wom' : 'log-plain');
     $('logNote').textContent = 'Newest week first. What the wholesaler sends in answer to an order reaches you three weeks after you placed it. It sends less than you ordered when its own stock runs out, and puts the rest on back order.' +
       (w ? ' "Sent back" counts kegs that did not fit in your cellar.' : '');
-    $('hStock').textContent = w ? 'Cellar' : 'Stock';
-    $('lStock').textContent = w ? 'Kegs in your cellar at the end of each week. It holds ' + CAP + '.' : 'Kegs in your cellar, minus kegs owed';
+    $('hStock').textContent = $('hRefStock').textContent = w ? 'Cellar' : 'Stock';
+    $('lStock').textContent = $('lRefStock').textContent = w ? 'Kegs in your cellar at the end of each week. It holds ' + CAP + '.' : 'Kegs in your cellar, minus kegs owed';
     $('barsNote').textContent = w ? 'Right of the line is stock. Left of the line is kegs on back order to the next position.' : 'Right of the line is stock. Left of the line is kegs owed.';
   }
   /* One row a week, newest first. A row fills in as the week goes on: customers and the
@@ -2994,6 +3074,7 @@ const Model = (function () {
   function start() {
     clearInterval(timer);
     G = Engine.newGame(0, MODE);
+    $('refPanel').hidden = true;     // a new game: the reference mode returns when it ends
     setMode();
     const rec = Engine.beginWeek(G);
     Model.startGame(G); TAB = 'game';
@@ -3139,9 +3220,7 @@ const Model = (function () {
     }).join('');
   }
 
-  function kpis(id, list) {
-    $(id).innerHTML = list.map(function (f) { return '<div><dt>' + f[0] + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
-  }
+
   /* ---------- the personal message after the game ----------
      Built from the player's own record: what cost them money (against the lowest cost the
      game allows, CFG.best), customers kept waiting, kegs piled up, orders far above demand,
@@ -3191,29 +3270,33 @@ const Model = (function () {
     }
     $('story').innerHTML = '<p>' + head + '</p><ul class="story-list">' + P.map(function (p) { return '<li>' + p + '</li>'; }).join('') + '</ul>';
   }
-  function results() {
-    show('results');
+  /* the pub's two charts, the reference mode: on the results screen and in the modelling tab */
+  function drawPub(idOrders, idStock) {
     const n = CFG.weeksPlayed, demand = G.log.map(function (r) { return r.demand; });
     const myOrders = col(0, 'order');
     const peak = function (a) { return Math.max.apply(null, a.filter(function (q) { return q != null; })); };
     const top = Math.max(8, peak(myOrders), peak(demand));
-    lineChart($('cMineOrders'), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(top, top > 40 ? 20 : top > 20 ? 10 : 4));
+    lineChart($(idOrders), [{ key: 'dem', label: 'Customers', vals: demand }, { key: 'pub', label: 'You', vals: myOrders }], n, 0, nice(top, top > 40 ? 20 : top > 20 ? 10 : 4));
     if (wom()) {
       const myStock = col(0, 'stock');
-      kpis('kTop', [['Customers served', G.served], ['Customers turned away', G.turned], ['Kegs sent back', G.wasted]]);
-      kpis('kBottom', [['Biggest crowd in a week', peak(demand)], ['Smallest crowd in a week', Math.min.apply(null, demand)], ['Largest order by the brewery', peak(col(3, 'order'))]]);
-      lineChart($('cMineStock'), [{ key: 'pub', label: 'Cellar', vals: myStock }], n, 0, nice(Math.max(CAP, peak(myStock)), 4));
+      lineChart($(idStock), [{ key: 'pub', label: 'Cellar', vals: myStock }], n, 0, nice(Math.max(CAP, peak(myStock)), 4));
     } else {
       const myNet = col(0, 'net');
-      kpis('kTop', [['Your total cost', money(G.pos[0].cost)], ['Most customers ever wanted in a week', peak(demand)], ['Most you ordered in a week', peak(myOrders)]]);
-      kpis('kBottom', [['Largest order by the brewery', peak(col(3, 'order'))], ['Cost of the whole chain', money(G.pos.reduce(function (s, p) { return s + p.cost; }, 0))], ['Times customer demand changed', 1]]);
       const lo = Math.min(0, Math.min.apply(null, myNet)), hi = Math.max(12, Math.max.apply(null, myNet)), st = hi - lo > 50 ? 20 : 10;
-      lineChart($('cMineStock'), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
+      lineChart($(idStock), [{ key: 'pub', label: 'Stock', vals: myNet }], n, Math.floor(lo / st) * st, nice(hi, st));
     }
+  }
+  let refOpened = false;   // the reference-mode panel opens by itself once; after that it stays as the player leaves it
+  function results() {
+    show('results');
+    drawPub('cMineOrders', 'cMineStock'); drawPub('cRefOrders', 'cRefStock');
     const said = $('why').value.trim();
-    $('said').textContent = said || 'You left this blank.';
-    drawChain(n);
+    $('said').textContent = $('refSaid').textContent = said || 'You left this blank.';
+    $('refPanel').hidden = false;
+    if (!refOpened) { $('refPanel').open = true; refOpened = true; }
+    drawChain(CFG.weeksPlayed);
     story();
+    Model.gameComment($('story').innerText);     // the AI's comment on what they wrote, set against the summary
   }
   function replay() {
     clearInterval(timer);
@@ -3227,6 +3310,8 @@ const Model = (function () {
   /* ---------- wiring ---------- */
   $('cMineOrders').setAttribute('data-label', 'Customer demand and your orders by week');
   $('cMineStock').setAttribute('data-label', 'Your stock by week');
+  $('cRefOrders').setAttribute('data-label', 'Customer demand and your orders by week');
+  $('cRefStock').setAttribute('data-label', 'Your stock by week');
   $('cChain').setAttribute('data-label', 'Orders placed each week by all four positions');
   $('startBtn').addEventListener('click', start);
   $('sendBtn').addEventListener('click', send);
