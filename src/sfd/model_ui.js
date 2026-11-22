@@ -206,7 +206,7 @@ const Model = (function () {
     'You are a teaching assistant in a system dynamics course. A learner is playing, or has played, a supply-chain game, draws a stock-and-flow diagram to explain it, and has had it checked. The check was made by fixed rules on top of your reading of their diagram. Now they ask you questions.',
     'Ground every answer in the reference diagram, the learner\'s current diagram, the check\'s results and the learner\'s own game record. Cite weeks of their game where that helps. If the game is still being played, use only the weeks given, and never tell them what the game will do next.',
     'Explain why each problem matters. Prefer a hint first; if the learner asks for the answer directly, you may give it.',
-    'If the learner says their diagram was misread, take it seriously: say which element you read as what, and if they are right, tell them to check again after renaming or redrawing it so the reading is clear.',
+    'If the learner says their diagram was misread, take it seriously: say which element you read as what, and if they are right, tell them to submit it for evaluation again after renaming or redrawing it so the reading is clear.',
     'If a question is not settled by the reference, say so plainly, and answer briefly from general system dynamics knowledge, marked as such.',
     'Keep answers short: at most about 150 words, plain English, no markdown headings.'
   ].join('\n');
@@ -282,9 +282,9 @@ const Model = (function () {
     if (mp.missing.length) {     // never build verdicts on a gap
       busy(false);
       const names = mp.missing.map(function (id) { return '"' + shown(list.ids[id]) + '"'; });
-      showMarkMsg('I could not read all of your diagram: ' + names.join(', ') + (names.length === 1 ? ' was' : ' were') + ' left out of my reading, so a check now would be built on a gap. ' +
-        'Please press <b>Check my diagram</b> again. If it keeps happening, try another model under <b>AI settings</b>.');
-      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, { overall: 'The diagram could not be fully read, so no check was given.', unread: mp.missing.map(function (id) { return shown(list.ids[id]); }) });
+      showMarkMsg('I could not read all of your diagram: ' + names.join(', ') + (names.length === 1 ? ' was' : ' were') + ' left out of my reading, so an evaluation now would be built on a gap. ' +
+        'Please press <b>Submit the diagram for evaluation</b> again. If it keeps happening, try another model under <b>AI settings</b>.');
+      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, { overall: 'The diagram could not be fully read, so no evaluation was given.', unread: mp.missing.map(function (id) { return shown(list.ids[id]); }) });
       drawRecord();
       return;
     }
@@ -323,7 +323,7 @@ const Model = (function () {
         notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
         retried: raws.length > 1,
         worded_by: words ? 'ai' : 'rules' };
-      const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Check my diagram.' }, answer); askWhy(ev.i, ev.question);
+      const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, answer); askWhy(ev.i, ev.question);
     }
     buildSlides(); drawChat(); drawRecord();
     $('askPanel').hidden = false;
@@ -349,12 +349,12 @@ const Model = (function () {
     // 1. overall
     slides.push({ label: 'Overall', title: w.headline || (r.fails.length ? 'A good start. Let\'s see how it can be improved.' : 'Your diagram works the way the game does.'),
       html: status + '<p>' + esc(w.overall || overallFallback(r)) + '</p>' +
-        (r.better.length ? '<p class="sl-good">Since your last check, now working: ' + r.better.map(function (m) { return esc(m.title); }).join('; ') + '.</p>' : ''),
+        (r.better.length ? '<p class="sl-good">Since your last submission, now working: ' + r.better.map(function (m) { return esc(m.title); }).join('; ') + '.</p>' : ''),
       next: r.fails.length || errs.length ? 'Let\'s see how it can be improved →' : 'See how I read your diagram →' });
     // 2. how I read your diagram
     const tags = {}; Object.keys(r.map.map).forEach(function (l) { tags[l] = r.map.map[l].map(function (c) { return Marking.CONCEPT[c].name; }).join(' + '); });
     slides.push({ label: 'How I read your diagram', title: 'Before we go on, here is how I understood your diagram',
-      html: '<p>Each part of your diagram is tagged with the part of the game I read it as. If I read something wrongly, tell me in <b>Ask about your diagram</b> below: the rest of the check builds on this reading.</p>' +
+      html: '<p>Each part of your diagram is tagged with the part of the game I read it as. If I read something wrongly, tell me in <b>Ask about your diagram</b> below: the rest of the evaluation builds on this reading.</p>' +
         (r.kinds.length ? '<ul class="sl-list">' + r.kinds.map(function (k) { return '<li>' + esc(k.text) + '</li>'; }).join('') + '</ul>' : '') +
         (r.map.extras.filter(function (x) { return x.comment; }).length ? '<p class="muted small">Not part of the game\'s mechanics: ' + r.map.extras.filter(function (x) { return x.comment; }).map(function (x) { return '<b>' + esc(x.element) + '</b> (' + esc(x.comment) + ')'; }).join('; ') + '</p>' : ''),
       pic: { whole: true, tags: tags, extras: r.map.extras.map(function (x) { return x.element; }) } });
@@ -384,7 +384,7 @@ const Model = (function () {
     slides.push({ label: 'Next step', title: r.fails.length ? 'Your next step' : 'Well done',
       html: '<p>' + esc(w.wrap || (r.fails[0] ? r.fails[0].hint : 'Your diagram now works the way the game does: that is the structure behind the swings you saw.')) + '</p>' +
         '<p class="muted">' + esc(r.mech.decisionNote) + ' <span class="small">(An observation, not marked.)</span></p>' +
-        (!r.first ? '<p>' + (r.better.length || r.worse.length ? 'Since your last check: ' + (r.better.length ? 'now working, ' + r.better.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + (r.better.length && r.worse.length ? '. ' : '') + (r.worse.length ? 'no longer working, ' + r.worse.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + '.' : 'Since your last check, the results are the same.') + '</p>' : '') +
+        (!r.first ? '<p>' + (r.better.length || r.worse.length ? 'Since your last submission: ' + (r.better.length ? 'now working, ' + r.better.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + (r.better.length && r.worse.length ? '. ' : '') + (r.worse.length ? 'no longer working, ' + r.worse.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + '.' : 'Since your last submission, the results are the same.') + '</p>' : '') +
         '<p class="muted small">Checked by rules, with ' + esc(LLM.PROVIDERS[S.cfg.provider]) + ' · ' + esc(S.cfg.model) + ' reading your diagram' + (r.words ? ' and writing these words' : '') + '. The reading can be wrong: if it is, say so below.</p>',
       last: true });
     S.slides = slides; S.slide = 0; S.onePage = false;
@@ -397,7 +397,7 @@ const Model = (function () {
       (s.pic && s.label === 'How it can be improved' || s.label === 'Notation' ? '<button class="btn ghost small" type="button" data-act="canvas">Try it on the canvas</button>' : '');
     const nav = one ? (tools ? '<div class="sl-nav">' + tools + '</div>' : '') :
       '<div class="sl-nav">' + (i > 0 ? '<button class="btn ghost small" type="button" data-act="back">← Back</button>' : '') + tools + '<span class="sl-gap"></span>' +
-      (s.last ? '<button class="btn" type="button" data-act="again">Check again</button>' : '<button class="btn" type="button" data-act="next">' + esc(s.next || 'Next →') + '</button>') + '</div>';
+      (s.last ? '<button class="btn" type="button" data-act="again">Submit it again</button>' : '<button class="btn" type="button" data-act="next">' + esc(s.next || 'Next →') + '</button>') + '</div>';
     const dots = one ? '' : '<span class="sl-dots" aria-hidden="true">' + S.slides.map(function (_, k) { return '<i class="' + (k === i ? 'on' : k < i ? 'seen' : '') + '"></i>'; }).join('') + '</span>';
     return '<section class="slide" aria-label="' + esc(s.label) + ', ' + (i + 1) + ' of ' + n + '"><div class="sl-top"><span>' + esc(s.label) + ' · ' + (i + 1) + ' of ' + n + '</span>' + dots + '</div>' +
       '<h3>' + esc(s.title) + '</h3>' + s.html + pic + ans + nav + '</section>';
@@ -451,7 +451,7 @@ const Model = (function () {
   function busy(on, what) {
     S.busy = on;
     $('markBtn').disabled = on; $('askBtn').disabled = on;
-    $('markBtn').textContent = on && what === 'mark' ? 'Marking…' : 'Check my diagram';
+    $('markBtn').textContent = on && what === 'mark' ? 'Evaluating…' : 'Submit the diagram for evaluation';
     $('askBtn').textContent = on && what === 'ask' ? 'Thinking…' : 'Ask';
   }
 
@@ -465,7 +465,7 @@ const Model = (function () {
   }
   function drawSettings() {
     const st = $('aiState');
-    if (!S.cfg) { st.className = 'ai-state'; st.textContent = 'No key yet. The game and the drawing work without one; checking the diagram needs one.'; }
+    if (!S.cfg) { st.className = 'ai-state'; st.textContent = 'No key yet. The game and the drawing work without one; evaluating the diagram needs one.'; }
     else if (S.conn === null) { st.className = 'ai-state warn'; st.textContent = 'Key entered but not checked yet. Press Test the connection.'; }
     else if (S.conn === true) { st.className = 'ai-state ok'; st.textContent = 'AI on: ' + LLM.PROVIDERS[S.cfg.provider] + ' · ' + S.cfg.model; }
     else { st.className = 'ai-state err'; st.textContent = S.conn; }

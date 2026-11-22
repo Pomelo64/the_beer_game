@@ -166,7 +166,7 @@
       { t: [byId('panelLog')], h: 'Week by week',
         b: 'A record of every week so far. Numbers in red mark trouble: customers ' + (w ? 'turned away, kegs sent back,' : 'left waiting,') + ' or kegs the wholesaler could not send.' },
       { t: [byId('tabModel')], h: 'Your model',
-        b: 'Draw your stock-and-flow diagram of the game here, and have it checked. The tab is open the whole time: draw while you play, after it, or both, and switch back and forth as you like.' },
+        b: 'Draw your stock-and-flow diagram of the game here, and submit it for evaluation. The tab is open the whole time: draw while you play, after it, or both, and switch back and forth as you like.' },
 
     ];
   }
