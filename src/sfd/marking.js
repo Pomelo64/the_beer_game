@@ -305,10 +305,11 @@ const Marking = (function () {
     put('O1', anyInf(dtime, deliv), { focus: deliv }, '', '');
     put('O2', anyInf(catchup, serve), { focus: catchup.concat(serve) }, '', '');
 
-    // the order decision: observed, never marked
+    // the order decision: observed, never marked; nothing is said when the diagram has no order flow
     let decisionNote = null;
     const dec = first(decision);
-    if (dec && R.links.some(function (l) { return l.to === dec; })) {
+    if (!orders.length) decisionNote = null;
+    else if (dec && R.links.some(function (l) { return l.to === dec; })) {
       decisionNote = anyInf(onorder, [dec]) ? 'Your order decision takes the kegs already on order into account. Most players forget them.'
         : 'Your order decision does not take the kegs already on order into account. That is what most players of this game do, and it is why their orders swing.';
     } else if (!dec || !R.links.some(function (l) { return l.to === dec; })) {

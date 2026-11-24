@@ -123,36 +123,6 @@ const Model = (function () {
     L.push('INFORMATION LINKS (from -> to; a link into a flow\'s name goes into its valve): ' + (links.join('; ') || 'none'));
     return L.join('\n');
   }
-  /* The diagram as the reading call sees it: every stock, flow and auxiliary gets a
-     number, and the AI answers with the numbers. Names are shown but never matched on,
-     so a copied line, a reworded name or two elements with the same name cannot lose
-     an element. d is the diagram after Marking.unique. */
-  function elementList(d) {
-    const ids = {}, num = {}, kind = {}; let n = 0;
-    [['stocks', 'stock'], ['flows', 'flow'], ['auxiliaries', 'auxiliary']].forEach(function (k) {
-      (d[k[0]] || []).forEach(function (e) { const id = 'E' + (++n); ids[id] = e.label; num[e.label] = id; kind[id] = k[1]; });
-    });
-    const B = Marking.base;
-    const ref = function (l) { return l == null ? '(unattached)' : l === 'cloud' ? 'a cloud (outside the model)' : num[l] ? num[l] + ' "' + B(l) + '"' : '"' + B(l) + '"'; };
-    const L = ['ELEMENTS'];
-    Object.keys(ids).forEach(function (id) {
-      const l = ids[id];
-      if (kind[id] !== 'flow') { L.push(id + ' ' + kind[id] + ' "' + B(l) + '"'); return; }
-      const f = d.flows.find(function (x) { return x.label === l; });
-      L.push(id + ' flow "' + B(l) + '", from ' + ref(f.from) + ' to ' + ref(f.to));
-    });
-    const J = new Set((d.junctions || []).map(function (j) { return j.label; })), links = [];
-    const addLink = function (a, b) { const t = ref(a) + ' -> ' + ref(b); if (links.indexOf(t) < 0) links.push(t); };
-    (d.connectors || []).forEach(function (c) { if (!J.has(c.from) && !J.has(c.to)) addLink(c.from, c.to); });
-    J.forEach(function (j) {   // merged links: trunk -> junction -> forks
-      const a = (d.connectors || []).filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
-      const b = (d.connectors || []).filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
-      a.forEach(function (x) { b.forEach(function (y) { addLink(x, y); }); });
-    });
-    L.push('', 'INFORMATION LINKS (from -> to; a link into a flow goes into its valve)');
-    L.push(links.length ? links.join('\n') : 'none');
-    return { text: L.join('\n'), ids: ids };
-  }
   function keyText(k) {
     return (k.game ? 'HOW THE GAME WORKS: ' + k.game + '\n' : '') + 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
       (k.reference ? '\n\nTHE REFERENCE DIAGRAM (the educator\'s own stock-and-flow diagram of the game; the key items below are taken from it)\n' + diagramText(k.reference) : '') +
@@ -164,45 +134,15 @@ const Model = (function () {
   /* Only what the learner has seen: completed weeks, and while the game runs nothing
      from the distributor or brewery, which are hidden from the player. */
   function gameText() {
-    const g = S.game, w = S.mode === 'wom';
-    if (!g) return 'THE LEARNER\'S GAME: not started yet.';
-    const upto = S.finished ? g.log.length - 1 : S.done;
-    const rows = g.log.slice(0, upto + 1).map(function (r, k) {
-      const me = r.pos[0], nxt = g.log[k + 1], sup = nxt ? nxt.pos[1] : null;
-      return [r.week, me.asked, me.arrived, me.sent, w ? me.turned : me.owed, me.stock, me.order == null ? '' : me.order,
-        sup ? sup.sent : '', sup ? sup.owed : ''].join(',');
-    });
-    return 'THE LEARNER\'S GAME (' + (w ? 'word of mouth' : 'the supply game') + ', the learner runs the pub). ' +
-      (S.finished ? 'The game is over: ' + g.log.length + ' weeks played.'
-        : 'The game is still being played: ' + (upto + 1) + ' week' + (upto === 0 ? '' : 's') + ' completed so far. The learner has not yet seen how the game ends, nor anything from the distributor or the brewery, which are hidden while they play. Do not guess at what comes next.') +
-      '\nOne line a week:\nweek,customers,delivered to the pub,served,' + (w ? 'turned away' : 'left waiting') + ',cellar at end,pub ordered,wholesaler sent in answer,on back order with the wholesaler\n' +
-      (rows.length ? rows.join('\n') : '(no week completed yet)') +
-      (S.finished ? '\nLargest order placed by the brewery: ' + Math.max.apply(null, g.log.map(function (r) { return r.pos[3].order || 0; })) +
-        '.\nWhat the learner wrote at the end, before seeing the results: ' + (S.said || '(nothing)') : '');
+    if (!S.game) return 'THE LEARNER\'S GAME: not started yet.';
+    return Evaluate.gameRecordText(S.game, { wom: S.mode === 'wom', finished: S.finished, done: S.done, said: S.said });
   }
 
   /* ---------- marking: rules (code) and two AI calls ----------
      Layer 1 and layer 3 are decided by the rules in marking.js. The AI maps the
      learner's elements to concepts (call 1) and words the slides (call 2). The
      wording cannot change a verdict; if it fails, the rules' own words are used. */
-  const MAP_SYSTEM = [
-    'You read a learner\'s stock-and-flow diagram of a pub supply game and say which CONCEPT of the game each of the learner\'s elements stands for.',
-    'Judge by meaning and by the element\'s place in the structure (what a flow fills and empties, what a link informs), not by its name alone: learners use their own words.',
-    'An element may stand for several concepts when it plays several roles (one flow out of the waiting customers can be both "serving on arrival" and "catching up"). A concept may be drawn as several elements (kegs on order as two stocks in a row).',
-    'Map an element by the role it plays even if it is drawn as the wrong kind (a stock drawn as an auxiliary): the rules notice the kind themselves.',
-    'An element that stands for no concept is an extra: give a short, neutral comment on it.',
-    'You only map. Do not judge whether the diagram is right.',
-    'Every element has a number (E1, E2, ...). Refer to elements only by their numbers. Two elements may have the same name: the numbers tell them apart, and so do a flow\'s ends.',
-    'Answer for every element: each number appears exactly once, either in "elements" or in "extras".',
-    'Reply ONLY with JSON, no markdown fences: {"elements": [{"id": "E1", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"id": "E2", "comment": "<one short sentence>"}]}'
-  ].join('\n');
-  const WORD_SYSTEM = [
-    'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
-    'Voice: warm, encouraging and explanatory, in plain English for a beginner. Praise only what the rules confirm, and name it specifically. Frame each problem as the next thing to understand. Never use the word "wrong". Be honest about how far the learner is.',
-    'Give hints, not answers: do not tell them which link or flow to add. You may use their own game weeks as evidence ("in week 9, 30 customers were waiting").',
-    'If their game record includes what they wrote at the end of the game, use one sentence of "wrap" to connect it to their diagram: what of their own explanation the diagram already shows, and what it does not show yet, going only by the verdicts.',
-    'Reply ONLY with JSON, no markdown fences: {"headline": "<one sentence>", "overall": "<2-4 sentences>", "slides": {"<mechanism id>": "<2-3 sentences: what the game does, where they met it in their own weeks if helpful, ending with the hint question>"}, "wrap": "<1-2 sentences: the single most useful next step>"}'
-  ].join('\n');
+  const MAP_SYSTEM = Evaluate.MAP_SYSTEM, WORD_SYSTEM = Evaluate.WORD_SYSTEM;   // the evaluation's prompts live in evaluate.js
   /* The comment on what the learner wrote at the end of the game, before seeing any results. */
   const COMMENT_SYSTEM = [
     'You are a teaching assistant in a system dynamics course. A learner has just finished a one-player supply game in which they ran a pub. Before seeing any results, they wrote in their own words what made the game hard. You reply to what they wrote.',
@@ -219,119 +159,44 @@ const Model = (function () {
     'Keep answers short: at most about 150 words, plain English, no markdown headings.'
   ].join('\n');
 
-  function conceptText() {
-    return Marking.CONCEPTS.map(function (c) { return c.id + ' ' + c.name + ' [' + c.kind + ']: ' + c.what + ' (e.g. ' + c.names.join(', ') + ')'; }).join('\n');
-  }
-  /* The AI's reading, by element number. raws: one or more answers; a later answer only
-     fills elements an earlier one left out. An entry that gives a name instead of a
-     number is accepted when the name (or the part before ":" or "(") fits one element. */
-  function cleanMap(raws, list) {
-    const ids = new Set(Marking.CONCEPTS.map(function (c) { return c.id; }));
-    const norm = function (t) { return Marking.base(String(t)).toLowerCase().replace(/\s+/g, ' ').trim(); };
-    const idOf = function (x) {
-      if (!x) return null;
-      const t = String(x.id != null ? x.id : x.element != null ? x.element : '').trim(), m = t.match(/^E(\d+)\b/i);
-      if (m && list.ids['E' + m[1]]) return 'E' + m[1];
-      const tries = [t, t.split(':')[0], t.split('(')[0]].map(norm);
-      for (let i = 0; i < tries.length; i++) {
-        const hit = Object.keys(list.ids).filter(function (id) { return norm(list.ids[id]) === tries[i]; });
-        if (hit.length === 1) return hit[0];
-      }
-      return null;
-    };
-    const got = {}, cons = {}, why = {}, note = {};
-    raws.forEach(function (raw) {
-      const fresh = {};
-      (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
-        const id = idOf(e); if (!id || (got[id] && !fresh[id])) return;
-        const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
-        fresh[id] = got[id] = true;
-        if (cs.length) { cons[id] = (cons[id] || []).concat(cs.filter(function (c) { return (cons[id] || []).indexOf(c) < 0; })); why[id] = e.reason || ''; }
-      });
-      (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) {
-        const id = idOf(x); if (!id || (got[id] && !fresh[id])) return;
-        fresh[id] = got[id] = true; if (!cons[id]) note[id] = x.comment || '';
-      });
-    });
-    const map = {}, whyL = {}, extras = [], missing = [];
-    Object.keys(list.ids).forEach(function (id) {
-      const l = list.ids[id];
-      if (!got[id]) missing.push(id);
-      else if (cons[id]) { map[l] = cons[id]; whyL[l] = why[id]; }
-      else extras.push({ element: l, comment: note[id] || '' });
-    });
-    return { map: map, why: whyL, extras: extras, missing: missing };
-  }
-
+  const elementList = Evaluate.elementList, cleanMap = Evaluate.cleanMap, conceptText = Evaluate.conceptText;
   function progress(text) { $('markOut').innerHTML = '<p class="mark-busy" role="status"><span class="spin" aria-hidden="true"></span>' + text + '</p>'; }
   async function mark() {
     if (S.busy) return;
     if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be checked.'); return; }
     if (!S.cfg) { showMarkMsg('Add an AI key under <b>AI settings</b> first.'); openSettings(); return; }
     if (!S.diagram || !((S.diagram.stocks || []).length + (S.diagram.flows || []).length + (S.diagram.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
-    const d = Marking.unique(S.diagram), list = elementList(d), shown = Marking.shown;
+    const shown = Marking.shown;
     busy(true, 'mark');
-    // layer 1: notation (code)
-    const notation = Marking.notation(d);
-    // layer 2: concepts (AI)
-    progress('Reading your diagram…');
-    const ask1 = 'HOW THE GAME WORKS\n' + S.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + S.key.task +
-      '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
-    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', 2500);
-    if (r1[1]) { busy(false); showMarkMsg(esc(r1[1])); return; }
-    const raws = [r1[0]];
-    let mp = cleanMap(raws, list);
-    if (mp.missing.length) {     // an element got no reading: ask once more for those
-      progress('Reading the rest of your diagram…');
-      const r1b = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
-        '. Answer again for every element, by number.', 2500);
-      if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
-    }
-    if (mp.missing.length) {     // never build verdicts on a gap
-      busy(false);
-      const names = mp.missing.map(function (id) { return '"' + shown(list.ids[id]) + '"'; });
+    // the evaluation itself is shared with the test page (evaluate.js)
+    const ev = await Evaluate.run({ cfg: S.cfg, key: S.key, diagram: S.diagram, gameText: gameText(), prev: S.lastResult, progress: progress });
+    busy(false);
+    const recorded = { app_version: APP_VERSION, settings: ev.settings, calls: ev.calls.map(function (c) { return { step: c.step, model: c.model, temperature: c.temperature, ms: c.ms, tokens: c.usage }; }) };
+    if (ev.status === 'error') { showMarkMsg(esc(ev.error)); return; }
+    if (ev.status === 'unread') {     // never build verdicts on a gap
+      const names = ev.map.missing.map(function (id) { return '"' + shown(ev.list.ids[id]) + '"'; });
       showMarkMsg('I could not read all of your diagram: ' + names.join(', ') + (names.length === 1 ? ' was' : ' were') + ' left out of my reading, so an evaluation now would be built on a gap. ' +
         'Please press <b>Submit the diagram for evaluation</b> again. If it keeps happening, try another model under <b>AI settings</b>.');
-      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, { overall: 'The diagram could not be fully read, so no evaluation was given.', unread: mp.missing.map(function (id) { return shown(list.ids[id]); }) });
+      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' },
+        Object.assign({ overall: 'The diagram could not be fully read, so no evaluation was given.', unread: ev.map.missing.map(function (id) { return shown(ev.list.ids[id]); }) }, recorded));
       drawRecord();
       return;
     }
-    // layer 3: mechanisms (code)
-    progress('Checking how it works…');
-    const mech = Marking.mechanisms(d, mp.map), M = mech.mechanisms;
-    const sc = Marking.score(M), far = Marking.coreFound(mp.map) < 3;
-    const fails = M.filter(function (m) { return !m.pass && m.weight !== 'optional'; })
-      .sort(function (a, b) { return (a.weight === 'required' ? 0 : 1) - (b.weight === 'required' ? 0 : 1); });
-    const prev = S.lastResult, now = {}; M.forEach(function (m) { now[m.id] = m.pass; });
-    const better = prev ? M.filter(function (m) { return m.pass && prev[m.id] === false && m.weight !== 'optional'; }) : [];
-    const worse = prev ? M.filter(function (m) { return !m.pass && prev[m.id] === true && m.weight !== 'optional'; }) : [];
-    // the words (AI); the rules' own words if this fails
-    progress('Writing your feedback…');
-    const facts = 'RESULTS OF THE CHECK (final)\n' +
-      'Required mechanisms working: ' + sc.required.pass + ' of ' + sc.required.of + '. Important: ' + sc.important.pass + ' of ' + sc.important.of + '.\n' +
-      'WORKING: ' + (M.filter(function (m) { return m.pass && m.weight !== 'optional'; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
-      'NOT YET WORKING (write a slide for each id):\n' + (fails.map(function (m) { return m.id + ' ' + m.title + ' [' + m.weight + ']. The game: ' + m.game + ' Rule\'s hint: ' + m.hint; }).join('\n') || 'none') + '\n' +
-      'NOTATION: ' + (notation.length ? notation.map(function (n) { return n.type + ': ' + n.text; }).join(' | ') : 'no problems') + '\n' +
-      (far ? 'The diagram shows few of the game\'s parts: be honest and kind about that, and point them to the main parts of the game.\n' : '') +
-      'OPTIONAL extras drawn: ' + (M.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
-      (prev ? 'SINCE THE LAST CHECK: now working: ' + (better.map(function (m) { return m.title; }).join('; ') || 'nothing new') + '; no longer working: ' + (worse.map(function (m) { return m.title; }).join('; ') || 'nothing') + '\n' : '') +
-      'ABOUT THE ORDER DECISION (an observation, not marked): ' + mech.decisionNote;
-    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, Marking.base(facts) + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
-    busy(false);
-    const words = r2[1] ? null : r2[0];
-    const res = { notation: notation, map: mp, mech: mech, score: sc, fails: fails, far: far, better: better, worse: worse, first: !prev, words: words,
-      kinds: Marking.kindNotes(d, mp.map), diagram: JSON.parse(JSON.stringify(d)), when: new Date() };
-    S.lastResult = now; S.result = res; S.chat = [];
+    const mp = ev.map, words = ev.words, prev = S.lastResult;
+    const res = { notation: ev.notation, map: mp, mech: ev.mech, score: ev.score, fails: ev.fails, far: ev.far, better: ev.better, worse: ev.worse, first: !prev, words: words,
+      kinds: ev.kinds, diagram: JSON.parse(JSON.stringify(ev.d)), when: new Date() };
+    S.lastResult = ev.verdicts; S.result = res; S.chat = [];
     // the record (what SFD Studio's replay shows of an advisor's answer: overall, issues, suggestion)
     if (S.rec) {
-      const answer = { overall: (words && words.overall) || overallFallback(res),
-        issues: notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
+      const sc = ev.score, fails = ev.fails;
+      const answer = Object.assign({ overall: (words && words.overall) || overallFallback(res),
+        issues: ev.notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
         suggestion: (words && words.wrap) || (fails[0] ? fails[0].hint : 'Your diagram works the way the game does.'),
         score: { required: sc.required.pass + '/' + sc.required.of, important: sc.important.pass + '/' + sc.important.of },
-        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
-        retried: raws.length > 1,
-        worded_by: words ? 'ai' : 'rules' };
-      const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, answer); askWhy(ev.i, ev.question);
+        notation: ev.notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
+        retried: ev.retried,
+        worded_by: words ? 'ai' : 'rules' }, recorded);
+      const e = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, answer); askWhy(e.i, e.question);
     }
     buildSlides(); drawChat(); drawRecord();
     $('askPanel').hidden = false;
@@ -391,7 +256,7 @@ const Model = (function () {
     // 5. wrap-up
     slides.push({ label: 'Next step', title: r.fails.length ? 'Your next step' : 'Well done',
       html: '<p>' + esc(w.wrap || (r.fails[0] ? r.fails[0].hint : 'Your diagram now works the way the game does: that is the structure behind the swings you saw.')) + '</p>' +
-        '<p class="muted">' + esc(r.mech.decisionNote) + ' <span class="small">(An observation, not marked.)</span></p>' +
+        (r.mech.decisionNote ? '<p class="muted">' + esc(r.mech.decisionNote) + ' <span class="small">(An observation, not marked.)</span></p>' : '') +
         (!r.first ? '<p>' + (r.better.length || r.worse.length ? 'Since your last submission: ' + (r.better.length ? 'now working, ' + r.better.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + (r.better.length && r.worse.length ? '. ' : '') + (r.worse.length ? 'no longer working, ' + r.worse.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + '.' : 'Since your last submission, the results are the same.') + '</p>' : '') +
         '<p class="muted small">Checked by rules, with ' + esc(LLM.PROVIDERS[S.cfg.provider]) + ' · ' + esc(S.cfg.model) + ' reading your diagram' + (r.words ? ' and writing these words' : '') + '. The reading can be wrong: if it is, say so below.</p>',
       last: true });
@@ -415,7 +280,9 @@ const Model = (function () {
     const n = S.slides.length;
     const body = S.onePage ? S.slides.map(function (s, i) { return slideHTML(s, i, n, true); }).join('') : slideHTML(S.slides[S.slide], S.slide, n, false);
     $('markOut').innerHTML = '<div class="slides' + (S.onePage ? ' one' : '') + '" aria-live="polite">' + body + '</div>' +
-      '<p class="sl-switch"><button class="linkish" type="button" data-act="toggle">' + (S.onePage ? 'Back to the slides' : 'See everything on one page') + '</button></p>';
+      '<p class="sl-switch"><button class="linkish" type="button" data-act="pdf">Download the feedback (PDF)</button> · ' +
+      '<button class="linkish" type="button" data-act="toggle">' + (S.onePage ? 'Back to the slides' : 'See everything on one page') + '</button></p>' +
+      '<p class="sl-switch muted small" id="pdfMsg" aria-live="polite"></p>';
   }
   function slideAction(e) {
     const b = e.target.closest('button[data-act]'); if (!b || !S.slides) return;
@@ -426,6 +293,67 @@ const Model = (function () {
     else if (act === 'canvas') frame().scrollIntoView({ block: 'center', behavior: 'smooth' });
     else if (act === 'again') mark();
     else if (act === 'toggle') { S.onePage = !S.onePage; drawSlides(); }
+    else if (act === 'pdf') feedbackPdf();
+  }
+
+  /* ---------- the feedback as a PDF ----------
+     Every slide, as the learner saw it, after a cover with the game, their words and their
+     diagram, printed through the browser ("Save as PDF"), so the pictures stay sharp and nothing
+     is loaded from outside. Every page's margin names the repository (in browsers that print page
+     margins, such as Chrome and Edge), the cover and the last page link to it, and the text
+     also holds the line below in transparent ink: invisible on the page, but kept in the PDF's
+     text, so it survives if the footer is cut off. Where the page cannot print (inside a frame,
+     as on claude.ai), the same pages are saved as a web page to print from instead. */
+  const REPO = 'https://github.com/Pomelo64/the_beer_game';
+  const HIDDEN_LINE = 'Made with Beer Game Lab, ' + REPO + '. Idea and design by Shahin Ashkiani.';
+  function money(x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); }
+  function feedbackHTML() {
+    const r = S.result, n = S.slides.length, cfg = S.cfg || {}, when = r.when || new Date();
+    const pos = S.game && S.game.pos[0];
+    const game = !S.game ? 'No game had been played yet.'
+      : S.finished ? (S.mode === 'wom' ? 'Game ' + S.n + ', with word of mouth: total cost ' + money(pos.cost) + '.'
+        : 'Game ' + S.n + ': total cost ' + money(pos.cost) + '. The lowest cost the game allows, found with hindsight, is ' + money(Engine.CFG.best.cost) + '.')
+      : 'Game ' + S.n + ' was still being played (week ' + (S.done + 2) + ') when the diagram was submitted.';
+    const model = (LLM.PROVIDERS[cfg.provider] || '') + ' · ' + (cfg.model || '');
+    const facts = [['Submitted', when.toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short' })], ['Your game', game],
+      ['Read by', model], ['Worded by', r.words ? model : 'the rules (the AI\'s wording was not available)'], ['App', 'Beer Game Lab ' + APP_VERSION]];
+    const said = S.finished && S.said ? '<h2>What you wrote at the end of the game</h2><p class="pv-said">' + esc(S.said) + '</p>' +
+      (S.comment && S.comment.n === S.n ? '<h2>The AI\'s comment on it</h2><p class="pv-ai">' + esc(S.comment.text) + '</p>' : '') : '';
+    const foot = '<div class="pv-foot">Made with <a href="' + REPO + '">Beer Game Lab</a> · <a href="' + REPO + '">github.com/Pomelo64/the_beer_game</a></div>';
+    // what refers to the page around the slides makes no sense on paper
+    const slides = S.slides.map(function (sl, i) { return slideHTML(sl, i, n, true); }).join('')
+      .replace('If I read something wrongly, tell me in <b>Ask about your diagram</b> below: the rest', 'The rest').replace(': if it is, say so below.', '.');
+    return '<section class="pv-page pv-cover"><p class="pv-hidden">' + esc(HIDDEN_LINE) + '</p>' +
+      '<p class="pv-note">To keep this as a PDF, print this page (Ctrl+P, or ⌘P on a Mac) and choose <b>Save as PDF</b>.</p>' +
+      '<h1>Feedback on your diagram</h1><p class="pv-sub">Beer Game Lab: model your pub</p>' +
+      '<table class="pv-facts">' + facts.map(function (f) { return '<tr><td>' + esc(f[0]) + '</td><td>' + esc(f[1]) + '</td></tr>'; }).join('') +
+      '<tr><td>Made with</td><td><a href="' + REPO + '">Beer Game Lab, github.com/Pomelo64/the_beer_game</a></td></tr></table>' +
+      '<h2>Your diagram</h2><div class="sl-pic">' + Picture.svg(r.diagram, { whole: true }) + '</div>' + said + '</section>' +
+      '<section class="pv-page"><h2>The feedback</h2>' + slides +
+      '<p class="pv-hidden">' + esc(HIDDEN_LINE) + '</p>' +
+      '<p class="muted small">The verdicts come from fixed rules, the same for everyone. The AI only reads the diagram' + (r.words ? ' and words the feedback' : '') + ', and its reading can be wrong. This is feedback, not a mark.</p>' + foot + '</section>';
+  }
+  function feedbackPdf() {
+    if (!S.result || !S.slides) return;
+    const html = feedbackHTML(), d = S.result.when || new Date();
+    const title = 'Beer Game Lab feedback ' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    let framed = true; try { framed = window.self !== window.top; } catch (e) { framed = true; }
+    if (S.rec) { PL.addEvent(S.rec, { kind: 'feedback_pdf', saved_as: framed ? 'web page' : 'print' }); drawRecord(); }
+    if (framed || typeof window.print !== 'function') {   // a frame usually may not print: save the pages instead
+      const css = Array.prototype.map.call(document.querySelectorAll('style'), function (st) { return st.textContent; }).join('\n') +
+        '\n.pv{display:block;max-width:182mm;margin:0 auto;padding:10mm 0}@media screen{.pv .pv-note{display:block;padding:8px 12px;background:#eef2f0;border-radius:8px}.pv .pv-foot{margin-top:24px}}';
+      download(title.replace(/ /g, '-') + '.html', '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + esc(title) + '</title>\n<style>\n' + css + '\n</style>\n</head>\n<body class="printing">\n<div class="pv">' + html + '</div>\n</body>\n</html>\n', 'text/html');
+      const m = $('pdfMsg'); if (m) m.textContent = 'This page cannot print here, so the feedback was saved as a web page. Open it and print it, choosing Save as PDF.';
+      return;
+    }
+    let pv = $('printView');
+    if (!pv) { pv = document.createElement('div'); pv.id = 'printView'; pv.className = 'pv'; document.body.appendChild(pv); }
+    pv.innerHTML = html;
+    const oldTitle = document.title;
+    const done = function () { document.body.classList.remove('printing'); document.title = oldTitle; pv.innerHTML = ''; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    document.body.classList.add('printing'); document.title = title;
+    window.print();
   }
 
   /* ---------- questions ---------- */
@@ -440,7 +368,7 @@ const Model = (function () {
       '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(shownMap(R.map.map)) +
       '\nNotation: ' + (R.notation.map(function (n) { return n.text; }).join(' | ') || 'no problems') +
       '\nMechanisms: ' + R.mech.mechanisms.map(function (m) { return m.id + ' ' + m.title + ': ' + (m.pass ? 'works' : 'not yet. Hint: ' + m.hint + ' Answer, if asked: ' + m.answer); }).join('\n') +
-      '\nOrder decision: ' + R.mech.decisionNote;
+      '\nOrder decision: ' + (R.mech.decisionNote || 'no order flow in the diagram');
     ctx = Marking.base(ctx);
     const msgs = [{ role: 'user', content: ctx + '\n\n(The learner\'s questions follow.)' }, { role: 'assistant', content: 'Understood. I will answer as their teaching assistant.' }].concat(S.chat);
     const r = await LLM.complete(S.cfg, ASK_SYSTEM, msgs, 700, false);
@@ -548,7 +476,7 @@ const Model = (function () {
      they happen, between the modelling steps, so a reader can see when the
      learner drew what. The diagram carries over from one game to the next. */
   function startGame(game) {
-    if (!S.rec) S.rec = PL.newRecord('Beer Game Lab');
+    if (!S.rec) { S.rec = PL.newRecord('Beer Game Lab'); PL.addEvent(S.rec, { kind: 'app', name: 'Beer Game Lab', version: APP_VERSION }); }
     S.game = game; S.mode = game.mode; S.key = KEYS[game.mode] || null;
     S.n += 1; S.done = -1; S.finished = false; S.said = '';
     PL.addEvent(S.rec, { kind: 'game', game: S.n, mode: game.mode });

@@ -1,0 +1,50 @@
+<div class="wrap">
+  <header>
+    <h1>Beer Game Lab: test runner</h1>
+    <p class="muted">For the performance assessment, not for learners. It submits the test diagrams to the same evaluation a learner's submission gets, and scores the results against the key. App version <b id="ver"></b>; <span id="nTests"></span> test diagrams built in.</p>
+  </header>
+
+  <section class="panel">
+    <h2>1. Models</h2>
+    <p class="muted">Each row is one model. Keys stay in this page's memory and are never saved or sent anywhere but to the provider. <b>Rehearsal</b> needs no key: it reads every diagram exactly as the key says, so you can see a whole run and its report for free.</p>
+    <table class="rows">
+      <thead><tr><th>Provider</th><th>Model</th><th>Key</th><th>Runs</th></tr></thead>
+      <tbody id="modelRows"></tbody>
+    </table>
+  </section>
+
+  <section class="panel">
+    <h2>2. Diagrams</h2>
+    <div id="groups" class="checks"></div>
+    <label class="field"><span>Only these (optional, e.g. <code>A1, B7, D3</code>)</span><input id="only" type="text" spellcheck="false"></label>
+    <label class="field"><span>Evaluations at a time</span><select id="parallel"><option>1</option><option selected>2</option><option>3</option><option>4</option></select></label>
+    <p class="muted" id="plan"></p>
+  </section>
+
+  <section class="panel">
+    <h2>3. Run</h2>
+    <div class="buttons">
+      <button id="startBtn" class="btn">Start</button>
+      <button id="stopBtn" class="btn ghost" disabled>Stop after the current runs</button>
+      <button id="loadResBtn" class="btn ghost">Continue from a results file</button>
+      <button id="loadKeyBtn" class="btn ghost">Load a different key</button>
+      <button id="clearBtn" class="btn ghost">Clear results</button>
+      <input type="file" id="resFile" accept=".json" hidden><input type="file" id="keyFile" accept=".json" hidden>
+    </div>
+    <p id="status" class="status" aria-live="polite"></p>
+    <div class="bar"><i id="barFill"></i></div>
+    <details><summary>Runs so far</summary><div class="scroll"><table class="log"><thead><tr><th>Diagram</th><th>Model</th><th>Run</th><th>Result</th><th>Verdicts</th><th>Reading</th><th>Time</th></tr></thead><tbody id="log"></tbody></table></div></details>
+  </section>
+
+  <section class="panel">
+    <h2>4. Results</h2>
+    <p id="q3" class="muted"></p>
+    <div id="summary" class="scroll"></div>
+    <div class="buttons">
+      <button id="dlRes" class="btn" disabled>Download results (JSON)</button>
+      <button id="dlRep" class="btn ghost" disabled>Download report (Markdown)</button>
+      <button id="dlSlides" class="btn ghost" disabled>Download slides for rating (CSV)</button>
+    </div>
+    <p class="muted">The results file holds every run in full: the reading, the verdicts, the slide texts, each AI call's raw answer, time and tokens, and the settings. Keep it: anyone can re-score it with <code>node score.js results.json</code>, even after the models change.</p>
+  </section>
+</div>

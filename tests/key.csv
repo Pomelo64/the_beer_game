@@ -1,0 +1,60 @@
+id,file,diagram,errors,expected notation,expected failing mechanisms,the rules agree
+A1,diagrams/A1.json,"The reference, as the author drew it",0,,,yes
+A2,diagrams/A2.json,A1 with every name replaced by a synonym,0,,,yes
+A3,diagrams/A3.json,"A1 with a different layout, same structure",0,,,yes
+A4,diagrams/A4.json,"Kegs on order split into ""on back order"" and ""on the road""",0,,,yes
+A5,diagrams/A5.json,No customers-this-week stock: arrivals flow straight into the waiting customers,0,,,yes
+A6,diagrams/A6.json,"Cellar drained by two flows, one per kind of serving",0,,,yes
+A7,diagrams/A7.json,"Order decision modelled, informed by the cellar and the waiting customers",0,,,yes
+A8,diagrams/A8.json,A1 plus a delivery time and the two cost rates,0,,,yes
+B1,diagrams/B1.json,"Deliveries never reach the cellar: they fill a separate stock ""kegs at the door""",1,,M1,yes
+B2,diagrams/B2.json,Orders flow into the cellar; the kegs on order have no inflow,1,,M2,yes
+B3,diagrams/B3.json,"The wholesaler's limit informs the orders, not the deliveries",1,,M3,yes
+B4,diagrams/B4.json,The link from the cellar to serving removed,1,,M4,yes
+B5,diagrams/B5.json,Kegs leaving the cellar not tied to serving on arrival,1,,M5,yes
+B6,diagrams/B6.json,"Waiting customers can leave to a cloud (""giving up rate"")",1,,M6,yes
+B7,diagrams/B7.json,"Catching up informed by the customers of the week, not the waiting ones (the author's second draft)",1,,M7,yes
+B8,diagrams/B8.json,The customer arrivals input not linked,1,W1 W2,M8,yes
+B9,diagrams/B9.json,Cost per week not informed by the waiting customers,1,,M9,yes
+B10,diagrams/B10.json,The orders inform the cost,1,,M10,yes
+C1,diagrams/C1.json,"Two flows called ""coming in rate"" (the deliveries renamed)",1,N1,,yes
+C2,diagrams/C2.json,A link from serving into the cellar,1,N2,,yes
+C3,diagrams/C3.json,A link from a cloud to the customers arriving,1,N3,,yes
+C4,diagrams/C4.json,The cost per week flows from an auxiliary into the cost,1,N4,,yes
+C6,diagrams/C6.json,"A flow between two clouds (""spillage"")",1,N6,,yes
+C7,diagrams/C7.json,"A flow from the cellar back into the cellar (""restocking"")",1,N7,,yes
+C8,diagrams/C8.json,"An extra stock ""reputation"" with no flows",1,N8,,yes
+C9,diagrams/C9.json,The order decision left out: nothing informs the orders,1,W1,,yes
+C10,diagrams/C10.json,"An auxiliary ""weather"" that affects nothing",1,W2,,yes
+D1,diagrams/D1.json,B7 plus two flows of the same name,2,N1,M7,yes
+D2,diagrams/D2.json,The author's first draft,4,,M1 M2 M3 M7,yes
+D3,diagrams/D3.json,A learner's diagram with no cost part (rebuilt from screenshots),6,N1 W1,M3 M8 M9 M10,yes
+D4,diagrams/D4.json,"Notation slips throughout, game structure right",5,N2 N3 N6 N7 N8,,yes
+D5,diagrams/D5.json,"No cost, no waiting customers, orders straight to the cellar, a link into a stock",8,N2,M1 M2 M3 M6 M7 M9 M10,yes
+E1,diagrams/E1.json,"An unrelated diagram: happiness, fun and music",unrelated,,M1 M2 M3 M4 M5 M6 M7 M8 M9 M10,yes
+E2,diagrams/E2.json,"One stock ""beer"" with one inflow and one outflow",unrelated,,M1 M2 M3 M5 M6 M7 M8 M9 M10,yes
+E3,diagrams/E3.json,The reference with the names of the cellar and the waiting customers swapped,misleading names,,,yes
+E4,diagrams/E4.json,"A flow named ""catch up rate"" that drains the cellar to a cloud",misleading names,,,yes
+G1,diagrams/G1.json,"Double count: the kegs for customers served on arrival leave the cellar twice, by ""kegs served"" and by ""consumption rate"" [Akhavan & Jalali 2024, net exports counted twice]",1,,M5,NO
+G2,diagrams/G2.json,"Double count: every arriving customer also joins the waiting customers, by a second inflow ""customers joining the queue"" [Akhavan & Jalali 2024]",1,,M6,NO
+G3,diagrams/G3.json,"Invented link: the cellar informs the customers coming in, as if a full cellar drew customers (true only of the word-of-mouth version) [Schoenberg et al. 2025, fake relationships; Leitch 2026, extra links]",1,,M8,NO
+G4,diagrams/G4.json,"Invented link: the order rate informs the beer arrival rate, as if ordering sped up deliveries [Schoenberg et al. 2025; Leitch 2026]",1,,M1,NO
+G5,diagrams/G5.json,"Reversed flow: the deliveries run from the cellar back to the kegs on order [Schoenberg et al. 2025, link ends reversed]",1,,M1,yes
+G6,diagrams/G6.json,"Reversed link: the order rate informs the player decision, not the other way round [Schoenberg et al. 2025]",1,W1 W2,,yes
+G7,diagrams/G7.json,"Larger and correct: the learner also models the wholesaler's cellar, its kegs on order and the brewery (8 stocks) [Campuzano-Bolarin et al. 2026, larger models need major fixes; Park et al. 2026, performance falls with complexity]",0,,,yes
+G8,diagrams/G8.json,"Element type confused: the total cost drawn as an auxiliary, so it does not add up [Bravo et al. 2009, learners mix up element types]",1,W2,M9 M10,yes
+G9,diagrams/G9.json,Element type confused: the waiting customers drawn as an auxiliary; the unserved go to a cloud and catching up comes from a cloud [Bravo et al. 2009],1,N6,M6 M7 M9,yes
+G10,diagrams/G10.json,"The reference, with a confident but wrong explanation from the learner: tests the wording only [Akhavan & Jalali 2024, the model agreed readily with the user]",0,,,yes
+F1,diagrams/F1.json,"The author's own model of the game, drawn by hand (with typos in the names, and a stock of served customers)",0,,,yes
+F2,diagrams/F2.json,"F1 with an auxiliary ""pub hours"" that is linked to nothing",1,W2,,yes
+F3,diagrams/F3.json,F1 with a cloud attached to nothing,1,,,yes
+F4,diagrams/F4.json,"F1 with a stock ""a"" attached to nothing",1,N8,,yes
+F5,diagrams/F5.json,"F1 with the order flow named ""keg order stock""",1,,,yes
+F6,diagrams/F6.json,F1 with the link between serving and failing to serve reversed (failing to serve informs serving),1,,,yes
+F7,diagrams/F7.json,F1 with the player decision linked to the orders stock instead of the order flow,1,N2 W1,,yes
+F8,diagrams/F8.json,F1 with the player decision drawn as a stock,1,N8,,yes
+F9,diagrams/F9.json,"F1 with a stock ""wholesaler"", filled from a cloud, that the orders flow out of",1,W1,,yes
+F10,diagrams/F10.json,F1 without the player decision and the order flow: nothing fills the orders,2,,M2,yes
+F11,diagrams/F11.json,"F1 with the order flow drawn as a stock ""keg order rate"", which a flow ""kegs"" empties into the orders",1,,,yes
+F12,diagrams/F12.json,F1 without the link from the player decision to the order flow,1,W1 W2,,yes
+F13,diagrams/F13.json,"An unrelated diagram: rabbits, with births and deaths",1,,M1 M2 M3 M4 M5 M6 M7 M8 M9 M10,yes

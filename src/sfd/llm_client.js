@@ -9,7 +9,10 @@
    - `complete` takes a list of messages, so a conversation can carry on.
 
    cfg = { provider: 'anthropic' | 'openai' | 'gemini', key: '...', model: '...' }
-   complete(cfg, system, messages, maxTokens, wantJson) -> Promise<[text, null] | [null, error]> */
+   complete(cfg, system, messages, maxTokens, wantJson, opts) -> Promise<[text, null, meta] | [null, error, meta]>
+   opts.temperature: sent when given; a model that rejects it is asked again without it.
+   meta = { provider, model, temperature (what was sent, or 'not accepted'), ms, usage: {input, output}, text }:
+   what a test needs to report and reproduce a call. Callers that read only [0] and [1] are unaffected. */
 const LLM = (function () {
   const PROVIDERS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (ChatGPT)', gemini: 'Google (Gemini)' };
   const DEFAULT_MODELS = { anthropic: 'claude-opus-4-7', openai: 'gpt-4o', gemini: 'gemini-3.5-flash-lite' };
@@ -75,8 +78,9 @@ const LLM = (function () {
     if (m.indexOf('gemini-2') === 0) return m.indexOf('flash') >= 0 ? { thinkingBudget: 0 } : null;
     return { thinkingLevel: 'low' };
   }
-  async function gemini(model, key, system, messages, maxTokens, wantJson) {
+  async function gemini(model, key, system, messages, maxTokens, wantJson, temperature) {
     const gen = { maxOutputTokens: Math.max(maxTokens, 2048) }, thinking = geminiThinking(model);
+    if (temperature != null) gen.temperature = temperature;
     if (thinking) gen.thinkingConfig = thinking;
     if (wantJson) gen.responseMimeType = 'application/json';
     const body = { systemInstruction: { parts: [{ text: system }] },
@@ -90,43 +94,68 @@ const LLM = (function () {
     }
   }
 
-  async function complete(cfg, system, messages, maxTokens, wantJson) {
-    if (typeof messages === 'string') messages = [{ role: 'user', content: messages }];
-    maxTokens = maxTokens || 300;
-    const provider = cfg.provider, model = (cfg.model || '').trim() || DEFAULT_MODELS[provider], key = cfg.key;
-    try {
-      let text;
-      if (provider === 'anthropic') {
-        const data = await post(ANTHROPIC_URL,
-          { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          { model: model, max_tokens: maxTokens, system: system, messages: messages });
-        text = (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('');
-      } else if (provider === 'openai') {
-        const body = { model: model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }].concat(messages) };
-        if (wantJson) body.response_format = { type: 'json_object' };
-        const data = await post(OPENAI_URL, { Authorization: 'Bearer ' + key }, body);
-        text = data.choices[0].message.content || '';
-      } else {
-        const data = await gemini(model, key, system, messages, maxTokens, wantJson);
-        const parts = (((data.candidates || [{}])[0] || {}).content || {}).parts || [];
-        text = parts.map(function (p) { return p.text || ''; }).join('');
-      }
-      text = (text || '').trim();
-      return text ? [text, null] : [null, 'Empty response from the AI.'];
-    } catch (e) { return [null, errorText(e)]; }
+  /* one call to the provider; returns { text, usage } */
+  async function call(provider, model, key, system, messages, maxTokens, wantJson, temperature) {
+    if (provider === 'anthropic') {
+      const body = { model: model, max_tokens: maxTokens, system: system, messages: messages };
+      if (temperature != null) body.temperature = temperature;
+      const data = await post(ANTHROPIC_URL,
+        { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body);
+      const u = data.usage || {};
+      return { text: (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(''),
+        usage: { input: u.input_tokens, output: u.output_tokens } };
+    } else if (provider === 'openai') {
+      const body = { model: model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }].concat(messages) };
+      if (wantJson) body.response_format = { type: 'json_object' };
+      if (temperature != null) body.temperature = temperature;
+      const data = await post(OPENAI_URL, { Authorization: 'Bearer ' + key }, body), u = data.usage || {};
+      return { text: data.choices[0].message.content || '', usage: { input: u.prompt_tokens, output: u.completion_tokens } };
+    }
+    const data = await gemini(model, key, system, messages, maxTokens, wantJson, temperature), u = data.usageMetadata || {};
+    const parts = (((data.candidates || [{}])[0] || {}).content || {}).parts || [];
+    return { text: parts.map(function (p) { return p.text || ''; }).join(''),
+      usage: { input: u.promptTokenCount, output: (u.candidatesTokenCount || 0) + (u.thoughtsTokenCount || 0) } };
   }
-  async function completeJson(cfg, system, messages, maxTokens) {
-    const r = await complete(cfg, system, messages, maxTokens || 400, true);
-    if (r[1]) return [null, r[1]];
+  /* Models known to ignore a temperature: Google says Gemini 3.5 and later ignore it, and that later
+     models will refuse it. It is not sent to them, and the record says "not accepted", so nobody
+     reads a run as having been made at temperature 0 when it was not. */
+  function ignoresTemperature(provider, model) {
+    const m = provider === 'gemini' && /^gemini-(\d+)(?:\.(\d+))?/.exec(model.toLowerCase());
+    return !!m && (+m[1] > 3 || (+m[1] === 3 && +(m[2] || 0) >= 5));
+  }
+  async function complete(cfg, system, messages, maxTokens, wantJson, opts) {
+    if (typeof messages === 'string') messages = [{ role: 'user', content: messages }];
+    maxTokens = maxTokens || 300; opts = opts || {};
+    const provider = cfg.provider, model = (cfg.model || '').trim() || DEFAULT_MODELS[provider], key = cfg.key;
+    const meta = { provider: provider, model: model, temperature: opts.temperature != null ? opts.temperature : 'default', ms: 0, usage: null, text: null };
+    if (opts.temperature != null && ignoresTemperature(provider, model)) { meta.temperature = 'not accepted'; opts = Object.assign({}, opts, { temperature: null }); }
+    const t0 = Date.now();
+    try {
+      let r;
+      try { r = await call(provider, model, key, system, messages, maxTokens, wantJson, opts.temperature); }
+      catch (e) {   // a model that does not take a temperature: ask again without one
+        if (opts.temperature != null && e instanceof HttpError && e.code === 400 && /temperature/i.test(e.body)) {
+          meta.temperature = 'not accepted';
+          r = await call(provider, model, key, system, messages, maxTokens, wantJson, null);
+        } else throw e;
+      }
+      meta.ms = Date.now() - t0; meta.usage = r.usage; meta.text = r.text;
+      const text = (r.text || '').trim();
+      return text ? [text, null, meta] : [null, 'Empty response from the AI.', meta];
+    } catch (e) { meta.ms = Date.now() - t0; return [null, errorText(e), meta]; }
+  }
+  async function completeJson(cfg, system, messages, maxTokens, opts) {
+    const r = await complete(cfg, system, messages, maxTokens || 400, true, opts);
+    if (r[1]) return [null, r[1], r[2]];
     const m = r[0].match(/\{[\s\S]*\}/);
-    if (!m) return [null, 'The AI did not return JSON.'];
-    try { return [JSON.parse(m[0]), null]; } catch (e) { return [null, "The AI's reply could not be read."]; }
+    if (!m) return [null, 'The AI did not return JSON.', r[2]];
+    try { return [JSON.parse(m[0]), null, r[2]]; } catch (e) { return [null, "The AI's reply could not be read.", r[2]]; }
   }
   async function testConnection(cfg) {
     const r = await complete(cfg, 'Reply with the single word OK.', 'Ping', 5);
     return [r[1] === null, r[1]];
   }
   return { PROVIDERS: PROVIDERS, DEFAULT_MODELS: DEFAULT_MODELS, KEY_PLACEHOLDER: KEY_PLACEHOLDER,
-           complete: complete, completeJson: completeJson, testConnection: testConnection };
+           complete: complete, completeJson: completeJson, testConnection: testConnection, ignoresTemperature: ignoresTemperature };
 })();
 if (typeof module !== 'undefined') module.exports = LLM;

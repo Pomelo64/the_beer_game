@@ -1,0 +1,3762 @@
+[
+ {
+  "id": "A1",
+  "file": "diagrams/A1.json",
+  "diagram": "The reference, as the author drew it",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A2",
+  "file": "diagrams/A2.json",
+  "diagram": "A1 with every name replaced by a synonym",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "guests this week": [
+    "C5"
+   ],
+   "backlog": [
+    "C3"
+   ],
+   "kegs at the pub": [
+    "C1"
+   ],
+   "running cost": [
+    "C4"
+   ],
+   "kegs in transit": [
+    "C2"
+   ],
+   "guests arriving [flow cloud -> guests this week]": [
+    "C8"
+   ],
+   "served on the spot [flow guests this week -> cloud]": [
+    "C9"
+   ],
+   "added to backlog [flow guests this week -> backlog]": [
+    "C10"
+   ],
+   "cost per week [flow cloud -> running cost]": [
+    "C13"
+   ],
+   "kegs poured [flow kegs at the pub -> cloud]": [
+    "C12"
+   ],
+   "backlog served [flow backlog -> cloud]": [
+    "C11"
+   ],
+   "deliveries [flow kegs in transit -> kegs at the pub]": [
+    "C7"
+   ],
+   "ordering [flow cloud -> kegs in transit]": [
+    "C6"
+   ],
+   "demand pattern": [
+    "C14"
+   ],
+   "supplier capacity": [
+    "C15"
+   ],
+   "my order": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A3",
+  "file": "diagrams/A3.json",
+  "diagram": "A1 with a different layout, same structure",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A4",
+  "file": "diagrams/A4.json",
+  "diagram": "Kegs on order split into \"on back order\" and \"on the road\"",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "on back order": [
+    "C2"
+   ],
+   "on the road": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow on the road -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> on back order]": [
+    "C6"
+   ],
+   "shipping rate [flow on back order -> on the road]": [
+    "C7"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A5",
+  "file": "diagrams/A5.json",
+  "diagram": "No customers-this-week stock: arrivals flow straight into the waiting customers",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> waiting to serve]": [
+    "C8"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A6",
+  "file": "diagrams/A6.json",
+  "diagram": "Cellar drained by two flows, one per kind of serving",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "kegs served on arrival [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "kegs served late [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A7",
+  "file": "diagrams/A7.json",
+  "diagram": "Order decision modelled, informed by the cellar and the waiting customers",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "Your order decision does not take the kegs already on order into account. That is what most players of this game do, and it is why their orders swing."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "A8",
+  "file": "diagrams/A8.json",
+  "diagram": "A1 plus a delivery time and the two cost rates",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "delivery time": [
+    "C17"
+   ],
+   "holding cost per keg": [
+    "C18"
+   ],
+   "cost per keg owed": [
+    "C18"
+   ]
+  }
+ },
+ {
+  "id": "B1",
+  "file": "diagrams/B1.json",
+  "diagram": "Deliveries never reach the cellar: they fill a separate stock \"kegs at the door\"",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "kegs at the door": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> kegs at the door]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B2",
+  "file": "diagrams/B2.json",
+  "diagram": "Orders flow into the cellar; the kegs on order have no inflow",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M2"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> pub cellar]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B3",
+  "file": "diagrams/B3.json",
+  "diagram": "The wholesaler's limit informs the orders, not the deliveries",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M3"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B4",
+  "file": "diagrams/B4.json",
+  "diagram": "The link from the cellar to serving removed",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M4"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B5",
+  "file": "diagrams/B5.json",
+  "diagram": "Kegs leaving the cellar not tied to serving on arrival",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M5"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B6",
+  "file": "diagrams/B6.json",
+  "diagram": "Waiting customers can leave to a cloud (\"giving up rate\")",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M6"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "giving up rate [flow waiting to serve -> cloud]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B7",
+  "file": "diagrams/B7.json",
+  "diagram": "Catching up informed by the customers of the week, not the waiting ones (the author's second draft)",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M7"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B8",
+  "file": "diagrams/B8.json",
+  "diagram": "The customer arrivals input not linked",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W1",
+    "W2"
+   ],
+   "failing": [
+    "M8"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B9",
+  "file": "diagrams/B9.json",
+  "diagram": "Cost per week not informed by the waiting customers",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M9"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "B10",
+  "file": "diagrams/B10.json",
+  "diagram": "The orders inform the cost",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M10"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C1",
+  "file": "diagrams/C1.json",
+  "diagram": "Two flows called \"coming in rate\" (the deliveries renamed)",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N1"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "coming in rate (2) [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C2",
+  "file": "diagrams/C2.json",
+  "diagram": "A link from serving into the cellar",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N2"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C3",
+  "file": "diagrams/C3.json",
+  "diagram": "A link from a cloud to the customers arriving",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N3"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C4",
+  "file": "diagrams/C4.json",
+  "diagram": "The cost per week flows from an auxiliary into the cost",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N4"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow weekly costs -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "weekly costs": [
+    "C18"
+   ]
+  }
+ },
+ {
+  "id": "C6",
+  "file": "diagrams/C6.json",
+  "diagram": "A flow between two clouds (\"spillage\")",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N6"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "spillage [flow cloud -> cloud]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C7",
+  "file": "diagrams/C7.json",
+  "diagram": "A flow from the cellar back into the cellar (\"restocking\")",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N7"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "restocking [flow pub cellar -> pub cellar]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C8",
+  "file": "diagrams/C8.json",
+  "diagram": "An extra stock \"reputation\" with no flows",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N8"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "reputation": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "C9",
+  "file": "diagrams/C9.json",
+  "diagram": "The order decision left out: nothing informs the orders",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W1"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ]
+  }
+ },
+ {
+  "id": "C10",
+  "file": "diagrams/C10.json",
+  "diagram": "An auxiliary \"weather\" that affects nothing",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W2"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "weather": "extra"
+  }
+ },
+ {
+  "id": "D1",
+  "file": "diagrams/D1.json",
+  "diagram": "B7 plus two flows of the same name",
+  "errors": 2,
+  "expected": {
+   "notation": [
+    "N1"
+   ],
+   "failing": [
+    "M7"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "coming in rate (2) [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "D2",
+  "file": "diagrams/D2.json",
+  "diagram": "The author's first draft",
+  "errors": 4,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1",
+    "M2",
+    "M3",
+    "M7"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "order rate [flow cloud -> pub cellar]": [
+    "C6"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "D3",
+  "file": "diagrams/D3.json",
+  "diagram": "A learner's diagram with no cost part (rebuilt from screenshots)",
+  "errors": 6,
+  "expected": {
+   "notation": [
+    "N1",
+    "W1"
+   ],
+   "failing": [
+    "M3",
+    "M8",
+    "M9",
+    "M10"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "customers arrived": [
+    "C5"
+   ],
+   "customers waiting": [
+    "C3"
+   ],
+   "customers served": "extra",
+   "ordered kegs": [
+    "C2"
+   ],
+   "kegs at the pub": [
+    "C1"
+   ],
+   "arrival rate [flow cloud -> customers arrived]": [
+    "C8"
+   ],
+   "serving rate [flow customers arrived -> customers served]": [
+    "C9"
+   ],
+   "fail to serve rate [flow customers arrived -> customers waiting]": [
+    "C10"
+   ],
+   "catch up rate [flow customers waiting -> customers served]": [
+    "C11"
+   ],
+   "order rate [flow cloud -> ordered kegs]": [
+    "C6"
+   ],
+   "arrival rate (2) [flow ordered kegs -> kegs at the pub]": [
+    "C7"
+   ],
+   "consumption rate [flow kegs at the pub -> cloud]": [
+    "C12"
+   ],
+   "exogenous table": [
+    "C14"
+   ],
+   "player's decision": [
+    "C16"
+   ],
+   "wholesaler provision capability": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "D4",
+  "file": "diagrams/D4.json",
+  "diagram": "Notation slips throughout, game structure right",
+  "errors": 5,
+  "expected": {
+   "notation": [
+    "N2",
+    "N3",
+    "N6",
+    "N7",
+    "N8"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "reputation": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "spillage [flow cloud -> cloud]": "extra",
+   "restocking [flow pub cellar -> pub cellar]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "D5",
+  "file": "diagrams/D5.json",
+  "diagram": "No cost, no waiting customers, orders straight to the cellar, a link into a stock",
+  "errors": 8,
+  "expected": {
+   "notation": [
+    "N2"
+   ],
+   "failing": [
+    "M1",
+    "M2",
+    "M3",
+    "M6",
+    "M7",
+    "M9",
+    "M10"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "order rate [flow cloud -> pub cellar]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "E1",
+  "file": "diagrams/E1.json",
+  "diagram": "An unrelated diagram: happiness, fun and music",
+  "errors": "unrelated",
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9",
+    "M10"
+   ],
+   "observation_on_decision": null
+  },
+  "expected_reading": {
+   "Happiness": "extra",
+   "fun [flow cloud -> Happiness]": "extra",
+   "Music": "extra"
+  }
+ },
+ {
+  "id": "E2",
+  "file": "diagrams/E2.json",
+  "diagram": "One stock \"beer\" with one inflow and one outflow",
+  "errors": "unrelated",
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1",
+    "M2",
+    "M3",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9",
+    "M10"
+   ],
+   "observation_on_decision": null
+  },
+  "expected_reading": {
+   "beer": [
+    "C1"
+   ],
+   "brewing [flow cloud -> beer]": [
+    "C7"
+   ],
+   "drinking [flow beer -> cloud]": [
+    "C12"
+   ],
+   "supply": [
+    "C15"
+   ],
+   "thirst": [
+    "C14"
+   ]
+  }
+ },
+ {
+  "id": "E3",
+  "file": "diagrams/E3.json",
+  "diagram": "The reference with the names of the cellar and the waiting customers swapped",
+  "errors": "misleading names",
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "pub cellar": [
+    "C3"
+   ],
+   "waiting to serve": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> pub cellar]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow waiting to serve -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow pub cellar -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> waiting to serve]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "E4",
+  "file": "diagrams/E4.json",
+  "diagram": "A flow named \"catch up rate\" that drains the cellar to a cloud",
+  "errors": "misleading names",
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "catch up rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "orders filled late [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "G1",
+  "file": "diagrams/G1.json",
+  "diagram": "Double count: the kegs for customers served on arrival leave the cellar twice, by \"kegs served\" and by \"consumption rate\" [Akhavan & Jalali 2024, net exports counted twice]",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M5"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "kegs served [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "rules_give": {
+   "notation": [],
+   "failing": []
+  }
+ },
+ {
+  "id": "G2",
+  "file": "diagrams/G2.json",
+  "diagram": "Double count: every arriving customer also joins the waiting customers, by a second inflow \"customers joining the queue\" [Akhavan & Jalali 2024]",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M6"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "customers joining the queue [flow cloud -> waiting to serve]": [
+    "C8"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "rules_give": {
+   "notation": [],
+   "failing": []
+  }
+ },
+ {
+  "id": "G3",
+  "file": "diagrams/G3.json",
+  "diagram": "Invented link: the cellar informs the customers coming in, as if a full cellar drew customers (true only of the word-of-mouth version) [Schoenberg et al. 2025, fake relationships; Leitch 2026, extra links]",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M8"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "rules_give": {
+   "notation": [],
+   "failing": []
+  }
+ },
+ {
+  "id": "G4",
+  "file": "diagrams/G4.json",
+  "diagram": "Invented link: the order rate informs the beer arrival rate, as if ordering sped up deliveries [Schoenberg et al. 2025; Leitch 2026]",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "rules_give": {
+   "notation": [],
+   "failing": []
+  }
+ },
+ {
+  "id": "G5",
+  "file": "diagrams/G5.json",
+  "diagram": "Reversed flow: the deliveries run from the cellar back to the kegs on order [Schoenberg et al. 2025, link ends reversed]",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow pub cellar -> registered order]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "G6",
+  "file": "diagrams/G6.json",
+  "diagram": "Reversed link: the order rate informs the player decision, not the other way round [Schoenberg et al. 2025]",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W1",
+    "W2"
+   ],
+   "failing": [],
+   "observation_on_decision": "Your order decision does not take the kegs already on order into account. That is what most players of this game do, and it is why their orders swing."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "G7",
+  "file": "diagrams/G7.json",
+  "diagram": "Larger and correct: the learner also models the wholesaler's cellar, its kegs on order and the brewery (8 stocks) [Campuzano-Bolarin et al. 2026, larger models need major fixes; Park et al. 2026, performance falls with complexity]",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "wholesaler kegs on order": "extra",
+   "wholesaler cellar": "extra",
+   "brewery kegs brewing": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "wholesaler order rate [flow cloud -> wholesaler kegs on order]": "extra",
+   "wholesaler arrival rate [flow wholesaler kegs on order -> wholesaler cellar]": "extra",
+   "wholesaler shipping rate [flow wholesaler cellar -> cloud]": "extra",
+   "brewing start rate [flow cloud -> brewery kegs brewing]": "extra",
+   "brewing finish rate [flow brewery kegs brewing -> cloud]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "G8",
+  "file": "diagrams/G8.json",
+  "diagram": "Element type confused: the total cost drawn as an auxiliary, so it does not add up [Bravo et al. 2009, learners mix up element types]",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W2"
+   ],
+   "failing": [
+    "M9",
+    "M10"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "total cost": [
+    "C4"
+   ]
+  }
+ },
+ {
+  "id": "G9",
+  "file": "diagrams/G9.json",
+  "diagram": "Element type confused: the waiting customers drawn as an auxiliary; the unserved go to a cloud and catching up comes from a cloud [Bravo et al. 2009]",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N6"
+   ],
+   "failing": [
+    "M6",
+    "M7",
+    "M9"
+   ],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> cloud]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow cloud -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "waiting to serve": [
+    "C3"
+   ]
+  }
+ },
+ {
+  "id": "G10",
+  "file": "diagrams/G10.json",
+  "diagram": "The reference, with a confident but wrong explanation from the learner: tests the wording only [Akhavan & Jalali 2024, the model agreed readily with the user]",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "said": "My diagram shows that the three-week delivery does not matter. My costs were all the wholesaler's fault, and ordering more every week would have fixed them."
+ },
+ {
+  "id": "F1",
+  "file": "diagrams/F1.json",
+  "diagram": "The author's own model of the game, drawn by hand (with typos in the names, and a stock of served customers)",
+  "errors": 0,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F2",
+  "file": "diagrams/F2.json",
+  "diagram": "F1 with an auxiliary \"pub hours\" that is linked to nothing",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W2"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ],
+   "pub hours": "extra"
+  }
+ },
+ {
+  "id": "F3",
+  "file": "diagrams/F3.json",
+  "diagram": "F1 with a cloud attached to nothing",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F4",
+  "file": "diagrams/F4.json",
+  "diagram": "F1 with a stock \"a\" attached to nothing",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N8"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "a": "extra",
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F5",
+  "file": "diagrams/F5.json",
+  "diagram": "F1 with the order flow named \"keg order stock\"",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order stock [flow cloud -> orders]": [
+    "C6"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F6",
+  "file": "diagrams/F6.json",
+  "diagram": "F1 with the link between serving and failing to serve reversed (failing to serve informs serving)",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F7",
+  "file": "diagrams/F7.json",
+  "diagram": "F1 with the player decision linked to the orders stock instead of the order flow",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N2",
+    "W1"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F8",
+  "file": "diagrams/F8.json",
+  "diagram": "F1 with the player decision drawn as a stock",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "N8"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F9",
+  "file": "diagrams/F9.json",
+  "diagram": "F1 with a stock \"wholesaler\", filled from a cloud, that the orders flow out of",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W1"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "wholesaler": [
+    "C15"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "distributor provision rrate [flow cloud -> wholesaler]": "extra",
+   "keg order rate [flow wholesaler -> orders]": [
+    "C6"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  }
+ },
+ {
+  "id": "F10",
+  "file": "diagrams/F10.json",
+  "diagram": "F1 without the player decision and the order flow: nothing fills the orders",
+  "errors": 2,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M2"
+   ],
+   "observation_on_decision": null
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F11",
+  "file": "diagrams/F11.json",
+  "diagram": "F1 with the order flow drawn as a stock \"keg order rate\", which a flow \"kegs\" empties into the orders",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "keg order rate": "extra",
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "kegs [flow keg order rate -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F12",
+  "file": "diagrams/F12.json",
+  "diagram": "F1 without the link from the player decision to the order flow",
+  "errors": 1,
+  "expected": {
+   "notation": [
+    "W1",
+    "W2"
+   ],
+   "failing": [],
+   "observation_on_decision": "You treat the order decision as an input from outside the diagram, as the task allows."
+  },
+  "expected_reading": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  }
+ },
+ {
+  "id": "F13",
+  "file": "diagrams/F13.json",
+  "diagram": "An unrelated diagram: rabbits, with births and deaths",
+  "errors": 1,
+  "expected": {
+   "notation": [],
+   "failing": [
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9",
+    "M10"
+   ],
+   "observation_on_decision": null
+  },
+  "expected_reading": {
+   "rabbits": "extra",
+   "birth rate [flow cloud -> rabbits]": "extra",
+   "death rate [flow rabbits -> cloud]": "extra"
+  }
+ }
+]

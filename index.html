@@ -405,6 +405,40 @@ details.fold[open] > summary{margin-bottom:12px}
 
 /* credit line, on every screen */
 .credit{margin:32px 0 0;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+
+/* ---------- the feedback as a PDF: a print view of every slide (model_ui.js, feedbackPdf) ----------
+   Always light, whatever the screen's theme, since it is printed. */
+.pv{display:none}
+.pv{--bg:#ffffff; --surface:#ffffff; --sunk:#eef2f0; --line:#cdd8d2; --fg:#16211c; --muted:#56655d;
+  --accent:#17705a; --accent-fg:#ffffff; --owed:#b3392f; --hold:#17705a; color-scheme:light;
+  background:#fff;color:var(--fg);font-family:var(--font-body);font-size:10.5pt;line-height:1.45}
+.pv-page{padding:0 0 8mm}
+.pv h1{font-family:var(--font-head);font-size:20pt;margin:0 0 2pt}
+.pv h2{font-family:var(--font-head);font-size:13pt;margin:14pt 0 4pt}
+.pv .pv-sub{color:var(--muted);margin:0 0 10pt}
+.pv table.pv-facts{border-collapse:collapse;margin:6pt 0 4pt;font-size:9.5pt}
+.pv table.pv-facts td{padding:2pt 12pt 2pt 0;vertical-align:top}
+.pv table.pv-facts td:first-child{color:var(--muted);white-space:nowrap}
+.pv table.pv-facts a{color:var(--accent)}
+.pv .pv-said{border-left:3pt solid var(--line);padding:2pt 0 2pt 8pt;margin:4pt 0 8pt;font-style:italic}
+.pv .pv-ai{border-left:3pt solid var(--hold);padding:2pt 0 2pt 8pt;margin:4pt 0 8pt}
+.pv .slide{border:1px solid var(--line);border-radius:8pt;padding:10pt 12pt;break-inside:avoid}
+.pv .sl-pic .pic{width:100%;height:auto;max-height:120mm;display:block}
+.pv .pv-cover .sl-pic .pic{height:80mm;max-height:none}
+.pv .sl-nav,.pv .sl-dots{display:none}
+.pv .pv-foot{font-size:8pt;color:#6b7a72;text-align:center;margin-top:6pt}
+.pv .pv-foot a{color:inherit}
+.pv .pv-hidden{color:transparent;font-size:6pt;margin:0;line-height:1}
+.pv .pv-note{display:none}
+@media print{
+  @page{size:A4;margin:14mm 14mm 18mm;
+    @bottom-center{content:"Made with Beer Game Lab · github.com/Pomelo64/the_beer_game";font-family:system-ui,sans-serif;font-size:8pt;color:#6b7a72}}
+  body.printing{background:#fff}
+  body.printing > *:not(.pv){display:none!important}
+  body.printing > .pv{display:block}
+  .pv .pv-cover{break-after:page}
+  .pv a{text-decoration:none}
+}
 </style>
 </head>
 <body>
@@ -701,6 +735,7 @@ details.fold[open] > summary{margin-bottom:12px}
 </div>
 <div id="fx" aria-hidden="true"></div>
 <script>
+const APP_VERSION = "1.2 (2026-11-24)";
 const CANVAS_HTML = "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>SFD Canvas<\/title>\n<script src=\"https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js\"><\/script>\n<script src=\"https://cdn.jsdelivr.net/npm/cytoscape-svg@0.4.0/cytoscape-svg.js\"><\/script>\n<style>\n  :root {\n    --stock:  #2563eb;   /* blue   */\n    --flow:   #059669;   /* green  */\n    --aux:    #d97706;   /* amber  */\n    --cloud:  #94a3b8;   /* grey   */\n    --conn:   #6b7280;   /* grey info arrow */\n    --ink:    #1e293b;\n    --paper:  #fbfaf7;\n    --line:   #d8d4cc;\n  }\n  html, body { margin: 0; padding: 0; font-family: Georgia, 'Times New Roman', serif; }\n  #toolbar {\n    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;\n    padding: 8px 10px; background: #f3f1ec;\n    border: 1px solid var(--line); border-bottom: none;\n    font-size: 13px; color: var(--ink);\n  }\n  .tool {\n    font-family: inherit; font-size: 12px; cursor: pointer;\n    border: 1px solid var(--line); background: #fff; color: var(--ink);\n    padding: 5px 9px; border-radius: 2px;\n    display: inline-flex; align-items: center; gap: 5px;\n  }\n  .tool .swatch {\n    width: 11px; height: 11px; border-radius: 2px; display: inline-block;\n    border: 1px solid rgba(0,0,0,.25);\n  }\n  .tool.active { border-color: var(--ink); border-width: 2px; font-weight: bold;\n                 background: #fffdf8; }\n  .sep { width: 1px; height: 22px; background: var(--line); margin: 0 4px; }\n  .act {\n    font-family: inherit; font-size: 12px; cursor: pointer;\n    border: 1px solid var(--ink); background: #fff; color: var(--ink);\n    padding: 5px 11px; border-radius: 2px;\n  }\n  .act.primary { background: var(--ink); color: #fff; }\n  .act:active, .tool:active { transform: translateY(1px); }\n  #cy {\n    width: 100%; height: 430px; background: var(--paper);\n    background-image: radial-gradient(var(--line) 0.8px, transparent 0.8px);\n    background-size: 22px 22px;\n    border: 1px solid var(--line); box-sizing: border-box;\n    position: relative;\n  }\n  /* overlay holding the bend-point circles for the active link */\n  #wpLayer { position: absolute; left: 0; top: 0; right: 0; bottom: 0;\n             pointer-events: none; z-index: 5; overflow: visible; }\n  .wphandle { position: absolute; width: 13px; height: 13px;\n              transform: translate(-50%, -50%); border-radius: 50%;\n              background: #fff; border: 2px solid #2563eb;\n              box-shadow: 0 1px 2px rgba(0,0,0,.3);\n              pointer-events: auto; cursor: grab; z-index: 6; }\n  .wphandle:hover { border-color: #1e293b; }\n  .wphandle:active { cursor: grabbing; border-color: #1e293b; }\n  #status { font-size: 12px; color: #767067; padding: 5px 10px;\n            border: 1px solid var(--line); border-top: none; min-height: 1.1em;\n            background: #f3f1ec; font-style: italic; }\n  #footer {\n    display: flex; justify-content: flex-end;\n    padding: 8px 10px; background: #f3f1ec;\n    border: 1px solid var(--line); border-top: none;\n  }\n  /* Draw / Edit mode toggle on the left side of the toolbar */\n  .mode {\n    display: inline-flex; border: 1px solid var(--ink); border-radius: 2px;\n    overflow: hidden; margin-right: 6px;\n  }\n  .mode button {\n    font-family: inherit; font-size: 12px; cursor: pointer;\n    background: #fff; color: var(--ink);\n    padding: 5px 10px; border: none;\n  }\n  .mode button.active { background: var(--ink); color: #fff; font-weight: bold; }\n  .mode button + button { border-left: 1px solid var(--ink); }\n  /* visual cue while in edit mode: dim the tool buttons */\n  body.edit-mode .tool, body.edit-mode #clearBtn { opacity: 0.4; pointer-events: none; }\n<\/style>\n<style>/* added by Beer Game Lab: no equations in this exercise */ #modeToggle{display:none!important}<\/style>\n<\/head>\n<body>\n  <div id=\"toolbar\">\n    <span class=\"mode\" id=\"modeToggle\">\n      <button data-mode=\"draw\" class=\"active\">Draw<\/button>\n      <button data-mode=\"edit\">Edit<\/button>\n    <\/span>\n    <button class=\"tool active\" data-tool=\"stock\">\n      <span class=\"swatch\" style=\"background:#2563eb\"><\/span>Stock<\/button>\n    <button class=\"tool\" data-tool=\"aux\">\n      <span class=\"swatch\" style=\"background:#d97706;border-radius:50%\"><\/span>Auxiliary<\/button>\n    <button class=\"tool\" data-tool=\"cloud\">\n      <span class=\"swatch\" style=\"background:#94a3b8\"><\/span>Cloud<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"tool\" data-tool=\"flow\">\n      <span class=\"swatch\" style=\"background:#059669\"><\/span>Flow<\/button>\n    <button class=\"tool\" data-tool=\"connector\">\n      <span class=\"swatch\" style=\"background:#6b7280\"><\/span>Connector<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"act\" id=\"clearBtn\">Clear<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"act\" id=\"untangleBtn\" title=\"Auto-arrange the whole diagram: keep the stock-flow backbone in the centre, spread the auxiliaries onto a ring around it, and remove overlaps. Then use &ldquo;Tidy flows&rdquo; to square up the pipes.\">Untangle<\/button>\n    <button class=\"act\" id=\"tidyBtn\" title=\"Straighten every flow: square up pipes to horizontal/vertical and center each valve. A stock's inflow and outflow share one axis, so cloud&rarr;inflow&rarr;stock&rarr;outflow&rarr;cloud comes out fully horizontal (or fully vertical).\">Tidy flows<\/button>\n    <button class=\"act\" id=\"hideBendsBtn\" title=\"Hide the bend-point circles on links (the link shapes are kept)\">Hide bend points<\/button>\n    <button class=\"act\" id=\"mergeBtn\" title=\"Merge information links that share a source: they leave the source as one trunk and fork near their targets (links heading opposite ways stay separate). Press again to un-merge. Drag a bend to fine-tune; right-click a bend to unmerge just one link.\">Merge links<\/button>\n    <span class=\"sep\"><\/span>\n    <button class=\"act\" id=\"zoomOutBtn\" title=\"Zoom out 10%\">&minus;<\/button>\n    <button class=\"act\" id=\"zoomInBtn\"  title=\"Zoom in 10%\">+<\/button>\n    <button class=\"act\" id=\"fitBtn\"     title=\"Fit diagram to canvas\">Center<\/button>\n    <button class=\"act\" id=\"fadeBtn\"    title=\"Storytelling: dim everything, then click elements to reveal them (click again to re-hide) for a screenshot. Click a flow to reveal the whole flow. Press again to restore.\">Fade<\/button>\n    <button class=\"act\" id=\"svgBtn\"     title=\"Export the diagram as an SVG image\">SVG<\/button>\n  <\/div>\n  <div id=\"cy\"><\/div>\n  <div id=\"status\">Stock tool active \u2014 click the canvas to place a stock.<\/div>\n\n<script>\n/* ====================================================================\n   Streamlit component protocol (vanilla, no build step)\n   ==================================================================== */\nconst Streamlit = {\n  _renderHandler: null,\n  _ready: false,            // becomes true once Streamlit sends first render\n  _pending: null,           // a value emitted before we were ready\n  _readyTimer: null,\n  setComponentReady() {\n    window.parent.postMessage(\n      { isStreamlitMessage: true, type: \"streamlit:componentReady\",\n        apiVersion: 1 }, \"*\");\n  },\n  setFrameHeight(h) {\n    window.parent.postMessage(\n      { isStreamlitMessage: true, type: \"streamlit:setFrameHeight\",\n        height: h || document.body.scrollHeight }, \"*\");\n  },\n  setComponentValue(v) {\n    // Streamlit's handler reads BOTH `value` and `dataType`; omitting\n    // dataType makes the value silently fail to register. Use \"json\".\n    if (!this._ready) { this._pending = v; return; }   // queue until ready\n    window.parent.postMessage(\n      { isStreamlitMessage: true, type: \"streamlit:setComponentValue\",\n        dataType: \"json\", value: v }, \"*\");\n  },\n  onRender(fn) { this._renderHandler = fn; }\n};\nwindow.addEventListener(\"message\", (e) => {\n  if (!e.data || e.data.type !== \"streamlit:render\") return;\n  // The first render means Streamlit has registered us as ready. Stop the\n  // re-announce loop and flush any value queued before this point.\n  if (!Streamlit._ready) {\n    Streamlit._ready = true;\n    if (Streamlit._readyTimer) {\n      clearInterval(Streamlit._readyTimer);\n      Streamlit._readyTimer = null;\n    }\n  }\n  if (Streamlit._renderHandler) {\n    Streamlit._renderHandler(e.data.args || {});\n  }\n  if (Streamlit._pending !== null) {\n    const v = Streamlit._pending;\n    Streamlit._pending = null;\n    Streamlit.setComponentValue(v);\n  }\n});\n\nconst C = {\n  stock: \"#2563eb\", flow: \"#059669\", aux: \"#d97706\",\n  cloud: \"#94a3b8\", conn: \"#6b7280\"\n};\n\n/* A real cloud glyph (classic SFD source/sink marker), drawn as an inline\n   SVG and used as the cloud node's background image. Encoded so the '#' in\n   the colours is safe inside a data URI. */\nconst CLOUD_SVG =\n  '<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"11 15 76.8 38.5\" ' +\n  'width=\"153.6\" height=\"77\">' +\n  '<path d=\"M24,50 C12,50 8,38 18,34 C13,22 30,16 37,26 C42,13 64,13 68,27 ' +\n  'C82,22 93,34 82,40 C90,46 82,52 72,50 C60,53 36,53 24,50 Z\" ' +\n  'fill=\"#eef0f2\" stroke=\"' + C.cloud + '\" stroke-width=\"2.6\" ' +\n  'stroke-linejoin=\"round\"/><\/svg>';\nconst CLOUD_URI =\n  'data:image/svg+xml;utf8,' + encodeURIComponent(CLOUD_SVG);\n\n/* ====================================================================\n   Cytoscape editor \u2014 typed SFD elements\n   ==================================================================== */\nconst cy = cytoscape({\n  container: document.getElementById('cy'),\n  minZoom: 0.4, maxZoom: 2.5,\n  style: [\n    /* --- STOCK : blue rectangle --------------------------------------- */\n    { selector: 'node[type=\"stock\"]', style: {\n        'label': 'data(label)', 'shape': 'rectangle',\n        'background-color': '#eef3ff', 'border-color': C.stock,\n        'border-width': 2.5,\n        'width': 96, 'height': 46,\n        'text-valign': 'center', 'text-halign': 'center',\n        'font-family': 'Georgia, serif', 'font-size': 12,\n        'color': '#1e3a8a', 'text-wrap': 'wrap', 'text-max-width': 88\n    }},\n    /* --- AUXILIARY : amber circle ------------------------------------- */\n    { selector: 'node[type=\"aux\"]', style: {\n        'label': 'data(label)', 'shape': 'ellipse',\n        'background-color': '#fef3e2', 'border-color': C.aux,\n        'border-width': 2,\n        'width': 62, 'height': 62,\n        'text-valign': 'center', 'text-halign': 'center',\n        'font-family': 'Georgia, serif', 'font-size': 11,\n        'color': '#92400e', 'text-wrap': 'wrap', 'text-max-width': 56\n    }},\n    /* --- CLOUD : real cloud glyph (boundary source / sink) ------------ */\n    /* The glyph is scaled to 112% of the node box and allowed to overflow\n       it (background-clip:none), so a flow connecting to the node boundary\n       always meets the cloud with no gap, from any angle. */\n    { selector: 'node[type=\"cloud\"]', style: {\n        'label': '',                       /* clouds carry no visible text */\n        'shape': 'round-rectangle',        /* invisible body; image shows */\n        'background-opacity': 0, 'border-width': 0,\n        'background-image': CLOUD_URI,\n        'background-fit': 'none', 'background-clip': 'none',\n        'background-width': '112%', 'background-height': '112%',\n        'background-position-x': '50%', 'background-position-y': '50%',\n        'width': 62, 'height': 31\n    }},\n    /* keep the cloud free of a rectangular border when selected --------- */\n    { selector: 'node[type=\"cloud\"]:selected', style: {\n        'border-width': 0\n    }},\n    /* --- selected highlight ------------------------------------------- */\n    { selector: 'node:selected', style: {\n        'border-width': 4, 'overlay-color': '#1e293b', 'overlay-opacity': 0.06\n    }},\n    /* --- FLOW : two thick green pipe segments meeting at a valve node - */\n    { selector: 'edge[type=\"flowseg\"]', style: {\n        'curve-style': 'straight', /* Beer Game Lab: was 'bezier' */\n        'width': 7,\n        'line-color': C.flow, 'line-style': 'double',\n        'target-arrow-color': C.flow,\n        'target-arrow-shape': 'data(arrow)',   /* 'triangle' or 'none' */\n        'arrow-scale': 1.6\n    }},\n    /* the VALVE : the small symbol sitting on the flow pipe ------------- */\n    { selector: 'node[type=\"valve\"]', style: {\n        'label': 'data(label)', 'shape': 'diamond',\n        'background-color': '#fffdf8', 'border-color': C.flow,\n        'border-width': 2.5,\n        'width': 22, 'height': 22,\n        'text-valign': 'top', 'text-halign': 'center', 'text-margin-y': -3,\n        'font-family': 'Georgia, serif', 'font-size': 11, 'font-weight': 'bold',\n        'color': '#065f46',\n        'text-background-color': '#fbfaf7',\n        'text-background-opacity': 1, 'text-background-padding': 2\n    }},\n    /* --- CONNECTOR : thin grey curved information arrow --------------- */\n    { selector: 'edge[type=\"connector\"]', style: {\n        'curve-style': 'unbundled-bezier',\n        'control-point-distances': [38], 'control-point-weights': [0.5],\n        'width': 1.6,\n        'line-color': C.conn, 'line-style': 'solid',\n        'target-arrow-color': C.conn, 'target-arrow-shape': 'vee',\n        'arrow-scale': 1.0\n    }},\n    /* --- JUNCTION : tiny split-point where merged links fork ---------- */\n    { selector: 'node[type=\"junction\"]', style: {\n        'label': '', 'shape': 'ellipse',\n        'background-color': '#fffdf8', 'border-color': '#334155',\n        'border-width': 2, 'width': 15, 'height': 15\n    }},\n    { selector: 'node[type=\"junction\"]:selected', style: {\n        'border-width': 3, 'border-color': '#2563eb' }},\n    /* the trunk segment running into a junction carries no arrowhead */\n    { selector: 'edge[type=\"connector\"][trunk]', style: {\n        'target-arrow-shape': 'none' }},\n    { selector: 'edge:selected', style: { 'overlay-color': '#1e293b',\n        'overlay-opacity': 0.12, 'overlay-padding': 4 }},\n    /* the link currently being bent (its circles are showing) */\n    { selector: 'edge[type=\"connector\"].wpActive', style: {\n        'line-color': '#2563eb', 'target-arrow-color': '#2563eb',\n        'width': 2.4 }},\n    /* fade / storytelling: dimmed elements recede so the revealed ones pop */\n    { selector: 'node.dim', style: { 'opacity': 0.11, 'text-opacity': 0.11 }},\n    { selector: 'edge.dim', style: { 'opacity': 0.09 }},\n    /* hover glow \u2014 signals \"this element is clickable\".\n       Border + width changes always render, unlike overlay-*. */\n    { selector: 'node.hovered', style: {\n        'border-width': 5, 'border-color': '#1e293b' }},\n    { selector: 'edge[type=\"flowseg\"].hovered', style: {\n        'width': 10, 'line-color': '#065f46' }},\n    { selector: 'edge[type=\"connector\"].hovered', style: {\n        'width': 3.5, 'line-color': '#1e293b',\n        'target-arrow-color': '#1e293b' }},\n    /* Completion badges in edit mode \u2014 a ring around the element.\n       Amber = unconfirmed, green = user has saved the equation.    */\n    { selector: 'node.unconfirmed', style: {\n        'underlay-color': '#d97706', 'underlay-opacity': 0.18,\n        'underlay-padding': 7, 'underlay-shape': 'round-rectangle' }},\n    { selector: 'node.confirmed', style: {\n        'underlay-color': '#059669', 'underlay-opacity': 0.20,\n        'underlay-padding': 7, 'underlay-shape': 'round-rectangle' }}\n  ],\n  layout: { name: 'preset' }\n});\n\n/* --- mode + tool state ----------------------------------------------- */\nlet mode = 'draw';        // 'draw' or 'edit'\nlet fadeMode = false;     // storytelling: dim everything, click to reveal\nlet tool = 'stock';\n\n/* Track confirmation status per element label (pushed from Python via\n   args.confirmed). The Set holds labels of confirmed elements. */\nlet confirmedLabels = new Set();\n\nconst TOOL_HINT = {\n  stock:     'Stock tool \u2014 click the canvas to place a stock.',\n  aux:       'Auxiliary tool \u2014 click the canvas to place an auxiliary.',\n  cloud:     'Cloud tool \u2014 click the canvas to place a boundary cloud.',\n  flow:      'Flow tool \u2014 click a source element, then a target, to draw a flow.',\n  connector: 'Connector tool \u2014 click a source, then a target, to draw an info link.'\n};\nconst EDIT_HINT = 'Edit mode \u2014 click any stock, flow valve, or auxiliary to edit its equation.';\n\ndocument.querySelectorAll('.tool').forEach(btn => {\n  btn.onclick = () => {\n    tool = btn.dataset.tool;\n    document.querySelectorAll('.tool').forEach(b =>\n      b.classList.toggle('active', b === btn));\n    linkSource = null; cy.elements().unselect();\n    flash(TOOL_HINT[tool]);\n  };\n});\n\n/* Mode toggle: Draw lets you build the diagram; Edit lets you click an\n   element to edit its equation. The two are exclusive.                  */\ndocument.querySelectorAll('#modeToggle button').forEach(btn => {\n  btn.onclick = () => {\n    mode = btn.dataset.mode;\n    console.log('[SFD] mode ->', mode);\n    document.querySelectorAll('#modeToggle button').forEach(b =>\n      b.classList.toggle('active', b === btn));\n    document.body.classList.toggle('edit-mode', mode === 'edit');\n    linkSource = null; cy.elements().unselect();\n    refreshBadges();\n    flash(mode === 'edit' ? EDIT_HINT : TOOL_HINT[tool]);\n  };\n});\n\n/* Apply or clear completion-badge classes on every editable element.\n   Elements with equations are: stocks, auxiliaries, and flow valves\n   (their label is the flow's name). Clouds and pipe segments are\n   excluded \u2014 they don't carry equations.                                */\nfunction refreshBadges() {\n  cy.nodes().forEach(n => {\n    n.removeClass('confirmed').removeClass('unconfirmed');\n    if (mode !== 'edit') return;\n    const t = n.data('type');\n    if (t === 'cloud') return;\n    const label = (t === 'valve') ? n.data('label') : n.data('label');\n    if (confirmedLabels.has(label)) n.addClass('confirmed');\n    else                            n.addClass('unconfirmed');\n  });\n}\n\nlet seq = 0;\nconst newId = () => 'x' + (++seq);\n\n/* --- name validation -------------------------------------------------- */\n/* A component name must start with a letter (any language), so it can't be */\n/* mistaken for a number or an operator in an equation. E.g. naming flows   */\n/* \"1\" and \"2\" would make a stock's net flow read \"1 - 2\", which looks like */\n/* arithmetic. Names may contain letters, digits, spaces and underscores    */\n/* after the first character.                                               */\nfunction validName(s) {\n  if (!s) return false;\n  const t = s.trim();\n  if (!t) return false;\n  // first character must be a letter in any language (Unicode property)\n  return /^\\p{L}/u.test(t);\n}\n/* Prompt for a name, re-prompting while the entry is invalid. Returns the  */\n/* trimmed name, or null if the user cancels.                               */\nfunction promptName(message, initial) {\n  let val = window.prompt(message, initial || '');\n  while (val !== null) {                       // null = user cancelled\n    if (validName(val)) return val.trim();\n    val = window.prompt(\n      'Name must start with a letter (not a number or symbol). ' +\n      'Try again:', val);\n  }\n  return null;\n}\n\n/* --- click empty canvas: place a node-type element ------------------- */\ncy.on('tap', (evt) => {\n  if (fadeMode) return;                    // fade mode: clicks only reveal\n  if (mode !== 'draw') return;              // edit mode: no creation\n  if (evt.target !== cy) return;            // only background clicks\n  if (tool === 'flow' || tool === 'connector') {\n    flash('That tool draws arrows \u2014 click an element, not empty space.');\n    return;\n  }\n  let label;\n  if (tool === 'cloud') {\n    label = 'cloud';                        // clouds need no name\n  } else {\n    label = promptName(\n      tool === 'stock' ? 'Stock name:' : 'Auxiliary name:');\n    if (!label) return;                      // cancelled or never valid\n  }\n  cy.add({ group: 'nodes',\n           data: { id: newId(), label: label, type: tool },\n           position: { x: evt.position.x, y: evt.position.y } });\n  flash('Added ' + tool + (tool === 'cloud' ? '' : ' \"' + label + '\"'));\n});\n\n/* --- flow construction: source --[seg]--> valve --[seg]--> target ----- */\n/* A flow is a valve node plus two pipe segments sharing a `flow` id.     */\n/* This lets connectors attach to the valve, exactly as in real SFD tools.*/\nlet flowSeq = 0;\n\nfunction makeFlow(srcNode, tgtNode, label) {\n  const fid = 'flow' + (++flowSeq);\n  // valve sits at the midpoint of the two endpoints\n  const vx = (srcNode.position('x') + tgtNode.position('x')) / 2;\n  const vy = (srcNode.position('y') + tgtNode.position('y')) / 2;\n  const valveId = newId();\n  cy.add({ group: 'nodes',\n           data: { id: valveId, type: 'valve', label: label, flow: fid },\n           position: { x: vx, y: vy } });\n  // segment 1: source -> valve, no arrowhead\n  cy.add({ group: 'edges', data: {\n    id: 'e' + newId(), source: srcNode.id(), target: valveId,\n    type: 'flowseg', flow: fid, arrow: 'none' } });\n  // segment 2: valve -> target, carries the arrowhead\n  cy.add({ group: 'edges', data: {\n    id: 'e' + newId(), source: valveId, target: tgtNode.id(),\n    type: 'flowseg', flow: fid, arrow: 'triangle' } });\n}\n\n/* removing any part of a flow removes the whole flow ------------------- */\nfunction removeFlow(fid) {\n  cy.elements(`[flow = \"${fid}\"]`).remove();\n}\n\n/* --- click two elements: draw a flow or a connector ------------------ */\nlet linkSource = null;\ncy.on('tap', 'node', (evt) => {\n  if (fadeMode) return;                    // fade mode: handled by fade tap\n  // In edit mode, clicking an editable element sends an \"edit-this\"\n  // event to Python; drawing logic is suspended.\n  if (mode === 'edit') {\n    const n = evt.target;\n    const t = n.data('type');\n    console.log('[SFD] edit-click on', t, n.data('label'));\n    if (t === 'cloud') {\n      flash('Clouds have no equation.');\n      return;\n    }\n    // kind to emit: 'stock', 'aux', or 'flow' (via the valve)\n    let kind;\n    if (t === 'valve')      kind = 'flow';\n    else if (t === 'stock') kind = 'stock';\n    else if (t === 'aux')   kind = 'auxiliary';\n    else                    return;\n    const payload = {\n      event: 'edit_request',\n      label: n.data('label'),\n      kind: kind,\n      ts: Date.now()\n    };\n    console.log('[SFD] sending edit_request', payload);\n    Streamlit.setComponentValue(payload);\n    flash('Sent edit request for \"' + n.data('label') + '\" \u2014 '\n          + 'editor should appear above. (If not, see browser console.)');\n    return;\n  }\n\n  if (tool !== 'flow' && tool !== 'connector') return;   // selection only\n  const node = evt.target;\n\n  // A flow must run between stocks/clouds (or a valve isn't a sensible\n  // flow endpoint) \u2014 but we impose no hard restriction; we only skip\n  // using a valve as a *flow* endpoint, which would be meaningless.\n  if (linkSource === null) {\n    linkSource = node; node.select();\n    flash(tool + ' from \"' + node.data('label') + '\" \u2014 click the target.');\n  } else if (linkSource.id() === node.id()) {\n    linkSource.unselect(); linkSource = null;\n    flash(tool + ' cancelled.');\n  } else {\n    if (tool === 'flow') {\n      const fl = promptName('Flow name:');\n      if (!fl) { linkSource.unselect(); linkSource = null;\n                 flash('Flow cancelled.'); return; }\n      makeFlow(linkSource, node, fl);\n    } else {\n      cy.add({ group: 'edges', data: {\n        id: 'e' + newId(), source: linkSource.id(), target: node.id(),\n        type: 'connector' } });\n    }\n    flash(tool + ' drawn: \"' + linkSource.data('label') +\n          '\" \\u2192 \"' + node.data('label') + '\"');\n    linkSource.unselect(); linkSource = null;\n  }\n});\n\n/* --- double-click a node to rename ----------------------------------- */\ncy.on('dbltap', 'node', (evt) => {\n  if (fadeMode) return;\n  if (mode !== 'draw') return;             // edit mode: no rename\n  const n = evt.target;\n  if (n.data('type') === 'cloud') return;\n  const what = n.data('type') === 'valve' ? 'Rename flow:' : 'Rename:';\n  const name = promptName(what, n.data('label'));\n  if (name) n.data('label', name);\n});\n\n/* --- right-click deletes ---------------------------------------------- */\n/* Deleting a valve or a pipe segment removes the entire flow.           */\ncy.on('cxttap', 'node', (evt) => {\n  if (fadeMode) return;\n  if (mode !== 'draw') return;             // edit mode: no deletion\n  const n = evt.target;\n  if (n.data('type') === 'valve') removeFlow(n.data('flow'));\n  else n.remove();\n});\ncy.on('cxttap', 'edge', (evt) => {\n  if (fadeMode) return;\n  if (mode !== 'draw') return;\n  const e = evt.target;\n  if (e.data('type') === 'flowseg') removeFlow(e.data('flow'));\n  else e.remove();\n});\n\n/* --- hover glow: highlight the element under the cursor -------------- */\n/* Makes it clear when a click lands ON an element (select it / link it) */\n/* versus on empty canvas (place a new element).                         */\ncy.on('mouseover', 'node', (evt) => {\n  evt.target.addClass('hovered');\n  cy.container().style.cursor = 'pointer';\n});\ncy.on('mouseout', 'node', (evt) => {\n  evt.target.removeClass('hovered');\n  cy.container().style.cursor = 'default';\n});\ncy.on('mouseover', 'edge', (evt) => {\n  evt.target.addClass('hovered');\n  cy.container().style.cursor = 'pointer';\n});\ncy.on('mouseout', 'edge', (evt) => {\n  evt.target.removeClass('hovered');\n  cy.container().style.cursor = 'default';\n});\n\n/* --- toolbar actions -------------------------------------------------- */\ndocument.getElementById('clearBtn').onclick = () => {\n  if (window.confirm('Clear the whole diagram?')) {\n    if (fadeMode) setFadeMode(false);\n    cy.elements().remove(); linkSource = null; flash('Cleared.');\n  }\n};\n\n/* --- Tidy flows: square up every pipe and center every valve ---------- */\n/* For each flow (source --[seg]--> valve --[seg]--> target) we:          */\n/*   1. make the pipe axis-aligned by snapping the lower-priority endpoint */\n/*      onto the higher-priority endpoint's row (horizontal) or column    */\n/*      (vertical). Priority: stock > auxiliary > cloud, so stocks stay    */\n/*      put and clouds line up to them; ties (stock-stock) anchor on the   */\n/*      flow's source.                                                     */\n/*   2. drop the valve exactly on the midpoint of the straightened pipe,   */\n/*      removing the \"down to the valve then back up\" kink.                */\n/* Stocks only ever move to align another stock; auxiliaries never move.   */\n/* Connectors feeding a valve follow it automatically.                     */\nfunction flowEndpoints(valve) {\n  const fid = valve.data('flow');\n  let srcId = null, tgtId = null;\n  cy.edges(`[flow = \"${fid}\"]`).forEach(seg => {\n    if (seg.data('target') === valve.id()) srcId = seg.data('source');\n    if (seg.data('source') === valve.id()) tgtId = seg.data('target');\n  });\n  return { srcId, tgtId };\n}\n\nfunction tidyFlows() {\n  const valves = cy.nodes('[type = \"valve\"]');\n  if (valves.empty()) { flash('No flows to straighten yet.'); return; }\n\n  // Collect well-formed flows.\n  const flows = [];\n  valves.forEach(valve => {\n    const { srcId, tgtId } = flowEndpoints(valve);\n    const src = cy.getElementById(srcId), tgt = cy.getElementById(tgtId);\n    if (src.nonempty() && tgt.nonempty()) flows.push({ valve, src, tgt });\n  });\n  if (!flows.length) { flash('No flows to straighten yet.'); return; }\n\n  // Work on a scratch copy of positions so passes compose cleanly.\n  const pos = {};\n  cy.nodes().forEach(n => { pos[n.id()] = { x: n.position('x'), y: n.position('y') }; });\n  const typeOf = n => n.data('type');\n  const prio = n => { const t = typeOf(n);\n                      return t === 'stock' ? 3 : (t === 'aux' ? 2 : 1); };\n\n  // --- chain axis: pick ONE orientation per stock from its boundary (cloud)\n  //     flows so the whole cloud->inflow->stock->outflow->cloud chain ends up\n  //     collinear. The inflow decides; if a stock has no cloud-inflow, its\n  //     cloud-outflow decides. (Stocks with no cloud flows are left to the\n  //     generic per-flow alignment below.)                                  */\n  const stockAxis = {};                       // stock id -> 'h' | 'v'\n  cy.nodes('[type = \"stock\"]').forEach(s => {\n    const sp = pos[s.id()];\n    let inH = 0, inV = 0, outH = 0, outV = 0, hasIn = false, hasOut = false;\n    flows.forEach(f => {\n      if (f.src.id() === s.id() && typeOf(f.tgt) === 'cloud') {\n        const cp = pos[f.tgt.id()]; hasOut = true;\n        outH += Math.abs(cp.x - sp.x); outV += Math.abs(cp.y - sp.y);\n      } else if (f.tgt.id() === s.id() && typeOf(f.src) === 'cloud') {\n        const cp = pos[f.src.id()]; hasIn = true;\n        inH += Math.abs(cp.x - sp.x); inV += Math.abs(cp.y - sp.y);\n      }\n    });\n    if (!hasIn && !hasOut) return;\n    const H = hasIn ? inH : outH, V = hasIn ? inV : outV;\n    stockAxis[s.id()] = (H >= V) ? 'h' : 'v';\n  });\n\n  const align = f => {\n    const sp = pos[f.src.id()], tp = pos[f.tgt.id()];\n    const horizontal = Math.abs(tp.x - sp.x) >= Math.abs(tp.y - sp.y);\n    // higher priority is the anchor; on a tie the source anchors.\n    const srcAnchors = prio(f.src) >= prio(f.tgt);\n    const ap = srcAnchors ? sp : tp;          // anchor position (stays)\n    const mp = srcAnchors ? tp : sp;          // mover position (snaps)\n    if (horizontal) mp.y = ap.y; else mp.x = ap.x;\n  };\n\n  // Pass 1: stock-to-stock flows first, to settle the stock skeleton.\n  flows.filter(f => prio(f.src) === 3 && prio(f.tgt) === 3).forEach(align);\n\n  // Pass 2a: boundary flows (stock <-> cloud) \u2014 place a stock's inflows on one\n  //          side and its outflows on the OPPOSITE side along the chosen axis,\n  //          so they never pile up / overlap on a single side of the stock.\n  //          cloud->inflow->STOCK->outflow->cloud thus reads as one straight\n  //          line (inflow=left/top, outflow=right/bottom).\n  const MIN_LEN = 120, MAX_LEN = 340, STEP = 95;\n  const handled = new Set();                   // valve ids placed here\n  cy.nodes('[type = \"stock\"]').forEach(s => {\n    const axis = stockAxis[s.id()];\n    if (!axis) return;\n    const sp = pos[s.id()];\n    const ins = [], outs = [];\n    flows.forEach(f => {\n      if (f.tgt.id() === s.id() && typeOf(f.src) === 'cloud') ins.push(f);\n      else if (f.src.id() === s.id() && typeOf(f.tgt) === 'cloud') outs.push(f);\n    });\n    const place = (list, sign) => {\n      // sort by current distance, then space them so same-side flows never\n      // overlap (each at least STEP further out than the previous one).\n      const ax = n => (axis === 'h') ? Math.abs(pos[n].x - sp.x)\n                                     : Math.abs(pos[n].y - sp.y);\n      const entries = list.map(f => ({\n        f, cloud: (typeOf(f.src) === 'cloud') ? f.src : f.tgt\n      }));\n      entries.sort((a, b) => ax(a.cloud.id()) - ax(b.cloud.id()));\n      let prev = -Infinity;\n      entries.forEach((e, k) => {\n        const cp = pos[e.cloud.id()];\n        let d = Math.min(Math.max(ax(e.cloud.id()), MIN_LEN), MAX_LEN);\n        if (k > 0) d = Math.max(d, prev + STEP);\n        prev = d;\n        if (axis === 'h') { cp.x = sp.x + sign * d; cp.y = sp.y; }\n        else              { cp.y = sp.y + sign * d; cp.x = sp.x; }\n        handled.add(e.f.valve.id());\n      });\n    };\n    place(ins, -1);                            // inflows: left (h) / top (v)\n    place(outs, 1);                            // outflows: right (h) / bottom (v)\n  });\n\n  // Pass 2b: any remaining non-stock-stock flow (e.g. cloud<->cloud) aligns\n  //          with the generic rule.\n  flows.filter(f => !(prio(f.src) === 3 && prio(f.tgt) === 3))\n       .filter(f => !handled.has(f.valve.id()))\n       .forEach(align);\n  // Pass 3: center each valve on its now-straight pipe.\n  flows.forEach(f => {\n    const sp = pos[f.src.id()], tp = pos[f.tgt.id()];\n    pos[f.valve.id()] = { x: (sp.x + tp.x) / 2, y: (sp.y + tp.y) / 2 };\n  });\n\n  // Apply with a short animation, then persist the new positions.\n  cy.nodes().forEach(n => {\n    const p = pos[n.id()];\n    if (!p) return;\n    if (Math.abs(p.x - n.position('x')) < 0.5 &&\n        Math.abs(p.y - n.position('y')) < 0.5) return;   // unchanged\n    n.animate({ position: { x: p.x, y: p.y } },\n              { duration: 300, easing: 'ease-in-out' });\n  });\n  flash('Straightened ' + flows.length +\n        ' flow' + (flows.length === 1 ? '' : 's') + '.');\n  pendingAction = 'tidy';\n  setTimeout(emitChange, 360);\n}\ndocument.getElementById('tidyBtn').onclick = tidyFlows;\n\n/* --- Untangle: stocks & flows in the centre, auxiliaries on a ring ---- */\n/* A deliberately simple, predictable arrangement (no global force tangle):\n     \u2022 the stock-flow backbone (stocks, valves, clouds) is KEPT in the central\n       area \u2014 only de-overlapped so nothing sits on top of anything;\n     \u2022 the auxiliary variables are moved out onto a circle around that core,\n       ordered by the direction of the core element each one feeds, so related\n       auxiliaries sit near the part of the model they connect to.\n   Press \"Tidy flows\" afterwards to square the pipes; \"Merge links\" to bundle\n   the information arrows.                                                   */\nfunction removeOverlapsP(list, P, pad, passes) {\n  const ids = list.map(n => n.id());\n  for (let pass = 0; pass < passes; pass++) {\n    let moved = false;\n    for (let a = 0; a < ids.length; a++) {\n      for (let b = a + 1; b < ids.length; b++) {\n        const A = P[ids[a]], B = P[ids[b]];\n        const minx = A.w / 2 + B.w / 2 + pad, miny = A.h / 2 + B.h / 2 + pad;\n        const dx = A.x - B.x, dy = A.y - B.y;\n        const ox = minx - Math.abs(dx), oy = miny - Math.abs(dy);\n        if (ox > 0 && oy > 0) {\n          if (ox < oy) { const s = (ox / 2 + 0.5) * (dx >= 0 ? 1 : -1);\n                         A.x += s; B.x -= s; }\n          else         { const s = (oy / 2 + 0.5) * (dy >= 0 ? 1 : -1);\n                         A.y += s; B.y -= s; }\n          moved = true;\n        }\n      }\n    }\n    if (!moved) break;\n  }\n}\n\nfunction autoLayout() {\n  const ns = cy.nodes();\n  if (ns.length < 2) { flash('Nothing to arrange yet.'); return; }\n\n  const isCore = n => { const t = n.data('type');\n                        return t === 'stock' || t === 'valve' || t === 'cloud'; };\n  const core = ns.filter(isCore);\n  const ring = ns.filter(n => !isCore(n));        // auxiliaries (+ any junctions)\n\n  const P = {};\n  ns.forEach(n => { P[n.id()] = { x: n.position('x'), y: n.position('y'),\n                                  w: n.outerWidth() || 60,\n                                  h: n.outerHeight() || 60 }; });\n\n  // Keep the core central: de-overlap it in place (tiny golden-angle nudge\n  // first so exactly-coincident nodes separate deterministically).\n  core.forEach((n, i) => { const a = i * 2.399963;\n                           P[n.id()].x += Math.cos(a) * 0.5;\n                           P[n.id()].y += Math.sin(a) * 0.5; });\n  removeOverlapsP(core, P, 18, 220);\n\n  // Core centre and radius.\n  let cx = 0, cy0 = 0;\n  const basis = core.nonempty() ? core : ns;\n  basis.forEach(n => { cx += P[n.id()].x; cy0 += P[n.id()].y; });\n  cx /= basis.length; cy0 /= basis.length;\n  let Rcore = 0;\n  core.forEach(n => { const p = P[n.id()];\n    const d = Math.hypot(p.x - cx, p.y - cy0) + Math.hypot(p.w, p.h) / 2;\n    if (d > Rcore) Rcore = d; });\n\n  // Ring the auxiliaries around the core.\n  const M = ring.length;\n  if (M) {\n    const info = ring.map(n => {\n      let ax = 0, ay = 0, cnt = 0;\n      n.connectedEdges('[type = \"connector\"]').forEach(e => {\n        const o = e.source().id() === n.id() ? e.target() : e.source();\n        const op = P[o.id()];\n        if (op) { ax += op.x; ay += op.y; cnt++; }\n      });\n      const ang = cnt ? Math.atan2(ay / cnt - cy0, ax / cnt - cx)\n                      : Math.atan2(P[n.id()].y - cy0, P[n.id()].x - cx);\n      return { n, ang };\n    });\n    info.sort((a, b) => a.ang - b.ang);          // group by connection direction\n    const SLOT = 84;                             // arc length per aux (no overlap)\n    const Rneeded = (M * SLOT) / (2 * Math.PI);\n    const R = Math.max(Rcore + 120, Rneeded, 170);\n    info.forEach((ri, i) => {\n      const theta = (i / M) * 2 * Math.PI;       // even spacing, ordered by angle\n      P[ri.n.id()].x = cx + R * Math.cos(theta);\n      P[ri.n.id()].y = cy0 + R * Math.sin(theta);\n    });\n  }\n\n  // Valves sit on the midpoint of their pipe.\n  cy.nodes('[type = \"valve\"]').forEach(v => {\n    const { srcId, tgtId } = flowEndpoints(v);\n    if (P[srcId] && P[tgtId]) {\n      P[v.id()].x = (P[srcId].x + P[tgtId].x) / 2;\n      P[v.id()].y = (P[srcId].y + P[tgtId].y) / 2;\n    }\n  });\n\n  // Drop stale link bends so connectors redraw straight to the new positions.\n  cy.batch(() => {\n    cy.edges('[type = \"connector\"]').forEach(e => {\n      if ((e.data('waypoints') || []).length) {\n        e.data('waypoints', []); applyConnectorRoute(e);\n      }\n    });\n  });\n  clearHandles();\n  cy.nodes().forEach(n => {\n    const p = P[n.id()]; if (!p) return;\n    n.animate({ position: { x: p.x, y: p.y } },\n              { duration: 430, easing: 'ease-in-out' });\n  });\n  flash('Arranged: stocks & flows in the centre, ' + M + ' auxiliar' +\n        (M === 1 ? 'y' : 'ies') + ' on the ring. ' +\n        'Use \\u201CTidy flows\\u201D to square the pipes.');\n  pendingAction = 'untangle';\n  setTimeout(() => { cy.fit(undefined, 40); emitChange(); }, 470);\n}\ndocument.getElementById('untangleBtn').onclick = autoLayout;\n\n/* --- Merge links: bundle info links that share a source --------------- */\n/* Old hand-drawn SFDs route several information links from one variable as a\n   single trunk that forks near the destinations. This does that: connectors\n   leaving the same source are grouped (by direction, so links heading opposite\n   ways aren't forced together), and each group is given ONE shared bend point\n   \u2014 the \"junction\" \u2014 placed near the group's targets. Because every link in a\n   group passes through the same junction, the source\u2192junction stretch overlaps\n   into a single trunk, then fans out to each target.\n\n   It's a toggle: press once to merge, again to un-merge (clear the bends).\n   The junction is an ordinary bend point, so it can be dragged to fine-tune,\n   and right-clicking a link's bend un-merges just that one link.            */\nfunction clusterByAngle(items, THRESH) {\n  if (items.length <= 1) return [items];\n  items.sort((a, b) => a.ang - b.ang);\n  const clusters = [[items[0]]];\n  for (let i = 1; i < items.length; i++) {\n    if (items[i].ang - items[i - 1].ang <= THRESH)\n      clusters[clusters.length - 1].push(items[i]);\n    else clusters.push([items[i]]);\n  }\n  if (clusters.length > 1) {                       // wrap-around (e.g. 170\u00b0 & -170\u00b0)\n    const wrapGap = (items[0].ang + 360) - items[items.length - 1].ang;\n    if (wrapGap <= THRESH) { const last = clusters.pop();\n                             clusters[0] = last.concat(clusters[0]); }\n  }\n  return clusters;\n}\n\n// A unique \"junction N\" label not already used by any node.\nfunction freshJunctionLabel() {\n  const used = new Set();\n  cy.nodes().forEach(n => used.add(n.data('label')));\n  let k = 1;\n  while (used.has('junction ' + k)) k++;\n  return 'junction ' + k;\n}\n\nfunction mergeLinks() {\n  const conns = cy.edges('[type = \"connector\"]');\n  const junctions = cy.nodes('[type = \"junction\"]');\n\n  // Toggle off: if any junctions exist, dissolve them back to direct links.\n  if (junctions.nonempty()) {\n    let restored = 0;\n    cy.batch(() => {\n      junctions.forEach(j => {\n        const srcs = [], tgts = [];\n        j.connectedEdges('[type = \"connector\"]').forEach(e => {\n          if (e.target().id() === j.id()) srcs.push(e.source());   // trunk in\n          else if (e.source().id() === j.id()) tgts.push(e.target()); // fork out\n        });\n        srcs.forEach(s => tgts.forEach(t => {\n          cy.add({ group: 'edges', data: {\n            id: 'e' + newId(), source: s.id(), target: t.id(),\n            type: 'connector', waypoints: [] } });\n          restored++;\n        }));\n        j.remove();                       // removes the junction and its edges\n      });\n    });\n    clearHandles();\n    flash('Links un-merged \u2014 restored ' + restored + ' direct link' +\n          (restored === 1 ? '' : 's') + '.');\n    pendingAction = 'unmerge';\n    setTimeout(emitChange, 60);\n    return;\n  }\n\n  if (conns.empty()) { flash('No information links to merge yet.'); return; }\n\n  // Group connectors by their source node.\n  const groups = {};\n  conns.forEach(e => { const s = e.source().id();\n                       (groups[s] = groups[s] || []).push(e); });\n\n  const THRESH = 55, bundled = [];\n  cy.batch(() => {\n    Object.keys(groups).forEach(sid => {\n      const grp = groups[sid];\n      if (grp.length < 2) return;\n      const srcNode = cy.getElementById(sid);\n      const A = srcNode.position();\n      const items = grp.map(e => {\n        const tp = e.target().position();\n        return { e, tgt: e.target(), tp,\n                 ang: Math.atan2(tp.y - A.y, tp.x - A.x) * 180 / Math.PI };\n      }).filter(it => Math.hypot(it.tp.x - A.x, it.tp.y - A.y) > 1);\n\n      clusterByAngle(items, THRESH).forEach(cl => {\n        if (cl.length < 2) return;                 // singletons keep their link\n        const M = { x: cl.reduce((s, i) => s + i.tp.x, 0) / cl.length,\n                    y: cl.reduce((s, i) => s + i.tp.y, 0) / cl.length };\n        const dAM = Math.hypot(A.x - M.x, A.y - M.y);\n        if (dAM < 70) return;                      // targets too close to source\n        const ux = (A.x - M.x) / dAM, uy = (A.y - M.y) / dAM;\n        let dist = Math.min(Math.max(45, 0.25 * dAM), 160);\n        dist = Math.min(dist, 0.65 * dAM);\n        const J = { x: M.x + ux * dist, y: M.y + uy * dist };\n\n        // Create the split-point node, the trunk into it, and the forks out.\n        const jid = newId();\n        cy.add({ group: 'nodes',\n                 data: { id: jid, label: freshJunctionLabel(), type: 'junction' },\n                 position: { x: J.x, y: J.y } });\n        cy.add({ group: 'edges', data: {\n          id: 'e' + newId(), source: sid, target: jid,\n          type: 'connector', trunk: 1, waypoints: [] } });   // no arrowhead\n        cl.forEach(i => {\n          cy.add({ group: 'edges', data: {\n            id: 'e' + newId(), source: jid, target: i.tgt.id(),\n            type: 'connector', waypoints: [] } });\n          i.e.remove();                            // drop the original A->target\n        });\n        bundled.push(cl.length);\n      });\n    });\n  });\n  clearHandles();\n  if (!bundled.length) {\n    flash('No mergeable links \u2014 need 2+ links leaving one source the same way.');\n    return;\n  }\n  const total = bundled.reduce((s, n) => s + n, 0);\n  flash('Merged ' + total + ' links through ' + bundled.length +\n        ' split-point' + (bundled.length === 1 ? '' : 's') +\n        '. Press again to un-merge.');\n  pendingAction = 'merge';\n  setTimeout(emitChange, 60);\n}\ndocument.getElementById('mergeBtn').onclick = mergeLinks;\n// Hide all bend-point circles without changing the link shapes.\ndocument.getElementById('hideBendsBtn').onclick = () => {\n  clearHandles();\n  flash('Bend points hidden \u2014 double-click a link to edit it again.');\n};\n/* --- Fade / storytelling: dim all, click to reveal, toggle off -------- */\n/* One button that reads \"Fade\" normally and \"Unfade\" while active. In fade\n   mode every element is ghosted; clicking one reveals it (click again to\n   re-hide) so a model can be explained piece by piece and screenshotted.\n   Clicking any part of a flow reveals the whole flow (its valve and both\n   pipe segments), so an inflow reads as one unit next to its stock. Fade is\n   purely visual \u2014 it is never saved and never affects the equations.      */\nfunction flowUnit(el) {                       // whole flow if el belongs to one\n  const fid = el.data('flow');\n  return fid ? cy.elements(`[flow = \"${fid}\"]`) : el;\n}\nfunction toggleReveal(el) {\n  const grp = flowUnit(el);\n  if (el.hasClass('dim')) grp.removeClass('dim');   // reveal\n  else                    grp.addClass('dim');      // hide again\n}\nfunction setFadeMode(on) {\n  fadeMode = on;\n  const btn = document.getElementById('fadeBtn');\n  if (on) {\n    clearHandles();                           // no bend circles while presenting\n    cy.elements().addClass('dim');            // ghost everything\n    btn.textContent = 'Unfade';\n    btn.classList.add('primary');\n    flash('Fade on \u2014 click elements to reveal them (click again to hide). ' +\n          'Screenshot when ready; press Unfade to restore.');\n  } else {\n    cy.elements().removeClass('dim');\n    btn.textContent = 'Fade';\n    btn.classList.remove('primary');\n    flash('Everything restored.');\n  }\n}\ncy.on('tap', (evt) => {                        // reveal / hide while fading\n  if (!fadeMode) return;\n  if (evt.target === cy) return;               // background: ignore\n  toggleReveal(evt.target);\n});\ndocument.getElementById('fadeBtn').onclick = () => setFadeMode(!fadeMode);\n/* --- auto-emit: send the current diagram to Python on every change ---- */\n/* Cytoscape fires `add`/`remove` when elements appear or disappear, and  */\n/* `dragfree` when a node finishes being dragged. A short debounce        */\n/* coalesces rapid edits (e.g. drawing a flow = 3 add events) into one    */\n/* Python rerun.                                                          */\nlet emitTimer = null;\nlet emitSeq = 0;\n// A layout button (Tidy flows, Untangle, Merge links) names itself in the\n// next emit, so the modelling-process record can show it as a moment.\nlet pendingAction = null;\nfunction emitChange() {\n  clearTimeout(emitTimer);\n  emitTimer = setTimeout(() => {\n    const diagram = serialize();\n    diagram.event = 'change';\n    if (pendingAction) { diagram.action = pendingAction; pendingAction = null; }\n    diagram.seq = ++emitSeq;       // ensures every emit is unique\n    console.log('[SFD] auto-emit #' + emitSeq,\n                diagram.stocks.length, 'stocks,',\n                diagram.flows.length, 'flows,',\n                diagram.auxiliaries.length, 'aux');\n    Streamlit.setComponentValue(diagram);\n  }, 250);                          // 250ms after the last change\n}\ncy.on('add remove', emitChange);\ncy.on('dragfree', 'node', emitChange);\n// Rename via dbltap mutates a `label`; emit then too.\ncy.on('data', 'node', emitChange);\n\n/* ====================================================================\n   Connector bending \u2014 adjustable bend circles on a link\n   ====================================================================\n   A connector may carry data('waypoints') = [{x,y}, ...] (absolute model\n   coords). With none it keeps its default arc; with some it renders as a\n   rounded polyline through them (curve-style round-segments). Editing:\n       double-click near a link  -> add a bend (and show its circles)\n       click a link              -> show that link's bend circles\n       drag a circle             -> adjust just that bend\n       right-click a circle      -> delete just that bend (rest untouched)\n   The circles are repositioned on every render straight from the\n   waypoints, so they always sit exactly on the line; the viewport is\n   frozen while dragging one so the canvas can't pan and nothing drifts.  */\nfunction chordAlong(s, t, pt) {\n  const dx = t.x - s.x, dy = t.y - s.y, l2 = dx * dx + dy * dy || 1;\n  return ((pt.x - s.x) * dx + (pt.y - s.y) * dy) / l2;\n}\n\nfunction applyConnectorRoute(e) {\n  const wps = e.data('waypoints') || [];\n  if (!wps.length) {\n    e.removeStyle('curve-style segment-distances segment-weights ' +\n                  'segment-radii radius-type');\n    return;\n  }\n  const s = e.source().position(), t = e.target().position();\n  const dx = t.x - s.x, dy = t.y - s.y, len = Math.hypot(dx, dy) || 1;\n  const W = [], D = [], R = [];\n  wps.forEach(w => {\n    let along = ((w.x - s.x) * dx + (w.y - s.y) * dy) / (len * len);\n    const perp = ((w.y - s.y) * dx - (w.x - s.x) * dy) / len;\n    along = Math.max(0.02, Math.min(0.98, along));\n    W.push(along); D.push(perp); R.push(14);\n  });\n  e.style({ 'curve-style': 'round-segments',\n            'segment-distances': D, 'segment-weights': W,\n            'segment-radii': R, 'radius-type': 'arc-radius' });\n}\n\nfunction nearestWaypoint(e, pt) {\n  const wps = e.data('waypoints') || [];\n  let idx = -1, best = Infinity;\n  wps.forEach((w, k) => {\n    const d = Math.hypot(w.x - pt.x, w.y - pt.y);\n    if (d < best) { best = d; idx = k; }\n  });\n  return { idx, dist: best };\n}\n\nfunction insertWaypoint(e, pt) {\n  const wps = (e.data('waypoints') || []).slice();\n  const s = e.source().position(), t = e.target().position();\n  const a = chordAlong(s, t, pt);\n  let ins = wps.length;\n  for (let k = 0; k < wps.length; k++) {\n    if (a < chordAlong(s, t, wps[k])) { ins = k; break; }\n  }\n  wps.splice(ins, 0, { x: pt.x, y: pt.y });\n  e.data('waypoints', wps);\n  return ins;\n}\n\n/* --- bend-point circles for the currently active link --------------- */\nconst wpLayer = document.createElement('div');\nwpLayer.id = 'wpLayer';\ndocument.getElementById('cy').appendChild(wpLayer);\nlet wpEdge = null;                          // the link whose circles are shown\n\nfunction clearHandles() {\n  if (wpLayer.children.length) wpLayer.innerHTML = '';\n  if (wpEdge && !wpEdge.removed()) wpEdge.removeClass('wpActive');\n  wpEdge = null;\n}\n\nfunction buildHandles(e) {\n  wpLayer.innerHTML = '';\n  (e.data('waypoints') || []).forEach((w, i) => {\n    const h = document.createElement('div');\n    h.className = 'wphandle';\n    h.title = 'Drag to bend \\u00b7 right-click to remove';\n    wpLayer.appendChild(h);\n    h.addEventListener('pointerdown', ev => startHandleDrag(ev, e, i, h));\n    h.addEventListener('mousedown', ev => ev.stopPropagation());\n    h.addEventListener('touchstart', ev => ev.stopPropagation(),\n                       { passive: false });\n    h.addEventListener('contextmenu', ev => {\n      ev.preventDefault(); ev.stopPropagation();\n      const arr = (e.data('waypoints') || []).slice();\n      arr.splice(i, 1);\n      e.data('waypoints', arr);\n      applyConnectorRoute(e);\n      buildHandles(e);\n      flash(arr.length ? 'Bend removed.' : 'Link straightened.');\n      emitChange();\n    });\n  });\n  positionHandles();\n}\n\nfunction positionHandles() {\n  if (!wpEdge || wpEdge.removed()) { clearHandles(); return; }\n  const wps = wpEdge.data('waypoints') || [];\n  if (wpLayer.children.length !== wps.length) { buildHandles(wpEdge); return; }\n  const z = cy.zoom(), p = cy.pan(), hs = wpLayer.children;\n  for (let i = 0; i < hs.length; i++) {\n    const w = wps[i];\n    hs[i].style.left = (w.x * z + p.x) + 'px';\n    hs[i].style.top  = (w.y * z + p.y) + 'px';\n  }\n}\n\nfunction showHandlesFor(e) {\n  if (!e || e.removed() || e.data('type') !== 'connector') { clearHandles(); return; }\n  if (wpEdge && wpEdge !== e && !wpEdge.removed()) wpEdge.removeClass('wpActive');\n  wpEdge = e;\n  e.addClass('wpActive');\n  buildHandles(e);\n}\n\nfunction startHandleDrag(ev, e, i, h) {\n  ev.preventDefault(); ev.stopPropagation();\n  try { h.setPointerCapture(ev.pointerId); } catch (_) {}\n  // freeze the viewport so the canvas can't pan under the drag\n  const panWas = cy.userPanningEnabled(), boxWas = cy.boxSelectionEnabled();\n  cy.userPanningEnabled(false); cy.boxSelectionEnabled(false);\n  const rect = cy.container().getBoundingClientRect();\n  const move = m => {\n    const z = cy.zoom(), p = cy.pan();\n    const arr = (e.data('waypoints') || []).slice();\n    arr[i] = { x: (m.clientX - rect.left - p.x) / z,\n               y: (m.clientY - rect.top  - p.y) / z };\n    e.data('waypoints', arr);\n    applyConnectorRoute(e);\n    positionHandles();\n  };\n  const up = () => {\n    window.removeEventListener('pointermove', move);\n    window.removeEventListener('pointerup', up);\n    window.removeEventListener('pointercancel', up);\n    cy.userPanningEnabled(panWas); cy.boxSelectionEnabled(boxWas);\n    emitChange();\n  };\n  window.addEventListener('pointermove', move);\n  window.addEventListener('pointerup', up);\n  window.addEventListener('pointercancel', up);\n}\n\n/* double-click a link to add a bend (double-click a bend to remove it).\n   This is edge-targeted, so Cytoscape hit-tests the actual rendered curve\n   and hands us the exact link clicked \u2014 which is what makes the 2nd, 3rd,\n   ... links bend, not just the first. */\ncy.on('dbltap', 'edge[type = \"connector\"]', (evt) => {\n  if (fadeMode) return;\n  const e = evt.target;\n  const near = nearestWaypoint(e, evt.position);\n  if (near.idx >= 0 && near.dist <= 14 / cy.zoom()) {\n    const arr = (e.data('waypoints') || []).slice();\n    arr.splice(near.idx, 1);\n    e.data('waypoints', arr);\n    flash(arr.length ? 'Bend removed.' : 'Link straightened.');\n  } else {\n    insertWaypoint(e, evt.position);\n    flash('Bend added \u2014 drag the circle to shape it; ' +\n          'right-click it to remove.');\n  }\n  applyConnectorRoute(e);\n  showHandlesFor(e);\n  emitChange();\n});\n\n/* show a link's circles when you tap it; switching links re-points the\n   circles. Crucially we do NOT tie this to Cytoscape selection \u2014 a stray\n   background click deselects and would wipe the circles, which is exactly\n   what stopped the 2nd, 3rd, ... links from being editable. */\ncy.on('tap', 'edge[type = \"connector\"]', (evt) => { if (!fadeMode) showHandlesFor(evt.target); });\ncy.on('remove', 'edge', (evt) => { if (evt.target === wpEdge) clearHandles(); });\n\n/* keep the circles glued to the line on every redraw (pan / zoom / resize\n   / animation), so they can never drift away from it */\ncy.on('render', positionHandles);\n\n/* reproject waypointed links when an endpoint node moves */\ncy.on('position', 'node', (evt) => {\n  evt.target.connectedEdges('[type = \"connector\"]').forEach(e => {\n    if ((e.data('waypoints') || []).length) applyConnectorRoute(e);\n  });\n});\n\n/* --- view controls: zoom +/- (10% steps) and fit-to-canvas ----------- */\nfunction zoomBy(factor) {\n  const target = cy.zoom() * factor;\n  const box = document.getElementById('cy').getBoundingClientRect();\n  cy.zoom({\n    level: target,\n    renderedPosition: { x: box.width / 2, y: box.height / 2 }\n  });\n  // Cytoscape clamps to minZoom/maxZoom; detect that and tell the user.\n  const actual = cy.zoom();\n  if (Math.abs(actual - target) > 0.001) {\n    flash('Zoom limit reached (' + Math.round(actual * 100) + '%).');\n  } else {\n    flash('Zoom: ' + Math.round(actual * 100) + '%');\n  }\n}\ndocument.getElementById('zoomInBtn').onclick  = () => zoomBy(1.10);\ndocument.getElementById('zoomOutBtn').onclick = () => zoomBy(1 / 1.10);\ndocument.getElementById('fitBtn').onclick = () => {\n  if (cy.elements().nonempty()) {\n    cy.fit(undefined, 40);            // fit all with 40px padding\n    flash('Centered on the diagram.');\n  } else {\n    cy.zoom(1); cy.center();\n    flash('Canvas reset.');\n  }\n};\n\n/* --- export the current view as SVG ---------------------------------- */\n/* Uses the cytoscape-svg extension (loaded from CDN). The SVG string is  */\n/* sent to Python, which offers it as a file download.                    */\nlet svgSeq = 0;\ndocument.getElementById('svgBtn').onclick = () => {\n  if (cy.elements().empty()) { flash('Nothing to export yet.'); return; }\n  if (typeof cy.svg !== 'function') {\n    flash('SVG export unavailable (extension failed to load).');\n    return;\n  }\n  try {\n    const svgText = cy.svg({ scale: 1, full: true, bg: '#fbfaf7' });\n    Streamlit.setComponentValue({\n      event: 'svg', svg: svgText, seq: ++svgSeq, ts: Date.now()\n    });\n    flash('SVG generated \u2014 use the download button below the canvas.');\n  } catch (e) {\n    console.error('[SFD] svg export failed', e);\n    flash('SVG export failed \u2014 see console.');\n  }\n};\n\n/* --- serialise to typed JSON ----------------------------------------- */\nfunction serialize() {\n  // label for any node; for a valve, its label IS the flow name\n  const labelOf = id => {\n    const n = cy.getElementById(id);\n    return n.nonempty() ? n.data('label') : null;\n  };\n  const out = { submitted_at: Date.now(),\n                stocks: [], auxiliaries: [], clouds: [],\n                flows: [], connectors: [], junctions: [] };\n\n  // plain element nodes\n  cy.nodes().forEach(n => {\n    const t = n.data('type');\n    if (t === 'valve') return;                 // valves handled via flows\n    const rec = { label: n.data('label'),\n                  x: Math.round(n.position('x')),\n                  y: Math.round(n.position('y')) };\n    if (t === 'stock')         out.stocks.push(rec);\n    else if (t === 'aux')      out.auxiliaries.push(rec);\n    else if (t === 'cloud')    out.clouds.push(rec);\n    else if (t === 'junction') out.junctions.push(rec);\n  });\n\n  // reconstruct each flow from its valve + two pipe segments\n  cy.nodes('[type = \"valve\"]').forEach(valve => {\n    const fid = valve.data('flow');\n    const segs = cy.edges(`[flow = \"${fid}\"]`);\n    let from = null, to = null, fromNode = null, toNode = null;\n    segs.forEach(seg => {\n      // the segment ending AT the valve gives the flow source;\n      // the segment starting FROM the valve gives the flow target\n      if (seg.data('target') === valve.id()) {\n        from = labelOf(seg.data('source'));\n        fromNode = cy.getElementById(seg.data('source'));\n      }\n      if (seg.data('source') === valve.id()) {\n        to = labelOf(seg.data('target'));\n        toNode = cy.getElementById(seg.data('target'));\n      }\n    });\n    // the ends' positions tell clouds apart: every cloud is called \"cloud\"\n    const rec = { label: valve.data('label'), from: from, to: to };\n    if (fromNode) rec.from_xy = [Math.round(fromNode.position('x')), Math.round(fromNode.position('y'))];\n    if (toNode)   rec.to_xy   = [Math.round(toNode.position('x')),   Math.round(toNode.position('y'))];\n    rec.valve_xy = [Math.round(valve.position('x')), Math.round(valve.position('y'))];\n    out.flows.push(rec);\n  });\n\n  // connectors \u2014 a valve target resolves to that flow's name\n  cy.edges('[type = \"connector\"]').forEach(e => {\n    const rec = { from: labelOf(e.data('source')),\n                  to:   labelOf(e.data('target')) };\n    const wps = e.data('waypoints');\n    if (wps && wps.length)\n      rec.waypoints = wps.map(w => ({ x: Math.round(w.x),\n                                      y: Math.round(w.y) }));\n    if (e.data('trunk')) rec.trunk = 1;        // segment into a junction\n    out.connectors.push(rec);\n  });\n  return out;\n}\n\n/* --- load a pre-existing diagram (optional) -------------------------- */\nfunction loadDiagram(d) {\n  cy.elements().remove();\n  const idmap = {};        // element label -> node id\n  const valveOf = {};      // flow label    -> valve node id\n\n  const byLabel = {};      // label -> all node ids (clouds share \"cloud\")\n  const addNode = (rec, type) => {\n    const id = newId();\n    idmap[rec.label] = id;\n    (byLabel[rec.label] = byLabel[rec.label] || []).push(id);\n    cy.add({ group:'nodes',\n             data:{ id:id, label:rec.label, type:type },\n             position:{ x:rec.x||120, y:rec.y||120 } });\n  };\n  (d.stocks || []).forEach(r => addNode(r, 'stock'));\n  (d.auxiliaries || []).forEach(r => addNode(r, 'aux'));\n  (d.clouds || []).forEach(r => addNode(r, 'cloud'));\n  (d.junctions || []).forEach(r => addNode(r, 'junction'));\n\n  // rebuild each flow as a valve node plus two pipe segments\n  // A flow end called \"cloud\" could be any cloud: take the one at the\n  // position saved with the flow, else the nearest unused one (a source on\n  // the upstream side, a sink on the downstream side).\n  const usedEnd = new Set();\n  const posOf = id => cy.getElementById(id).position();\n  const pickEnd = (label, xy, otherId, isSource) => {\n    const ids = byLabel[label] || [];\n    if (ids.length <= 1) return idmap[label];\n    const free = ids.filter(i => !usedEnd.has(i));\n    const pool = free.length ? free : ids;\n    const o = otherId ? posOf(otherId) : { x: 0, y: 0 };\n    const cost = i => {\n      const p = posOf(i);\n      if (xy) return Math.hypot(p.x - xy[0], p.y - xy[1]);\n      const lean = isSource ? Math.max(0, p.x - o.x) + Math.max(0, p.y - o.y)\n                            : Math.max(0, o.x - p.x) + Math.max(0, o.y - p.y);\n      return Math.hypot(p.x - o.x, p.y - o.y) + 0.25 * lean;\n    };\n    const best = pool.reduce((a, b) => cost(b) < cost(a) ? b : a);\n    usedEnd.add(best);\n    return best;\n  };\n  (d.flows || []).forEach(f => {\n    const single = l => (byLabel[l] || []).length === 1 ? idmap[l] : null;\n    const s = pickEnd(f.from, f.from_xy, single(f.to), true);\n    const t = pickEnd(f.to, f.to_xy, s || single(f.from), false);\n    if (!s || !t) return;\n    makeFlow(cy.getElementById(s), cy.getElementById(t),\n             f.label || 'flow');\n    // the valve just created is the last valve node added\n    const valve = cy.nodes('[type = \"valve\"]').last();\n    valveOf[f.label] = valve.id();\n    idmap[f.label] = valve.id();   // so a connector can target the flow\n  });\n\n  // connectors \u2014 endpoints may be element labels or flow (valve) labels\n  (d.connectors || []).forEach(c => {\n    const s = idmap[c.from], t = idmap[c.to];\n    if (!s || !t) return;\n    const wps = (c.waypoints || []).map(w => ({ x: w.x, y: w.y }));\n    const data = { id:'e'+newId(), source:s, target:t, type:'connector',\n                   waypoints: wps };\n    if (c.trunk) data.trunk = 1;\n    const e = cy.add({ group:'edges', data });\n    if (wps.length) applyConnectorRoute(e);\n  });\n}\n\n/* --- status line ----------------------------------------------------- */\nlet flashTimer = null;\nfunction flash(msg) {\n  document.getElementById('status').textContent = msg;\n}\n\n/* --- render handler -------------------------------------------------- */\nlet loadedOnce = false;\nStreamlit.onRender((args) => {\n  if (!loadedOnce && args && args.initial &&\n      ((args.initial.stocks || []).length ||\n       (args.initial.auxiliaries || []).length)) {\n    loadDiagram(args.initial);\n  }\n  loadedOnce = true;\n  // Python pushes the set of confirmed-equation labels on every rerun;\n  // refresh badges so they reflect the latest state.\n  if (args && Array.isArray(args.confirmed)) {\n    confirmedLabels = new Set(args.confirmed);\n    refreshBadges();\n  }\n  Streamlit.setFrameHeight();\n});\n\n// Announce readiness immediately, then keep re-announcing every 100ms\n// until Streamlit responds with its first `render`. This defeats the race\n// where our single announcement fires before the parent's listener is\n// attached (the most common cause of a silent, dead component).\nStreamlit.setComponentReady();\nStreamlit._readyTimer = setInterval(() => {\n  if (Streamlit._ready) { clearInterval(Streamlit._readyTimer); return; }\n  Streamlit.setComponentReady();\n}, 100);\nStreamlit.setFrameHeight(520);\nwindow.addEventListener('resize', () => Streamlit.setFrameHeight());\n<\/script>\n<\/body>\n<\/html>\n";
 /* Game engine. No drawing here: the same engine runs the player's pub,
    the three simulated positions and the replay.
@@ -1288,10 +1323,11 @@ const Marking = (function () {
     put('O1', anyInf(dtime, deliv), { focus: deliv }, '', '');
     put('O2', anyInf(catchup, serve), { focus: catchup.concat(serve) }, '', '');
 
-    // the order decision: observed, never marked
+    // the order decision: observed, never marked; nothing is said when the diagram has no order flow
     let decisionNote = null;
     const dec = first(decision);
-    if (dec && R.links.some(function (l) { return l.to === dec; })) {
+    if (!orders.length) decisionNote = null;
+    else if (dec && R.links.some(function (l) { return l.to === dec; })) {
       decisionNote = anyInf(onorder, [dec]) ? 'Your order decision takes the kegs already on order into account. Most players forget them.'
         : 'Your order decision does not take the kegs already on order into account. That is what most players of this game do, and it is why their orders swing.';
     } else if (!dec || !R.links.some(function (l) { return l.to === dec; })) {
@@ -1883,7 +1919,10 @@ if (typeof module !== 'undefined') module.exports = ProcessLog;
    - `complete` takes a list of messages, so a conversation can carry on.
 
    cfg = { provider: 'anthropic' | 'openai' | 'gemini', key: '...', model: '...' }
-   complete(cfg, system, messages, maxTokens, wantJson) -> Promise<[text, null] | [null, error]> */
+   complete(cfg, system, messages, maxTokens, wantJson, opts) -> Promise<[text, null, meta] | [null, error, meta]>
+   opts.temperature: sent when given; a model that rejects it is asked again without it.
+   meta = { provider, model, temperature (what was sent, or 'not accepted'), ms, usage: {input, output}, text }:
+   what a test needs to report and reproduce a call. Callers that read only [0] and [1] are unaffected. */
 const LLM = (function () {
   const PROVIDERS = { anthropic: 'Anthropic (Claude)', openai: 'OpenAI (ChatGPT)', gemini: 'Google (Gemini)' };
   const DEFAULT_MODELS = { anthropic: 'claude-opus-4-7', openai: 'gpt-4o', gemini: 'gemini-3.5-flash-lite' };
@@ -1949,8 +1988,9 @@ const LLM = (function () {
     if (m.indexOf('gemini-2') === 0) return m.indexOf('flash') >= 0 ? { thinkingBudget: 0 } : null;
     return { thinkingLevel: 'low' };
   }
-  async function gemini(model, key, system, messages, maxTokens, wantJson) {
+  async function gemini(model, key, system, messages, maxTokens, wantJson, temperature) {
     const gen = { maxOutputTokens: Math.max(maxTokens, 2048) }, thinking = geminiThinking(model);
+    if (temperature != null) gen.temperature = temperature;
     if (thinking) gen.thinkingConfig = thinking;
     if (wantJson) gen.responseMimeType = 'application/json';
     const body = { systemInstruction: { parts: [{ text: system }] },
@@ -1964,46 +2004,268 @@ const LLM = (function () {
     }
   }
 
-  async function complete(cfg, system, messages, maxTokens, wantJson) {
-    if (typeof messages === 'string') messages = [{ role: 'user', content: messages }];
-    maxTokens = maxTokens || 300;
-    const provider = cfg.provider, model = (cfg.model || '').trim() || DEFAULT_MODELS[provider], key = cfg.key;
-    try {
-      let text;
-      if (provider === 'anthropic') {
-        const data = await post(ANTHROPIC_URL,
-          { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-          { model: model, max_tokens: maxTokens, system: system, messages: messages });
-        text = (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text || ''; }).join('');
-      } else if (provider === 'openai') {
-        const body = { model: model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }].concat(messages) };
-        if (wantJson) body.response_format = { type: 'json_object' };
-        const data = await post(OPENAI_URL, { Authorization: 'Bearer ' + key }, body);
-        text = data.choices[0].message.content || '';
-      } else {
-        const data = await gemini(model, key, system, messages, maxTokens, wantJson);
-        const parts = (((data.candidates || [{}])[0] || {}).content || {}).parts || [];
-        text = parts.map(function (p) { return p.text || ''; }).join('');
-      }
-      text = (text || '').trim();
-      return text ? [text, null] : [null, 'Empty response from the AI.'];
-    } catch (e) { return [null, errorText(e)]; }
+  /* one call to the provider; returns { text, usage } */
+  async function call(provider, model, key, system, messages, maxTokens, wantJson, temperature) {
+    if (provider === 'anthropic') {
+      const body = { model: model, max_tokens: maxTokens, system: system, messages: messages };
+      if (temperature != null) body.temperature = temperature;
+      const data = await post(ANTHROPIC_URL,
+        { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' }, body);
+      const u = data.usage || {};
+      return { text: (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text || ''; }).join(''),
+        usage: { input: u.input_tokens, output: u.output_tokens } };
+    } else if (provider === 'openai') {
+      const body = { model: model, max_tokens: maxTokens, messages: [{ role: 'system', content: system }].concat(messages) };
+      if (wantJson) body.response_format = { type: 'json_object' };
+      if (temperature != null) body.temperature = temperature;
+      const data = await post(OPENAI_URL, { Authorization: 'Bearer ' + key }, body), u = data.usage || {};
+      return { text: data.choices[0].message.content || '', usage: { input: u.prompt_tokens, output: u.completion_tokens } };
+    }
+    const data = await gemini(model, key, system, messages, maxTokens, wantJson, temperature), u = data.usageMetadata || {};
+    const parts = (((data.candidates || [{}])[0] || {}).content || {}).parts || [];
+    return { text: parts.map(function (p) { return p.text || ''; }).join(''),
+      usage: { input: u.promptTokenCount, output: (u.candidatesTokenCount || 0) + (u.thoughtsTokenCount || 0) } };
   }
-  async function completeJson(cfg, system, messages, maxTokens) {
-    const r = await complete(cfg, system, messages, maxTokens || 400, true);
-    if (r[1]) return [null, r[1]];
+  /* Models known to ignore a temperature: Google says Gemini 3.5 and later ignore it, and that later
+     models will refuse it. It is not sent to them, and the record says "not accepted", so nobody
+     reads a run as having been made at temperature 0 when it was not. */
+  function ignoresTemperature(provider, model) {
+    const m = provider === 'gemini' && /^gemini-(\d+)(?:\.(\d+))?/.exec(model.toLowerCase());
+    return !!m && (+m[1] > 3 || (+m[1] === 3 && +(m[2] || 0) >= 5));
+  }
+  async function complete(cfg, system, messages, maxTokens, wantJson, opts) {
+    if (typeof messages === 'string') messages = [{ role: 'user', content: messages }];
+    maxTokens = maxTokens || 300; opts = opts || {};
+    const provider = cfg.provider, model = (cfg.model || '').trim() || DEFAULT_MODELS[provider], key = cfg.key;
+    const meta = { provider: provider, model: model, temperature: opts.temperature != null ? opts.temperature : 'default', ms: 0, usage: null, text: null };
+    if (opts.temperature != null && ignoresTemperature(provider, model)) { meta.temperature = 'not accepted'; opts = Object.assign({}, opts, { temperature: null }); }
+    const t0 = Date.now();
+    try {
+      let r;
+      try { r = await call(provider, model, key, system, messages, maxTokens, wantJson, opts.temperature); }
+      catch (e) {   // a model that does not take a temperature: ask again without one
+        if (opts.temperature != null && e instanceof HttpError && e.code === 400 && /temperature/i.test(e.body)) {
+          meta.temperature = 'not accepted';
+          r = await call(provider, model, key, system, messages, maxTokens, wantJson, null);
+        } else throw e;
+      }
+      meta.ms = Date.now() - t0; meta.usage = r.usage; meta.text = r.text;
+      const text = (r.text || '').trim();
+      return text ? [text, null, meta] : [null, 'Empty response from the AI.', meta];
+    } catch (e) { meta.ms = Date.now() - t0; return [null, errorText(e), meta]; }
+  }
+  async function completeJson(cfg, system, messages, maxTokens, opts) {
+    const r = await complete(cfg, system, messages, maxTokens || 400, true, opts);
+    if (r[1]) return [null, r[1], r[2]];
     const m = r[0].match(/\{[\s\S]*\}/);
-    if (!m) return [null, 'The AI did not return JSON.'];
-    try { return [JSON.parse(m[0]), null]; } catch (e) { return [null, "The AI's reply could not be read."]; }
+    if (!m) return [null, 'The AI did not return JSON.', r[2]];
+    try { return [JSON.parse(m[0]), null, r[2]]; } catch (e) { return [null, "The AI's reply could not be read.", r[2]]; }
   }
   async function testConnection(cfg) {
     const r = await complete(cfg, 'Reply with the single word OK.', 'Ping', 5);
     return [r[1] === null, r[1]];
   }
   return { PROVIDERS: PROVIDERS, DEFAULT_MODELS: DEFAULT_MODELS, KEY_PLACEHOLDER: KEY_PLACEHOLDER,
-           complete: complete, completeJson: completeJson, testConnection: testConnection };
+           complete: complete, completeJson: completeJson, testConnection: testConnection, ignoresTemperature: ignoresTemperature };
 })();
 if (typeof module !== 'undefined') module.exports = LLM;
+
+/* The evaluation of a learner's diagram, shared by the app and the test page, so that a
+   test runs exactly the code a learner gets.
+
+   Layer 1 (notation) and layer 3 (mechanisms) are decided by the rules in marking.js.
+   The AI reads what each element stands for (the reading call) and words the slides
+   (the wording call). The wording cannot change a verdict; if it fails, the rules' own
+   words are used.
+
+   Evaluate.run({ cfg, key, diagram, gameText, prev, progress }) -> Promise<result>
+     cfg       the AI settings { provider, key, model }
+     key       the answer key (KEYS.plain): its game description and task
+     diagram   the learner's diagram, as the canvas saves it
+     gameText  the learner's game record, as text for the wording call
+     prev      the previous submission's verdicts { M1: true, ... } or null
+     progress  optional, called with a short message before each step
+   result.status: 'done' | 'unread' (an element was left unread twice: no verdicts) | 'error'.
+   result.calls and result.raw hold what each AI call was sent back and cost, for testing. */
+const Evaluate = (function () {
+  const SETTINGS = { reading: { temperature: 0, maxTokens: 2500 }, wording: { temperature: null, maxTokens: 1800 } };
+
+  const MAP_SYSTEM = [
+    'You read a learner\'s stock-and-flow diagram of a pub supply game and say which CONCEPT of the game each of the learner\'s elements stands for.',
+    'Judge by meaning and by the element\'s place in the structure (what a flow fills and empties, what a link informs), not by its name alone: learners use their own words.',
+    'An element may stand for several concepts when it plays several roles (one flow out of the waiting customers can be both "serving on arrival" and "catching up"). A concept may be drawn as several elements (kegs on order as two stocks in a row).',
+    'Map an element by the role it plays even if it is drawn as the wrong kind (a stock drawn as an auxiliary): the rules notice the kind themselves.',
+    'An element that stands for no concept is an extra: give a short, neutral comment on it.',
+    'You only map. Do not judge whether the diagram is right.',
+    'Every element has a number (E1, E2, ...). Refer to elements only by their numbers. Two elements may have the same name: the numbers tell them apart, and so do a flow\'s ends.',
+    'Answer for every element: each number appears exactly once, either in "elements" or in "extras".',
+    'Reply ONLY with JSON, no markdown fences: {"elements": [{"id": "E1", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"id": "E2", "comment": "<one short sentence>"}]}'
+  ].join('\n');
+  const WORD_SYSTEM = [
+    'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
+    'Voice: warm, encouraging and explanatory, in plain English for a beginner. Praise only what the rules confirm, and name it specifically. Frame each problem as the next thing to understand. Never use the word "wrong". Be honest about how far the learner is.',
+    'Give hints, not answers: do not tell them which link or flow to add. You may use their own game weeks as evidence ("in week 9, 30 customers were waiting").',
+    'If their game record includes what they wrote at the end of the game, use one sentence of "wrap" to connect it to their diagram: what of their own explanation the diagram already shows, and what it does not show yet, going only by the verdicts.',
+    'Reply ONLY with JSON, no markdown fences: {"headline": "<one sentence>", "overall": "<2-4 sentences>", "slides": {"<mechanism id>": "<2-3 sentences: what the game does, where they met it in their own weeks if helpful, ending with the hint question>"}, "wrap": "<1-2 sentences: the single most useful next step>"}'
+  ].join('\n');
+
+  /* The diagram as the reading call sees it: every stock, flow and auxiliary gets a
+     number, and the AI answers with the numbers. Names are shown but never matched on,
+     so a copied line, a reworded name or two elements with the same name cannot lose
+     an element. d is the diagram after Marking.unique. */
+  function elementList(d) {
+    const ids = {}, num = {}, kind = {}; let n = 0;
+    [['stocks', 'stock'], ['flows', 'flow'], ['auxiliaries', 'auxiliary']].forEach(function (k) {
+      (d[k[0]] || []).forEach(function (e) { const id = 'E' + (++n); ids[id] = e.label; num[e.label] = id; kind[id] = k[1]; });
+    });
+    const B = Marking.base;
+    const ref = function (l) { return l == null ? '(unattached)' : l === 'cloud' ? 'a cloud (outside the model)' : num[l] ? num[l] + ' "' + B(l) + '"' : '"' + B(l) + '"'; };
+    const L = ['ELEMENTS'];
+    Object.keys(ids).forEach(function (id) {
+      const l = ids[id];
+      if (kind[id] !== 'flow') { L.push(id + ' ' + kind[id] + ' "' + B(l) + '"'); return; }
+      const f = d.flows.find(function (x) { return x.label === l; });
+      L.push(id + ' flow "' + B(l) + '", from ' + ref(f.from) + ' to ' + ref(f.to));
+    });
+    const J = new Set((d.junctions || []).map(function (j) { return j.label; })), links = [];
+    const addLink = function (a, b) { const t = ref(a) + ' -> ' + ref(b); if (links.indexOf(t) < 0) links.push(t); };
+    (d.connectors || []).forEach(function (c) { if (!J.has(c.from) && !J.has(c.to)) addLink(c.from, c.to); });
+    J.forEach(function (j) {   // merged links: trunk -> junction -> forks
+      const a = (d.connectors || []).filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
+      const b = (d.connectors || []).filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
+      a.forEach(function (x) { b.forEach(function (y) { addLink(x, y); }); });
+    });
+    L.push('', 'INFORMATION LINKS (from -> to; a link into a flow goes into its valve)');
+    L.push(links.length ? links.join('\n') : 'none');
+    return { text: L.join('\n'), ids: ids };
+  }
+  function conceptText() {
+    return Marking.CONCEPTS.map(function (c) { return c.id + ' ' + c.name + ' [' + c.kind + ']: ' + c.what + ' (e.g. ' + c.names.join(', ') + ')'; }).join('\n');
+  }
+  /* The AI's reading, by element number. raws: one or more answers; a later answer only
+     fills elements an earlier one left out. An entry that gives a name instead of a
+     number is accepted when the name (or the part before ":" or "(") fits one element. */
+  function cleanMap(raws, list) {
+    const ids = new Set(Marking.CONCEPTS.map(function (c) { return c.id; }));
+    const norm = function (t) { return Marking.base(String(t)).toLowerCase().replace(/\s+/g, ' ').trim(); };
+    const idOf = function (x) {
+      if (!x) return null;
+      const t = String(x.id != null ? x.id : x.element != null ? x.element : '').trim(), m = t.match(/^E(\d+)\b/i);
+      if (m && list.ids['E' + m[1]]) return 'E' + m[1];
+      const tries = [t, t.split(':')[0], t.split('(')[0]].map(norm);
+      for (let i = 0; i < tries.length; i++) {
+        const hit = Object.keys(list.ids).filter(function (id) { return norm(list.ids[id]) === tries[i]; });
+        if (hit.length === 1) return hit[0];
+      }
+      return null;
+    };
+    const got = {}, cons = {}, why = {}, note = {};
+    raws.forEach(function (raw) {
+      const fresh = {};
+      (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
+        const id = idOf(e); if (!id || (got[id] && !fresh[id])) return;
+        const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
+        fresh[id] = got[id] = true;
+        if (cs.length) { cons[id] = (cons[id] || []).concat(cs.filter(function (c) { return (cons[id] || []).indexOf(c) < 0; })); why[id] = e.reason || ''; }
+      });
+      (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) {
+        const id = idOf(x); if (!id || (got[id] && !fresh[id])) return;
+        fresh[id] = got[id] = true; if (!cons[id]) note[id] = x.comment || '';
+      });
+    });
+    const map = {}, whyL = {}, extras = [], missing = [];
+    Object.keys(list.ids).forEach(function (id) {
+      const l = list.ids[id];
+      if (!got[id]) missing.push(id);
+      else if (cons[id]) { map[l] = cons[id]; whyL[l] = why[id]; }
+      else extras.push({ element: l, comment: note[id] || '' });
+    });
+    return { map: map, why: whyL, extras: extras, missing: missing };
+  }
+
+  /* the facts the wording call is given: the verdicts, final */
+  function factsText(r, prev) {
+    const M = r.mech.mechanisms, sc = r.score, fails = r.fails, notation = r.notation;
+    return 'RESULTS OF THE CHECK (final)\n' +
+      'Required mechanisms working: ' + sc.required.pass + ' of ' + sc.required.of + '. Important: ' + sc.important.pass + ' of ' + sc.important.of + '.\n' +
+      'WORKING: ' + (M.filter(function (m) { return m.pass && m.weight !== 'optional'; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
+      'NOT YET WORKING (write a slide for each id):\n' + (fails.map(function (m) { return m.id + ' ' + m.title + ' [' + m.weight + ']. The game: ' + m.game + ' Rule\'s hint: ' + m.hint; }).join('\n') || 'none') + '\n' +
+      'NOTATION: ' + (notation.length ? notation.map(function (n) { return n.type + ': ' + n.text; }).join(' | ') : 'no problems') + '\n' +
+      (r.far ? 'The diagram shows few of the game\'s parts: be honest and kind about that, and point them to the main parts of the game.\n' : '') +
+      'OPTIONAL extras drawn: ' + (M.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
+      (prev ? 'SINCE THE LAST CHECK: now working: ' + (r.better.map(function (m) { return m.title; }).join('; ') || 'nothing new') + '; no longer working: ' + (r.worse.map(function (m) { return m.title; }).join('; ') || 'nothing') + '\n' : '') +
+      'ABOUT THE ORDER DECISION (an observation, not marked): ' + (r.mech.decisionNote || 'nothing to say: the diagram has no order flow.');
+  }
+
+  /* The learner's game as text for the AI: one line a week. g = an engine game;
+     o = { wom, finished, done (last completed week's index while playing), said } */
+  function gameRecordText(g, o) {
+    const w = !!o.wom, upto = o.finished ? g.log.length - 1 : o.done;
+    const rows = g.log.slice(0, upto + 1).map(function (r, k) {
+      const me = r.pos[0], nxt = g.log[k + 1], sup = nxt ? nxt.pos[1] : null;
+      return [r.week, me.asked, me.arrived, me.sent, w ? me.turned : me.owed, me.stock, me.order == null ? '' : me.order,
+        sup ? sup.sent : '', sup ? sup.owed : ''].join(',');
+    });
+    return 'THE LEARNER\'S GAME (' + (w ? 'word of mouth' : 'the supply game') + ', the learner runs the pub). ' +
+      (o.finished ? 'The game is over: ' + g.log.length + ' weeks played.'
+        : 'The game is still being played: ' + (upto + 1) + ' week' + (upto === 0 ? '' : 's') + ' completed so far. The learner has not yet seen how the game ends, nor anything from the distributor or the brewery, which are hidden while they play. Do not guess at what comes next.') +
+      '\nOne line a week:\nweek,customers,delivered to the pub,served,' + (w ? 'turned away' : 'left waiting') + ',cellar at end,pub ordered,wholesaler sent in answer,on back order with the wholesaler\n' +
+      (rows.length ? rows.join('\n') : '(no week completed yet)') +
+      (o.finished ? '\nLargest order placed by the brewery: ' + Math.max.apply(null, g.log.map(function (r) { return r.pos[3].order || 0; })) +
+        '.\nWhat the learner wrote at the end, before seeing the results: ' + (o.said || '(nothing)') : '');
+  }
+
+  async function run(o) {
+    const t0 = Date.now(), say = o.progress || function () {};
+    const d = Marking.unique(o.diagram), list = elementList(d);
+    const r = { status: 'done', error: null, d: d, list: list, calls: [], raw: { reading: [], wording: null },
+      settings: { reading_temperature: SETTINGS.reading.temperature, wording_temperature: 'default', reading_max_tokens: SETTINGS.reading.maxTokens, wording_max_tokens: SETTINGS.wording.maxTokens } };
+    const note = function (step, res) { const m = res[2] || {}; r.calls.push({ step: step, provider: m.provider, model: m.model, temperature: m.temperature, ms: m.ms, usage: m.usage, error: res[1] || null }); return m.text; };
+    // layer 1: notation (rules)
+    r.notation = Marking.notation(d);
+    // layer 2: the reading (AI), by element number
+    say('Reading your diagram…');
+    const ask1 = 'HOW THE GAME WORKS\n' + o.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + o.key.task +
+      '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
+    const rOpts = { temperature: SETTINGS.reading.temperature };
+    const r1 = await LLM.completeJson(o.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', SETTINGS.reading.maxTokens, rOpts);
+    r.raw.reading.push(note('reading', r1));
+    if (r1[1]) { r.status = 'error'; r.error = r1[1]; r.ms = Date.now() - t0; return r; }
+    const raws = [r1[0]];
+    let mp = cleanMap(raws, list);
+    if (mp.missing.length) {     // an element got no reading: ask once more for those
+      say('Reading the rest of your diagram…');
+      const r1b = await LLM.completeJson(o.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
+        '. Answer again for every element, by number.', SETTINGS.reading.maxTokens, rOpts);
+      r.raw.reading.push(note('reading again', r1b));
+      if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
+    }
+    r.map = mp; r.retried = raws.length > 1;
+    if (mp.missing.length) { r.status = 'unread'; r.ms = Date.now() - t0; return r; }   // never build verdicts on a gap
+    // layer 3: mechanisms (rules)
+    say('Checking how it works…');
+    const mech = Marking.mechanisms(d, mp.map), M = mech.mechanisms, prev = o.prev || null;
+    r.mech = mech; r.score = Marking.score(M); r.far = Marking.coreFound(mp.map) < 3;
+    r.fails = M.filter(function (m) { return !m.pass && m.weight !== 'optional'; })
+      .sort(function (a, b) { return (a.weight === 'required' ? 0 : 1) - (b.weight === 'required' ? 0 : 1); });
+    r.better = prev ? M.filter(function (m) { return m.pass && prev[m.id] === false && m.weight !== 'optional'; }) : [];
+    r.worse = prev ? M.filter(function (m) { return !m.pass && prev[m.id] === true && m.weight !== 'optional'; }) : [];
+    r.verdicts = {}; M.forEach(function (m) { r.verdicts[m.id] = m.pass; });
+    r.kinds = Marking.kindNotes(d, mp.map);
+    // the words (AI); the rules' own words if this fails
+    say('Writing your feedback…');
+    const r2 = await LLM.completeJson(o.cfg, WORD_SYSTEM, Marking.base(factsText(r, prev)) + '\n\n' + (o.gameText || '') + '\n\nWrite the slides now.',
+      SETTINGS.wording.maxTokens, { temperature: SETTINGS.wording.temperature });
+    r.raw.wording = note('wording', r2);
+    r.words = r2[1] ? null : r2[0];
+    r.ms = Date.now() - t0;
+    return r;
+  }
+
+  return { run: run, SETTINGS: SETTINGS, MAP_SYSTEM: MAP_SYSTEM, WORD_SYSTEM: WORD_SYSTEM,
+    elementList: elementList, cleanMap: cleanMap, conceptText: conceptText, factsText: factsText, gameRecordText: gameRecordText };
+})();
+if (typeof module !== 'undefined') module.exports = Evaluate;
 
 /* The modelling step: the learner draws a stock-and-flow diagram of the game on
    SFD Studio's canvas, the AI marks it against the answer key and answers
@@ -2130,36 +2392,6 @@ const Model = (function () {
     L.push('INFORMATION LINKS (from -> to; a link into a flow\'s name goes into its valve): ' + (links.join('; ') || 'none'));
     return L.join('\n');
   }
-  /* The diagram as the reading call sees it: every stock, flow and auxiliary gets a
-     number, and the AI answers with the numbers. Names are shown but never matched on,
-     so a copied line, a reworded name or two elements with the same name cannot lose
-     an element. d is the diagram after Marking.unique. */
-  function elementList(d) {
-    const ids = {}, num = {}, kind = {}; let n = 0;
-    [['stocks', 'stock'], ['flows', 'flow'], ['auxiliaries', 'auxiliary']].forEach(function (k) {
-      (d[k[0]] || []).forEach(function (e) { const id = 'E' + (++n); ids[id] = e.label; num[e.label] = id; kind[id] = k[1]; });
-    });
-    const B = Marking.base;
-    const ref = function (l) { return l == null ? '(unattached)' : l === 'cloud' ? 'a cloud (outside the model)' : num[l] ? num[l] + ' "' + B(l) + '"' : '"' + B(l) + '"'; };
-    const L = ['ELEMENTS'];
-    Object.keys(ids).forEach(function (id) {
-      const l = ids[id];
-      if (kind[id] !== 'flow') { L.push(id + ' ' + kind[id] + ' "' + B(l) + '"'); return; }
-      const f = d.flows.find(function (x) { return x.label === l; });
-      L.push(id + ' flow "' + B(l) + '", from ' + ref(f.from) + ' to ' + ref(f.to));
-    });
-    const J = new Set((d.junctions || []).map(function (j) { return j.label; })), links = [];
-    const addLink = function (a, b) { const t = ref(a) + ' -> ' + ref(b); if (links.indexOf(t) < 0) links.push(t); };
-    (d.connectors || []).forEach(function (c) { if (!J.has(c.from) && !J.has(c.to)) addLink(c.from, c.to); });
-    J.forEach(function (j) {   // merged links: trunk -> junction -> forks
-      const a = (d.connectors || []).filter(function (c) { return c.to === j; }).map(function (c) { return c.from; });
-      const b = (d.connectors || []).filter(function (c) { return c.from === j; }).map(function (c) { return c.to; });
-      a.forEach(function (x) { b.forEach(function (y) { addLink(x, y); }); });
-    });
-    L.push('', 'INFORMATION LINKS (from -> to; a link into a flow goes into its valve)');
-    L.push(links.length ? links.join('\n') : 'none');
-    return { text: L.join('\n'), ids: ids };
-  }
   function keyText(k) {
     return (k.game ? 'HOW THE GAME WORKS: ' + k.game + '\n' : '') + 'TASK GIVEN TO THE LEARNER: ' + k.task + '\nSCOPE: ' + k.scope +
       (k.reference ? '\n\nTHE REFERENCE DIAGRAM (the educator\'s own stock-and-flow diagram of the game; the key items below are taken from it)\n' + diagramText(k.reference) : '') +
@@ -2171,45 +2403,15 @@ const Model = (function () {
   /* Only what the learner has seen: completed weeks, and while the game runs nothing
      from the distributor or brewery, which are hidden from the player. */
   function gameText() {
-    const g = S.game, w = S.mode === 'wom';
-    if (!g) return 'THE LEARNER\'S GAME: not started yet.';
-    const upto = S.finished ? g.log.length - 1 : S.done;
-    const rows = g.log.slice(0, upto + 1).map(function (r, k) {
-      const me = r.pos[0], nxt = g.log[k + 1], sup = nxt ? nxt.pos[1] : null;
-      return [r.week, me.asked, me.arrived, me.sent, w ? me.turned : me.owed, me.stock, me.order == null ? '' : me.order,
-        sup ? sup.sent : '', sup ? sup.owed : ''].join(',');
-    });
-    return 'THE LEARNER\'S GAME (' + (w ? 'word of mouth' : 'the supply game') + ', the learner runs the pub). ' +
-      (S.finished ? 'The game is over: ' + g.log.length + ' weeks played.'
-        : 'The game is still being played: ' + (upto + 1) + ' week' + (upto === 0 ? '' : 's') + ' completed so far. The learner has not yet seen how the game ends, nor anything from the distributor or the brewery, which are hidden while they play. Do not guess at what comes next.') +
-      '\nOne line a week:\nweek,customers,delivered to the pub,served,' + (w ? 'turned away' : 'left waiting') + ',cellar at end,pub ordered,wholesaler sent in answer,on back order with the wholesaler\n' +
-      (rows.length ? rows.join('\n') : '(no week completed yet)') +
-      (S.finished ? '\nLargest order placed by the brewery: ' + Math.max.apply(null, g.log.map(function (r) { return r.pos[3].order || 0; })) +
-        '.\nWhat the learner wrote at the end, before seeing the results: ' + (S.said || '(nothing)') : '');
+    if (!S.game) return 'THE LEARNER\'S GAME: not started yet.';
+    return Evaluate.gameRecordText(S.game, { wom: S.mode === 'wom', finished: S.finished, done: S.done, said: S.said });
   }
 
   /* ---------- marking: rules (code) and two AI calls ----------
      Layer 1 and layer 3 are decided by the rules in marking.js. The AI maps the
      learner's elements to concepts (call 1) and words the slides (call 2). The
      wording cannot change a verdict; if it fails, the rules' own words are used. */
-  const MAP_SYSTEM = [
-    'You read a learner\'s stock-and-flow diagram of a pub supply game and say which CONCEPT of the game each of the learner\'s elements stands for.',
-    'Judge by meaning and by the element\'s place in the structure (what a flow fills and empties, what a link informs), not by its name alone: learners use their own words.',
-    'An element may stand for several concepts when it plays several roles (one flow out of the waiting customers can be both "serving on arrival" and "catching up"). A concept may be drawn as several elements (kegs on order as two stocks in a row).',
-    'Map an element by the role it plays even if it is drawn as the wrong kind (a stock drawn as an auxiliary): the rules notice the kind themselves.',
-    'An element that stands for no concept is an extra: give a short, neutral comment on it.',
-    'You only map. Do not judge whether the diagram is right.',
-    'Every element has a number (E1, E2, ...). Refer to elements only by their numbers. Two elements may have the same name: the numbers tell them apart, and so do a flow\'s ends.',
-    'Answer for every element: each number appears exactly once, either in "elements" or in "extras".',
-    'Reply ONLY with JSON, no markdown fences: {"elements": [{"id": "E1", "concepts": ["C1"], "reason": "<a few words>"}], "extras": [{"id": "E2", "comment": "<one short sentence>"}]}'
-  ].join('\n');
-  const WORD_SYSTEM = [
-    'You write the feedback slides a beginner sees after their stock-and-flow diagram of a pub supply game has been checked. The verdicts come from fixed rules and are final: never contradict them, add problems, or call something fine that the rules say does not work.',
-    'Voice: warm, encouraging and explanatory, in plain English for a beginner. Praise only what the rules confirm, and name it specifically. Frame each problem as the next thing to understand. Never use the word "wrong". Be honest about how far the learner is.',
-    'Give hints, not answers: do not tell them which link or flow to add. You may use their own game weeks as evidence ("in week 9, 30 customers were waiting").',
-    'If their game record includes what they wrote at the end of the game, use one sentence of "wrap" to connect it to their diagram: what of their own explanation the diagram already shows, and what it does not show yet, going only by the verdicts.',
-    'Reply ONLY with JSON, no markdown fences: {"headline": "<one sentence>", "overall": "<2-4 sentences>", "slides": {"<mechanism id>": "<2-3 sentences: what the game does, where they met it in their own weeks if helpful, ending with the hint question>"}, "wrap": "<1-2 sentences: the single most useful next step>"}'
-  ].join('\n');
+  const MAP_SYSTEM = Evaluate.MAP_SYSTEM, WORD_SYSTEM = Evaluate.WORD_SYSTEM;   // the evaluation's prompts live in evaluate.js
   /* The comment on what the learner wrote at the end of the game, before seeing any results. */
   const COMMENT_SYSTEM = [
     'You are a teaching assistant in a system dynamics course. A learner has just finished a one-player supply game in which they ran a pub. Before seeing any results, they wrote in their own words what made the game hard. You reply to what they wrote.',
@@ -2226,119 +2428,44 @@ const Model = (function () {
     'Keep answers short: at most about 150 words, plain English, no markdown headings.'
   ].join('\n');
 
-  function conceptText() {
-    return Marking.CONCEPTS.map(function (c) { return c.id + ' ' + c.name + ' [' + c.kind + ']: ' + c.what + ' (e.g. ' + c.names.join(', ') + ')'; }).join('\n');
-  }
-  /* The AI's reading, by element number. raws: one or more answers; a later answer only
-     fills elements an earlier one left out. An entry that gives a name instead of a
-     number is accepted when the name (or the part before ":" or "(") fits one element. */
-  function cleanMap(raws, list) {
-    const ids = new Set(Marking.CONCEPTS.map(function (c) { return c.id; }));
-    const norm = function (t) { return Marking.base(String(t)).toLowerCase().replace(/\s+/g, ' ').trim(); };
-    const idOf = function (x) {
-      if (!x) return null;
-      const t = String(x.id != null ? x.id : x.element != null ? x.element : '').trim(), m = t.match(/^E(\d+)\b/i);
-      if (m && list.ids['E' + m[1]]) return 'E' + m[1];
-      const tries = [t, t.split(':')[0], t.split('(')[0]].map(norm);
-      for (let i = 0; i < tries.length; i++) {
-        const hit = Object.keys(list.ids).filter(function (id) { return norm(list.ids[id]) === tries[i]; });
-        if (hit.length === 1) return hit[0];
-      }
-      return null;
-    };
-    const got = {}, cons = {}, why = {}, note = {};
-    raws.forEach(function (raw) {
-      const fresh = {};
-      (raw && Array.isArray(raw.elements) ? raw.elements : []).forEach(function (e) {
-        const id = idOf(e); if (!id || (got[id] && !fresh[id])) return;
-        const cs = (Array.isArray(e.concepts) ? e.concepts : []).filter(function (c) { return ids.has(c); });
-        fresh[id] = got[id] = true;
-        if (cs.length) { cons[id] = (cons[id] || []).concat(cs.filter(function (c) { return (cons[id] || []).indexOf(c) < 0; })); why[id] = e.reason || ''; }
-      });
-      (raw && Array.isArray(raw.extras) ? raw.extras : []).forEach(function (x) {
-        const id = idOf(x); if (!id || (got[id] && !fresh[id])) return;
-        fresh[id] = got[id] = true; if (!cons[id]) note[id] = x.comment || '';
-      });
-    });
-    const map = {}, whyL = {}, extras = [], missing = [];
-    Object.keys(list.ids).forEach(function (id) {
-      const l = list.ids[id];
-      if (!got[id]) missing.push(id);
-      else if (cons[id]) { map[l] = cons[id]; whyL[l] = why[id]; }
-      else extras.push({ element: l, comment: note[id] || '' });
-    });
-    return { map: map, why: whyL, extras: extras, missing: missing };
-  }
-
+  const elementList = Evaluate.elementList, cleanMap = Evaluate.cleanMap, conceptText = Evaluate.conceptText;
   function progress(text) { $('markOut').innerHTML = '<p class="mark-busy" role="status"><span class="spin" aria-hidden="true"></span>' + text + '</p>'; }
   async function mark() {
     if (S.busy) return;
     if (!S.key) { showMarkMsg('The answer key for this game has not been written yet, so the diagram cannot be checked.'); return; }
     if (!S.cfg) { showMarkMsg('Add an AI key under <b>AI settings</b> first.'); openSettings(); return; }
     if (!S.diagram || !((S.diagram.stocks || []).length + (S.diagram.flows || []).length + (S.diagram.auxiliaries || []).length)) { showMarkMsg('Draw something first.'); return; }
-    const d = Marking.unique(S.diagram), list = elementList(d), shown = Marking.shown;
+    const shown = Marking.shown;
     busy(true, 'mark');
-    // layer 1: notation (code)
-    const notation = Marking.notation(d);
-    // layer 2: concepts (AI)
-    progress('Reading your diagram…');
-    const ask1 = 'HOW THE GAME WORKS\n' + S.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + S.key.task +
-      '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
-    const r1 = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', 2500);
-    if (r1[1]) { busy(false); showMarkMsg(esc(r1[1])); return; }
-    const raws = [r1[0]];
-    let mp = cleanMap(raws, list);
-    if (mp.missing.length) {     // an element got no reading: ask once more for those
-      progress('Reading the rest of your diagram…');
-      const r1b = await LLM.completeJson(S.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
-        '. Answer again for every element, by number.', 2500);
-      if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
-    }
-    if (mp.missing.length) {     // never build verdicts on a gap
-      busy(false);
-      const names = mp.missing.map(function (id) { return '"' + shown(list.ids[id]) + '"'; });
+    // the evaluation itself is shared with the test page (evaluate.js)
+    const ev = await Evaluate.run({ cfg: S.cfg, key: S.key, diagram: S.diagram, gameText: gameText(), prev: S.lastResult, progress: progress });
+    busy(false);
+    const recorded = { app_version: APP_VERSION, settings: ev.settings, calls: ev.calls.map(function (c) { return { step: c.step, model: c.model, temperature: c.temperature, ms: c.ms, tokens: c.usage }; }) };
+    if (ev.status === 'error') { showMarkMsg(esc(ev.error)); return; }
+    if (ev.status === 'unread') {     // never build verdicts on a gap
+      const names = ev.map.missing.map(function (id) { return '"' + shown(ev.list.ids[id]) + '"'; });
       showMarkMsg('I could not read all of your diagram: ' + names.join(', ') + (names.length === 1 ? ' was' : ' were') + ' left out of my reading, so an evaluation now would be built on a gap. ' +
         'Please press <b>Submit the diagram for evaluation</b> again. If it keeps happening, try another model under <b>AI settings</b>.');
-      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, { overall: 'The diagram could not be fully read, so no evaluation was given.', unread: mp.missing.map(function (id) { return shown(list.ids[id]); }) });
+      if (S.rec) PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' },
+        Object.assign({ overall: 'The diagram could not be fully read, so no evaluation was given.', unread: ev.map.missing.map(function (id) { return shown(ev.list.ids[id]); }) }, recorded));
       drawRecord();
       return;
     }
-    // layer 3: mechanisms (code)
-    progress('Checking how it works…');
-    const mech = Marking.mechanisms(d, mp.map), M = mech.mechanisms;
-    const sc = Marking.score(M), far = Marking.coreFound(mp.map) < 3;
-    const fails = M.filter(function (m) { return !m.pass && m.weight !== 'optional'; })
-      .sort(function (a, b) { return (a.weight === 'required' ? 0 : 1) - (b.weight === 'required' ? 0 : 1); });
-    const prev = S.lastResult, now = {}; M.forEach(function (m) { now[m.id] = m.pass; });
-    const better = prev ? M.filter(function (m) { return m.pass && prev[m.id] === false && m.weight !== 'optional'; }) : [];
-    const worse = prev ? M.filter(function (m) { return !m.pass && prev[m.id] === true && m.weight !== 'optional'; }) : [];
-    // the words (AI); the rules' own words if this fails
-    progress('Writing your feedback…');
-    const facts = 'RESULTS OF THE CHECK (final)\n' +
-      'Required mechanisms working: ' + sc.required.pass + ' of ' + sc.required.of + '. Important: ' + sc.important.pass + ' of ' + sc.important.of + '.\n' +
-      'WORKING: ' + (M.filter(function (m) { return m.pass && m.weight !== 'optional'; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
-      'NOT YET WORKING (write a slide for each id):\n' + (fails.map(function (m) { return m.id + ' ' + m.title + ' [' + m.weight + ']. The game: ' + m.game + ' Rule\'s hint: ' + m.hint; }).join('\n') || 'none') + '\n' +
-      'NOTATION: ' + (notation.length ? notation.map(function (n) { return n.type + ': ' + n.text; }).join(' | ') : 'no problems') + '\n' +
-      (far ? 'The diagram shows few of the game\'s parts: be honest and kind about that, and point them to the main parts of the game.\n' : '') +
-      'OPTIONAL extras drawn: ' + (M.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.title; }).join('; ') || 'none') + '\n' +
-      (prev ? 'SINCE THE LAST CHECK: now working: ' + (better.map(function (m) { return m.title; }).join('; ') || 'nothing new') + '; no longer working: ' + (worse.map(function (m) { return m.title; }).join('; ') || 'nothing') + '\n' : '') +
-      'ABOUT THE ORDER DECISION (an observation, not marked): ' + mech.decisionNote;
-    const r2 = await LLM.completeJson(S.cfg, WORD_SYSTEM, Marking.base(facts) + '\n\n' + gameText() + '\n\nWrite the slides now.', 1800);
-    busy(false);
-    const words = r2[1] ? null : r2[0];
-    const res = { notation: notation, map: mp, mech: mech, score: sc, fails: fails, far: far, better: better, worse: worse, first: !prev, words: words,
-      kinds: Marking.kindNotes(d, mp.map), diagram: JSON.parse(JSON.stringify(d)), when: new Date() };
-    S.lastResult = now; S.result = res; S.chat = [];
+    const mp = ev.map, words = ev.words, prev = S.lastResult;
+    const res = { notation: ev.notation, map: mp, mech: ev.mech, score: ev.score, fails: ev.fails, far: ev.far, better: ev.better, worse: ev.worse, first: !prev, words: words,
+      kinds: ev.kinds, diagram: JSON.parse(JSON.stringify(ev.d)), when: new Date() };
+    S.lastResult = ev.verdicts; S.result = res; S.chat = [];
     // the record (what SFD Studio's replay shows of an advisor's answer: overall, issues, suggestion)
     if (S.rec) {
-      const answer = { overall: (words && words.overall) || overallFallback(res),
-        issues: notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
+      const sc = ev.score, fails = ev.fails;
+      const answer = Object.assign({ overall: (words && words.overall) || overallFallback(res),
+        issues: ev.notation.filter(function (n) { return n.type === 'error'; }).map(function (n) { return n.text; }).concat(fails.map(function (m) { return m.title + ': ' + m.hint; })),
         suggestion: (words && words.wrap) || (fails[0] ? fails[0].hint : 'Your diagram works the way the game does.'),
         score: { required: sc.required.pass + '/' + sc.required.of, important: sc.important.pass + '/' + sc.important.of },
-        notation: notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
-        retried: raws.length > 1,
-        worded_by: words ? 'ai' : 'rules' };
-      const ev = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, answer); askWhy(ev.i, ev.question);
+        notation: ev.notation.map(function (n) { return n.id; }), failed: fails.map(function (m) { return m.id; }), mapping: shownMap(mp.map), extras: mp.extras.map(function (x) { return shown(x.element); }),
+        retried: ev.retried,
+        worded_by: words ? 'ai' : 'rules' }, recorded);
+      const e = PL.addAi(S.rec, 'ai_advice', S.cfg, { description: 'Submit the diagram for evaluation.' }, answer); askWhy(e.i, e.question);
     }
     buildSlides(); drawChat(); drawRecord();
     $('askPanel').hidden = false;
@@ -2398,7 +2525,7 @@ const Model = (function () {
     // 5. wrap-up
     slides.push({ label: 'Next step', title: r.fails.length ? 'Your next step' : 'Well done',
       html: '<p>' + esc(w.wrap || (r.fails[0] ? r.fails[0].hint : 'Your diagram now works the way the game does: that is the structure behind the swings you saw.')) + '</p>' +
-        '<p class="muted">' + esc(r.mech.decisionNote) + ' <span class="small">(An observation, not marked.)</span></p>' +
+        (r.mech.decisionNote ? '<p class="muted">' + esc(r.mech.decisionNote) + ' <span class="small">(An observation, not marked.)</span></p>' : '') +
         (!r.first ? '<p>' + (r.better.length || r.worse.length ? 'Since your last submission: ' + (r.better.length ? 'now working, ' + r.better.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + (r.better.length && r.worse.length ? '. ' : '') + (r.worse.length ? 'no longer working, ' + r.worse.map(function (m) { return esc(m.title.toLowerCase()); }).join('; ') : '') + '.' : 'Since your last submission, the results are the same.') + '</p>' : '') +
         '<p class="muted small">Checked by rules, with ' + esc(LLM.PROVIDERS[S.cfg.provider]) + ' · ' + esc(S.cfg.model) + ' reading your diagram' + (r.words ? ' and writing these words' : '') + '. The reading can be wrong: if it is, say so below.</p>',
       last: true });
@@ -2422,7 +2549,9 @@ const Model = (function () {
     const n = S.slides.length;
     const body = S.onePage ? S.slides.map(function (s, i) { return slideHTML(s, i, n, true); }).join('') : slideHTML(S.slides[S.slide], S.slide, n, false);
     $('markOut').innerHTML = '<div class="slides' + (S.onePage ? ' one' : '') + '" aria-live="polite">' + body + '</div>' +
-      '<p class="sl-switch"><button class="linkish" type="button" data-act="toggle">' + (S.onePage ? 'Back to the slides' : 'See everything on one page') + '</button></p>';
+      '<p class="sl-switch"><button class="linkish" type="button" data-act="pdf">Download the feedback (PDF)</button> · ' +
+      '<button class="linkish" type="button" data-act="toggle">' + (S.onePage ? 'Back to the slides' : 'See everything on one page') + '</button></p>' +
+      '<p class="sl-switch muted small" id="pdfMsg" aria-live="polite"></p>';
   }
   function slideAction(e) {
     const b = e.target.closest('button[data-act]'); if (!b || !S.slides) return;
@@ -2433,6 +2562,67 @@ const Model = (function () {
     else if (act === 'canvas') frame().scrollIntoView({ block: 'center', behavior: 'smooth' });
     else if (act === 'again') mark();
     else if (act === 'toggle') { S.onePage = !S.onePage; drawSlides(); }
+    else if (act === 'pdf') feedbackPdf();
+  }
+
+  /* ---------- the feedback as a PDF ----------
+     Every slide, as the learner saw it, after a cover with the game, their words and their
+     diagram, printed through the browser ("Save as PDF"), so the pictures stay sharp and nothing
+     is loaded from outside. Every page's margin names the repository (in browsers that print page
+     margins, such as Chrome and Edge), the cover and the last page link to it, and the text
+     also holds the line below in transparent ink: invisible on the page, but kept in the PDF's
+     text, so it survives if the footer is cut off. Where the page cannot print (inside a frame,
+     as on claude.ai), the same pages are saved as a web page to print from instead. */
+  const REPO = 'https://github.com/Pomelo64/the_beer_game';
+  const HIDDEN_LINE = 'Made with Beer Game Lab, ' + REPO + '. Idea and design by Shahin Ashkiani.';
+  function money(x) { return '£' + (Math.round(x * 100) / 100).toFixed(x % 1 ? 2 : 0); }
+  function feedbackHTML() {
+    const r = S.result, n = S.slides.length, cfg = S.cfg || {}, when = r.when || new Date();
+    const pos = S.game && S.game.pos[0];
+    const game = !S.game ? 'No game had been played yet.'
+      : S.finished ? (S.mode === 'wom' ? 'Game ' + S.n + ', with word of mouth: total cost ' + money(pos.cost) + '.'
+        : 'Game ' + S.n + ': total cost ' + money(pos.cost) + '. The lowest cost the game allows, found with hindsight, is ' + money(Engine.CFG.best.cost) + '.')
+      : 'Game ' + S.n + ' was still being played (week ' + (S.done + 2) + ') when the diagram was submitted.';
+    const model = (LLM.PROVIDERS[cfg.provider] || '') + ' · ' + (cfg.model || '');
+    const facts = [['Submitted', when.toLocaleString('en-GB', { dateStyle: 'long', timeStyle: 'short' })], ['Your game', game],
+      ['Read by', model], ['Worded by', r.words ? model : 'the rules (the AI\'s wording was not available)'], ['App', 'Beer Game Lab ' + APP_VERSION]];
+    const said = S.finished && S.said ? '<h2>What you wrote at the end of the game</h2><p class="pv-said">' + esc(S.said) + '</p>' +
+      (S.comment && S.comment.n === S.n ? '<h2>The AI\'s comment on it</h2><p class="pv-ai">' + esc(S.comment.text) + '</p>' : '') : '';
+    const foot = '<div class="pv-foot">Made with <a href="' + REPO + '">Beer Game Lab</a> · <a href="' + REPO + '">github.com/Pomelo64/the_beer_game</a></div>';
+    // what refers to the page around the slides makes no sense on paper
+    const slides = S.slides.map(function (sl, i) { return slideHTML(sl, i, n, true); }).join('')
+      .replace('If I read something wrongly, tell me in <b>Ask about your diagram</b> below: the rest', 'The rest').replace(': if it is, say so below.', '.');
+    return '<section class="pv-page pv-cover"><p class="pv-hidden">' + esc(HIDDEN_LINE) + '</p>' +
+      '<p class="pv-note">To keep this as a PDF, print this page (Ctrl+P, or ⌘P on a Mac) and choose <b>Save as PDF</b>.</p>' +
+      '<h1>Feedback on your diagram</h1><p class="pv-sub">Beer Game Lab: model your pub</p>' +
+      '<table class="pv-facts">' + facts.map(function (f) { return '<tr><td>' + esc(f[0]) + '</td><td>' + esc(f[1]) + '</td></tr>'; }).join('') +
+      '<tr><td>Made with</td><td><a href="' + REPO + '">Beer Game Lab, github.com/Pomelo64/the_beer_game</a></td></tr></table>' +
+      '<h2>Your diagram</h2><div class="sl-pic">' + Picture.svg(r.diagram, { whole: true }) + '</div>' + said + '</section>' +
+      '<section class="pv-page"><h2>The feedback</h2>' + slides +
+      '<p class="pv-hidden">' + esc(HIDDEN_LINE) + '</p>' +
+      '<p class="muted small">The verdicts come from fixed rules, the same for everyone. The AI only reads the diagram' + (r.words ? ' and words the feedback' : '') + ', and its reading can be wrong. This is feedback, not a mark.</p>' + foot + '</section>';
+  }
+  function feedbackPdf() {
+    if (!S.result || !S.slides) return;
+    const html = feedbackHTML(), d = S.result.when || new Date();
+    const title = 'Beer Game Lab feedback ' + d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    let framed = true; try { framed = window.self !== window.top; } catch (e) { framed = true; }
+    if (S.rec) { PL.addEvent(S.rec, { kind: 'feedback_pdf', saved_as: framed ? 'web page' : 'print' }); drawRecord(); }
+    if (framed || typeof window.print !== 'function') {   // a frame usually may not print: save the pages instead
+      const css = Array.prototype.map.call(document.querySelectorAll('style'), function (st) { return st.textContent; }).join('\n') +
+        '\n.pv{display:block;max-width:182mm;margin:0 auto;padding:10mm 0}@media screen{.pv .pv-note{display:block;padding:8px 12px;background:#eef2f0;border-radius:8px}.pv .pv-foot{margin-top:24px}}';
+      download(title.replace(/ /g, '-') + '.html', '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>' + esc(title) + '</title>\n<style>\n' + css + '\n</style>\n</head>\n<body class="printing">\n<div class="pv">' + html + '</div>\n</body>\n</html>\n', 'text/html');
+      const m = $('pdfMsg'); if (m) m.textContent = 'This page cannot print here, so the feedback was saved as a web page. Open it and print it, choosing Save as PDF.';
+      return;
+    }
+    let pv = $('printView');
+    if (!pv) { pv = document.createElement('div'); pv.id = 'printView'; pv.className = 'pv'; document.body.appendChild(pv); }
+    pv.innerHTML = html;
+    const oldTitle = document.title;
+    const done = function () { document.body.classList.remove('printing'); document.title = oldTitle; pv.innerHTML = ''; window.removeEventListener('afterprint', done); };
+    window.addEventListener('afterprint', done);
+    document.body.classList.add('printing'); document.title = title;
+    window.print();
   }
 
   /* ---------- questions ---------- */
@@ -2447,7 +2637,7 @@ const Model = (function () {
       '\n\nTHE CHECK THEY RECEIVED (on the diagram as it was then)\nHow their elements were read: ' + JSON.stringify(shownMap(R.map.map)) +
       '\nNotation: ' + (R.notation.map(function (n) { return n.text; }).join(' | ') || 'no problems') +
       '\nMechanisms: ' + R.mech.mechanisms.map(function (m) { return m.id + ' ' + m.title + ': ' + (m.pass ? 'works' : 'not yet. Hint: ' + m.hint + ' Answer, if asked: ' + m.answer); }).join('\n') +
-      '\nOrder decision: ' + R.mech.decisionNote;
+      '\nOrder decision: ' + (R.mech.decisionNote || 'no order flow in the diagram');
     ctx = Marking.base(ctx);
     const msgs = [{ role: 'user', content: ctx + '\n\n(The learner\'s questions follow.)' }, { role: 'assistant', content: 'Understood. I will answer as their teaching assistant.' }].concat(S.chat);
     const r = await LLM.complete(S.cfg, ASK_SYSTEM, msgs, 700, false);
@@ -2555,7 +2745,7 @@ const Model = (function () {
      they happen, between the modelling steps, so a reader can see when the
      learner drew what. The diagram carries over from one game to the next. */
   function startGame(game) {
-    if (!S.rec) S.rec = PL.newRecord('Beer Game Lab');
+    if (!S.rec) { S.rec = PL.newRecord('Beer Game Lab'); PL.addEvent(S.rec, { kind: 'app', name: 'Beer Game Lab', version: APP_VERSION }); }
     S.game = game; S.mode = game.mode; S.key = KEYS[game.mode] || null;
     S.n += 1; S.done = -1; S.finished = false; S.said = '';
     PL.addEvent(S.rec, { kind: 'game', game: S.n, mode: game.mode });

@@ -51,6 +51,8 @@ assert.equal(M.kindNotes({ stocks: [], auxiliaries: [{ label: 'cost' }], flows: 
 assert.ok(/input from outside/.test(M.mechanisms(K.reference, MAP).decisionNote));
 const dm = JSON.parse(JSON.stringify(altA)); dm.connectors.push({ from: 'Inventory', to: 'Order decision' }); assert.ok(/does not take the kegs already on order/.test(M.mechanisms(dm, mapA).decisionNote));
 dm.connectors.push({ from: 'Supply line', to: 'Order decision' }); assert.ok(/takes the kegs already on order/.test(M.mechanisms(dm, mapA).decisionNote));
+// no order flow at all: nothing is said about the decision
+assert.strictEqual(M.mechanisms({ stocks: [{ label: 'rabbits', x: 0, y: 0 }], auxiliaries: [], clouds: [], flows: [], connectors: [], junctions: [] }, {}).decisionNote, null);
 // two elements with the same name, and an L-shaped flow (a learner's test diagram, rebuilt from screenshots)
 {
   const L = require('./fixtures/learner_lshape.json'), U = M.unique(L), Z = '​';

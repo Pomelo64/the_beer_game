@@ -1,0 +1,29 @@
+:root{--bg:#f7f5f0;--surface:#fff;--ink:#1d1f22;--muted:#5d636b;--line:#dcd8cf;--accent:#1f6f54;--bad:#b3261e;--good:#1f6f54;--r:10px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#16181b;--surface:#1f2226;--ink:#eceae5;--muted:#a3a8ae;--line:#33373c;--accent:#5fc49b;--bad:#f2867d;--good:#5fc49b}}
+:root[data-theme="dark"]{--bg:#16181b;--surface:#1f2226;--ink:#eceae5;--muted:#a3a8ae;--line:#33373c;--accent:#5fc49b;--bad:#f2867d;--good:#5fc49b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1.1rem;margin:0 0 8px}
+.muted{color:var(--muted)}code{font-size:.9em}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;color:var(--muted)}
+.rows input,.rows select{width:100%;font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.rows td:nth-child(4){width:80px}
+.field{display:flex;flex-direction:column;gap:4px;margin:12px 0 0;max-width:420px}
+.field input,.field select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.checks{display:flex;flex-wrap:wrap;gap:8px 20px}
+.checks label{display:flex;gap:6px;align-items:center}
+.buttons{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}
+.btn{font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:var(--surface);cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.status{margin:12px 0 6px;min-height:1.5em}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+.scroll{overflow-x:auto}
+details summary{cursor:pointer;margin-top:12px;font-weight:600}
+.log td.bad{color:var(--bad)}.log td.good{color:var(--good)}
+#summary table{margin-top:8px}

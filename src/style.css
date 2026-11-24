@@ -395,3 +395,37 @@ details.fold[open] > summary{margin-bottom:12px}
 
 /* credit line, on every screen */
 .credit{margin:32px 0 0;padding-top:12px;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+
+/* ---------- the feedback as a PDF: a print view of every slide (model_ui.js, feedbackPdf) ----------
+   Always light, whatever the screen's theme, since it is printed. */
+.pv{display:none}
+.pv{--bg:#ffffff; --surface:#ffffff; --sunk:#eef2f0; --line:#cdd8d2; --fg:#16211c; --muted:#56655d;
+  --accent:#17705a; --accent-fg:#ffffff; --owed:#b3392f; --hold:#17705a; color-scheme:light;
+  background:#fff;color:var(--fg);font-family:var(--font-body);font-size:10.5pt;line-height:1.45}
+.pv-page{padding:0 0 8mm}
+.pv h1{font-family:var(--font-head);font-size:20pt;margin:0 0 2pt}
+.pv h2{font-family:var(--font-head);font-size:13pt;margin:14pt 0 4pt}
+.pv .pv-sub{color:var(--muted);margin:0 0 10pt}
+.pv table.pv-facts{border-collapse:collapse;margin:6pt 0 4pt;font-size:9.5pt}
+.pv table.pv-facts td{padding:2pt 12pt 2pt 0;vertical-align:top}
+.pv table.pv-facts td:first-child{color:var(--muted);white-space:nowrap}
+.pv table.pv-facts a{color:var(--accent)}
+.pv .pv-said{border-left:3pt solid var(--line);padding:2pt 0 2pt 8pt;margin:4pt 0 8pt;font-style:italic}
+.pv .pv-ai{border-left:3pt solid var(--hold);padding:2pt 0 2pt 8pt;margin:4pt 0 8pt}
+.pv .slide{border:1px solid var(--line);border-radius:8pt;padding:10pt 12pt;break-inside:avoid}
+.pv .sl-pic .pic{width:100%;height:auto;max-height:120mm;display:block}
+.pv .pv-cover .sl-pic .pic{height:80mm;max-height:none}
+.pv .sl-nav,.pv .sl-dots{display:none}
+.pv .pv-foot{font-size:8pt;color:#6b7a72;text-align:center;margin-top:6pt}
+.pv .pv-foot a{color:inherit}
+.pv .pv-hidden{color:transparent;font-size:6pt;margin:0;line-height:1}
+.pv .pv-note{display:none}
+@media print{
+  @page{size:A4;margin:14mm 14mm 18mm;
+    @bottom-center{content:"Made with Beer Game Lab · github.com/Pomelo64/the_beer_game";font-family:system-ui,sans-serif;font-size:8pt;color:#6b7a72}}
+  body.printing{background:#fff}
+  body.printing > *:not(.pv){display:none!important}
+  body.printing > .pv{display:block}
+  .pv .pv-cover{break-after:page}
+  .pv a{text-decoration:none}
+}

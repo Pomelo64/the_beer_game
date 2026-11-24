@@ -1,0 +1,275 @@
+{
+ "stocks": [
+  {
+   "label": "pub customers",
+   "x": 736,
+   "y": 84
+  },
+  {
+   "label": "waiting to serve",
+   "x": 531,
+   "y": 301
+  },
+  {
+   "label": "pub cellar",
+   "x": 453,
+   "y": 436
+  },
+  {
+   "label": "cost",
+   "x": 119,
+   "y": 602
+  },
+  {
+   "label": "registered order",
+   "x": 736,
+   "y": 436
+  }
+ ],
+ "auxiliaries": [
+  {
+   "label": "arrival plan by week",
+   "x": 1110,
+   "y": 431
+  },
+  {
+   "label": "wholesaler provision capacity",
+   "x": 736,
+   "y": 725
+  },
+  {
+   "label": "player decision",
+   "x": 949,
+   "y": 540
+  }
+ ],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 1064,
+   "y": 84
+  },
+  {
+   "label": "cloud",
+   "x": 224,
+   "y": 76
+  },
+  {
+   "label": "cloud",
+   "x": 498,
+   "y": 597
+  },
+  {
+   "label": "cloud",
+   "x": 107,
+   "y": 433
+  },
+  {
+   "label": "cloud",
+   "x": 133,
+   "y": 292
+  },
+  {
+   "label": "cloud",
+   "x": 993,
+   "y": 440
+  }
+ ],
+ "flows": [
+  {
+   "label": "coming in rate",
+   "from": "cloud",
+   "to": "pub customers",
+   "from_xy": [
+    1064,
+    84
+   ],
+   "to_xy": [
+    736,
+    84
+   ],
+   "valve_xy": [
+    893,
+    88
+   ]
+  },
+  {
+   "label": "serving rate",
+   "from": "pub customers",
+   "to": "cloud",
+   "from_xy": [
+    736,
+    84
+   ],
+   "to_xy": [
+    224,
+    76
+   ],
+   "valve_xy": [
+    477,
+    85
+   ]
+  },
+  {
+   "label": "failed-to-serve rate",
+   "from": "pub customers",
+   "to": "waiting to serve",
+   "from_xy": [
+    736,
+    84
+   ],
+   "to_xy": [
+    531,
+    301
+   ],
+   "valve_xy": [
+    736,
+    305
+   ]
+  },
+  {
+   "label": "cost rate",
+   "from": "cloud",
+   "to": "cost",
+   "from_xy": [
+    498,
+    597
+   ],
+   "to_xy": [
+    119,
+    602
+   ],
+   "valve_xy": [
+    330,
+    599
+   ]
+  },
+  {
+   "label": "consumption rate",
+   "from": "pub cellar",
+   "to": "cloud",
+   "from_xy": [
+    453,
+    436
+   ],
+   "to_xy": [
+    107,
+    433
+   ],
+   "valve_xy": [
+    233,
+    432
+   ]
+  },
+  {
+   "label": "catch up rate",
+   "from": "waiting to serve",
+   "to": "cloud",
+   "from_xy": [
+    531,
+    301
+   ],
+   "to_xy": [
+    133,
+    292
+   ],
+   "valve_xy": [
+    293,
+    296
+   ]
+  },
+  {
+   "label": "beer arrival rate",
+   "from": "registered order",
+   "to": "pub cellar",
+   "from_xy": [
+    736,
+    436
+   ],
+   "to_xy": [
+    453,
+    436
+   ],
+   "valve_xy": [
+    594,
+    436
+   ]
+  },
+  {
+   "label": "order rate",
+   "from": "cloud",
+   "to": "registered order",
+   "from_xy": [
+    993,
+    440
+   ],
+   "to_xy": [
+    736,
+    436
+   ],
+   "valve_xy": [
+    879,
+    438
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "arrival plan by week",
+   "to": "coming in rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "cost rate"
+  },
+  {
+   "from": "waiting to serve",
+   "to": "cost rate"
+  },
+  {
+   "from": "pub customers",
+   "to": "serving rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "serving rate"
+  },
+  {
+   "from": "pub customers",
+   "to": "failed-to-serve rate"
+  },
+  {
+   "from": "serving rate",
+   "to": "failed-to-serve rate"
+  },
+  {
+   "from": "serving rate",
+   "to": "consumption rate"
+  },
+  {
+   "from": "catch up rate",
+   "to": "consumption rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "catch up rate"
+  },
+  {
+   "from": "player decision",
+   "to": "order rate"
+  },
+  {
+   "from": "wholesaler provision capacity",
+   "to": "beer arrival rate"
+  },
+  {
+   "from": "registered order",
+   "to": "beer arrival rate"
+  },
+  {
+   "from": "waiting to serve",
+   "to": "catch up rate"
+  }
+ ],
+ "junctions": []
+}

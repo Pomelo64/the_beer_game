@@ -1,0 +1,49 @@
+{
+ "stocks": [
+  {
+   "label": "Happiness",
+   "x": 400,
+   "y": 200
+  }
+ ],
+ "auxiliaries": [
+  {
+   "label": "Music",
+   "x": 300,
+   "y": 350
+  }
+ ],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 120,
+   "y": 200
+  }
+ ],
+ "flows": [
+  {
+   "label": "fun",
+   "from": "cloud",
+   "to": "Happiness",
+   "from_xy": [
+    120,
+    200
+   ],
+   "to_xy": [
+    400,
+    200
+   ],
+   "valve_xy": [
+    260,
+    200
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "Music",
+   "to": "fun"
+  }
+ ],
+ "junctions": []
+}
