@@ -68,12 +68,19 @@
       return { provider: p, model: p === 'rehearsal' ? 'the answer sheet' : ($('model' + i).value.trim() || LLM.DEFAULT_MODELS[p]), key: key, runs: runs };
     }).filter(Boolean);
   }
+  /* The two rows of boxes narrow the tests down: a row with nothing ticked does not narrow at all.
+     Each box's count is how many tests it would give, with the other row as it stands. */
+  const ticked = function (pre, keys) { return keys.filter(function (x) { const b = $(pre + x); return b && b.checked; }); };
+  const fits = function (k, types, sources) { return (!types.length || types.indexOf(Score.typeOf(k)) >= 0) && (!sources.length || sources.indexOf(k.source) >= 0); };
   function chosenIds() {
     const only = $('only').value.replace(/id/gi, ' ').split(/[\s,;]+/).map(function (s) { return parseInt(s, 10); }).filter(function (n) { return n > 0; });
-    return KEY.filter(function (k) {
-      if (only.length) return only.indexOf(k.id) >= 0;
-      const t = $('type' + Score.typeOf(k)), s = $('source' + k.source); return t && t.checked && s && s.checked;
-    }).map(function (k) { return k.id; });
+    const types = ticked('type', Object.keys(Score.TYPES)), sources = ticked('source', Object.keys(Score.SOURCES));
+    return KEY.filter(function (k) { return only.length ? only.indexOf(k.id) >= 0 : fits(k, types, sources); }).map(function (k) { return k.id; });
+  }
+  function drawCounts() {
+    const types = ticked('type', Object.keys(Score.TYPES)), sources = ticked('source', Object.keys(Score.SOURCES));
+    Object.keys(Score.TYPES).forEach(function (t) { $('ntype' + t).textContent = KEY.filter(function (k) { return fits(k, [t], sources); }).length; });
+    Object.keys(Score.SOURCES).forEach(function (x) { $('nsource' + x).textContent = KEY.filter(function (k) { return fits(k, types, [x]); }).length; });
   }
   const runKey = function (id, m, run) { return id + '|' + m.provider + '/' + m.model + '|' + run; };
   function tasks() {
@@ -90,15 +97,23 @@
     $('plan').textContent = ids.length + ' diagrams × ' + (ms.map(function (m) { return m.runs + ' run' + (m.runs === 1 ? '' : 's') + ' with ' + m.model; }).join(', ') || 'no model yet') +
       ': ' + T.length + ' evaluations to do' + (results.runs.length ? ' (' + results.runs.length + ' already in the results)' : '') + '.';
     $('startBtn').disabled = running || !T.length;
+    // why Start is grey, said where it is
+    const keyless = ROW_DEFAULTS.some(function (d, i) { return $('prov' + i).value && $('prov' + i).value !== 'rehearsal' && !$('key' + i).value.trim(); });
+    $('startWhy').textContent = running || T.length ? '' : !ids.length ? 'No tests are chosen: untick a box in section 2, or empty "Only these".'
+      : !ms.length ? (keyless ? 'Paste an API key into a model row (or choose Rehearsal) to start.' : 'Choose a model, with at least one run, in section 1.')
+      : 'Every run asked for is already in the results: raise Runs, add a model, or download and clear the results.';
+    if ($('ntypeNA')) drawCounts();
   }
 
   /* ---------- running ---------- */
   let results = newResults(), running = false, stopping = false;
   function newResults() {
-    return { format: 'beer-game-lab-test-results', version: 1, app_version: APP_VERSION, created: new Date().toISOString(),
+    return { format: 'beer-game-lab-test-results', version: 2, app_version: APP_VERSION, created: new Date().toISOString(),
       settings: { reading_temperature: Evaluate.SETTINGS.reading.temperature, wording_temperature: 'default',
         reading_max_tokens: Evaluate.SETTINGS.reading.maxTokens, wording_max_tokens: Evaluate.SETTINGS.wording.maxTokens },
-      game_text: GAME_TEXT, prompts: { reading: Evaluate.MAP_SYSTEM, wording: Evaluate.WORD_SYSTEM }, runs: [] };
+      game_text: GAME_TEXT, prompts: { reading: Evaluate.MAP_SYSTEM, wording: Evaluate.WORD_SYSTEM },
+      classification_requests: {},   // by test: what the classification call is sent, the same in every run of that test
+      runs: [] };
   }
   async function runOne(t) {
     const cfg = { provider: t.m.provider, key: t.m.key, model: t.m.model, testId: t.id };
@@ -114,6 +129,11 @@
       extras: map ? map.extras.map(function (x) { return sh(x.element); }) : null,
       missing: map ? map.missing.map(function (id) { return sh(ev.list.ids[id]); }) : null,
       notation: (ev.notation || []).map(function (n) { return n.id; }) };
+    // what each AI call was sent besides its system prompt: the classification request once per test, the rest per run
+    const q = ev.requests || { reading: [], wording: null }, cr = results.classification_requests = results.classification_requests || {};
+    if (q.reading[0] && !(t.id in cr)) cr[t.id] = q.reading[0];
+    rec.requests = { classification: q.reading[0] && q.reading[0] === cr[t.id] ? 'as classification_requests[' + t.id + ']' : (q.reading[0] || null),
+      classification_again: q.reading[1] || null, wording: q.wording || null };
     if (ev.status === 'done') {
       rec.failing = ev.fails.map(function (m) { return m.id; });
       rec.optional_passed = ev.mech.mechanisms.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.id; });
@@ -160,7 +180,7 @@
   }
   function drawResults() {
     const has = results.runs.length > 0;
-    ['dlRes', 'dlRep', 'dlSlides'].forEach(function (id) { $(id).disabled = !has; });
+    ['dlRes', 'dlRep', 'dlSlides', 'dlTr'].forEach(function (id) { $(id).disabled = !has; });
     const s = Score.score(results, KEY, DIAGRAMS), ra = s.rulesAlone;
     $('q3').innerHTML = '<b>The rules alone</b>, given the answer sheet\'s classification of the elements (no AI): TP ' + ra.caught + ', FN ' + (ra.flaws - ra.caught) + ', FP ' + ra.falseAlarms.length + '.' +
       (ra.missed.length ? ' The FNs: ' + esc(ra.missed.join('; ')) + '.' : '');
@@ -176,15 +196,22 @@
   }
   const stamp = function () { return new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ''); };
   /* a copy in this browser, in case the page is closed before the results are downloaded */
-  function save() { try { localStorage.setItem('bgl.testResults', JSON.stringify(results)); } catch (e) {} }
+  let warned = false;
+  function save() {
+    try { localStorage.setItem('bgl.testResults', JSON.stringify(results)); if (warned) { warned = false; $('saveWarn').textContent = ''; } }
+    catch (e) {   // the browser's copy is full: say so, the runs are still in the page
+      if (!warned) { warned = true; $('saveWarn').textContent = 'The browser\'s copy of the results is full, so a closed page could no longer carry on. The runs are safe while this page is open: download the results (section 4) now and then.'; }
+    }
+  }
 
   /* ---------- wiring ---------- */
   function init() {
     $('ver').textContent = APP_VERSION; $('nTests').textContent = KEY.length;
     drawRows();
-    const box = function (pre, key, label, n) { return '<label><input type="checkbox" id="' + pre + key + '" checked> ' + esc(label) + ' (' + n + ')</label>'; };
-    $('groups').innerHTML = '<p class="muted">Type of flaw</p><div class="checks">' + Object.keys(Score.TYPES).map(function (t) { return box('type', t, Score.TYPES[t], KEY.filter(function (k) { return Score.typeOf(k) === t; }).length); }).join('') + '</div>' +
-      '<p class="muted">Designed by</p><div class="checks">' + Object.keys(Score.SOURCES).map(function (s) { return box('source', s, Score.SOURCES[s], KEY.filter(function (k) { return k.source === s; }).length); }).join('') + '</div>';
+    const box = function (pre, key, label) { return '<label><input type="checkbox" id="' + pre + key + '"><span>' + esc(label) + ' (<span id="n' + pre + key + '"></span>)</span></label>'; };
+    $('groups').innerHTML = '<p class="muted">All tests run unless you tick boxes to narrow them down. Ticking in both rows gives the tests that fit both.</p>' +
+      '<p class="muted">Type of flaw</p><div class="checks">' + Object.keys(Score.TYPES).map(function (t) { return box('type', t, Score.TYPES[t]); }).join('') + '</div>' +
+      '<p class="muted">Designed by</p><div class="checks">' + Object.keys(Score.SOURCES).map(function (x) { return box('source', x, Score.SOURCES[x]); }).join('') + '</div>';
     Object.keys(Score.TYPES).forEach(function (t) { $('type' + t).addEventListener('change', drawPlan); });
     Object.keys(Score.SOURCES).forEach(function (s) { $('source' + s).addEventListener('change', drawPlan); });
     $('only').addEventListener('input', drawPlan);
@@ -192,7 +219,8 @@
     $('stopBtn').addEventListener('click', function () { stopping = true; $('stopBtn').disabled = true; });
     $('dlRes').addEventListener('click', function () { download('beer-game-lab-test-results-' + stamp() + '.json', JSON.stringify(results, null, 1), 'application/json'); });
     $('dlRep').addEventListener('click', function () { download('beer-game-lab-test-report-' + stamp() + '.md', Score.report(results, KEY, DIAGRAMS), 'text/markdown'); });
-    $('dlSlides').addEventListener('click', function () { download('beer-game-lab-explanations-to-rate-' + stamp() + '.csv', Score.ratingCsv(results, KEY, DIAGRAMS), 'text/csv'); });
+    $('dlTr').addEventListener('click', function () { download('beer-game-lab-transcripts-' + stamp() + '.md', Score.transcripts(results, KEY, DIAGRAMS), 'text/markdown'); });
+  $('dlSlides').addEventListener('click', function () { download('beer-game-lab-explanations-to-rate-' + stamp() + '.csv', Score.ratingCsv(results, KEY, DIAGRAMS), 'text/csv'); });
     $('clearBtn').addEventListener('click', function () {
       if (running || (results.runs.length && !window.confirm('Clear all ' + results.runs.length + ' runs from this page? Download the results first if you want to keep them.'))) return;
       results = newResults(); $('log').innerHTML = ''; save(); drawResults(); drawPlan(); $('status').textContent = 'Results cleared.';
@@ -203,6 +231,8 @@
       if (!o || o.format !== 'beer-game-lab-test-results') { $('status').textContent = 'That is not a results file from this page.'; return; }
       const have = {}; results.runs.forEach(function (r) { have[runKey(r.id, r.model, r.run)] = 1; });
       normalise(o.runs).forEach(function (r) { if (!have[runKey(r.id, r.model, r.run)]) results.runs.push(r); });
+      const cr = results.classification_requests = results.classification_requests || {};
+      Object.keys(o.classification_requests || {}).forEach(function (id) { const k = byId(id); if (k && !(k.id in cr)) cr[k.id] = o.classification_requests[id]; });
       if (o.created < results.created) results.created = o.created;
       $('log').innerHTML = ''; results.runs.forEach(addLog); save(); drawResults(); drawPlan();
       $('status').textContent = 'Loaded ' + o.runs.length + ' runs. Start continues with the runs not yet done' + (o.app_version !== APP_VERSION ? '. Note: they were made with app version ' + o.app_version + ', not ' + APP_VERSION + '.' : '.');

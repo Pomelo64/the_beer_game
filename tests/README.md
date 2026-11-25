@@ -7,13 +7,13 @@ The tests measure how well Beer Game Lab's feedback catches the flaws in a learn
 Open `tests/runner.html` (on GitHub Pages: the app's address followed by `tests/runner.html`). The page is not linked from the app, and learners never see it.
 
 1. **Models.** One row per model: provider, model, API key and number of runs. API keys stay in the page's memory and go only to the provider. Leave the model blank for the provider's default in the app.
-2. **Diagrams.** All 59, or by type of flaw and designer, or a list of id numbers.
+2. **Diagrams.** All 59 run unless you narrow them down: tick a type of flaw, a designer, or both (a row with nothing ticked does not narrow), or type id numbers in **Only these**. Each box shows how many tests it would give. If Start is grey, the reason is shown under it.
 3. **Start.** Each diagram goes through `Evaluate.run`, the same evaluation a learner's submission gets, with the same prompts and rules. A typical panicky game and a typical first explanation from the learner are given to the wording, the same for every run, except id 10, which has its own explanation.
-4. **Results.** Download the results file (JSON), the report (Markdown) and the explanations to rate (CSV). Nothing is downloaded on its own: press the buttons. They work as soon as one run has finished, so you can save the results so far at any time.
+4. **Results.** Download the results file (JSON), the report (Markdown), the transcripts (Markdown) and the explanations to rate (CSV). Nothing is downloaded on its own: press the buttons. They work as soon as one run has finished, so you can save the results so far at any time.
 
 **Rehearsal** needs no API key: it classifies every element exactly as the answer sheet says. Run it first to see a whole run and its report for free. It shows the best this design can do: every flaw the rules can see is flagged (TP), and nothing else (no FP).
 
-The page keeps a copy of the results in the browser, so a closed page can carry on where it stopped. **Continue from a results file** does the same from a downloaded file; Start then runs only what is missing. **Clear results** starts again. The browser's copy holds only about 5 MB, so on a long run, download the results now and then.
+The page keeps a copy of the results in the browser, so a closed page can carry on where it stopped. **Continue from a results file** does the same from a downloaded file; Start then runs only what is missing. **Clear results** starts again. The browser's copy holds only about 5 MB; if it fills, the page says so, and the runs stay safe while the page is open. On a long run, download the results now and then.
 
 ## The tests and their names
 
@@ -57,13 +57,15 @@ The report gives these per model, for syntactic and conceptual flaws apart, and 
 
 Underneath, supporting measures: the AI's **classification accuracy** (the share of elements it assigns to the same part of the game as the answer sheet, or, like the answer sheet, to none) and which elements it classified differently; whether repeated runs gave the same flags and classification; whether names and layout changed anything (renamed and relaid versions of the reference, against the reference); runs stopped because the AI left elements unclassified, or that failed; time and tokens.
 
+**The transcripts** (Markdown): every run, in the order of the tests, so that each count in the report can be checked. For each run: how it was marked (each flaw as TP or FN, each extra flag as FP); what the classification call was sent and what the AI answered, word for word, with the AI's classification of each element beside the answer sheet's; what was flagged; what the wording call was sent and answered; and the feedback the learner would see. The report lists, for each FN and FP, the runs it came from. The system prompts and the game given to the wording are at the top, once.
+
 **The explanations to rate** (CSV): one row per TP (a flaw flagged), in the first full run of each diagram and model, with what the learner was told about it. Fill in three columns: correct, clear, helps to fix it (y/n). Id 10 has a row of its own: whether the feedback went along with the learner's wrong explanation.
 
 ## Reproducibility
 
 - The AI's classification of the elements is asked for at temperature 0; a model that does not take a temperature is asked again without one, and the results say so. Gemini 3.5 and later are not sent one at all, since Google says they ignore it: their results say "not accepted", and their runs should not be described as made at temperature 0. The wording runs at the model's default.
-- The results file holds everything needed to mark the runs again exactly, even after the models change: the app version, the settings, the prompts, the game given to the wording, and for every run the AI's classification, what was flagged, the feedback's texts, each AI call's raw answer, time and tokens.
-- Mark a results file from the command line: `node tests/score.js results.json [answer_sheet.json] > report.md`.
+- The results file holds everything needed to mark the runs again exactly, and to check them, even after the models change: the app version, the settings, the system prompts, the game given to the wording, what each AI call was sent (the classification request once per test, since it is the same in every run; the rest per run) and its answer word for word, and for every run the AI's classification, what was flagged, the feedback's texts, time and tokens. Results from before the requests were kept (app version 1.2 of 24 November) have everything but the requests, which can be rebuilt from the diagram with that version.
+- Mark a results file from the command line: `node tests/score.js results.json [answer_sheet.json] > report.md`, and write its transcripts with `node tests/score.js results.json --transcripts > transcripts.md`.
 - Use dated model versions rather than aliases, and tag the repository version used for a published set of results.
 
 ## Files

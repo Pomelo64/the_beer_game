@@ -2218,7 +2218,8 @@ const Evaluate = (function () {
   async function run(o) {
     const t0 = Date.now(), say = o.progress || function () {};
     const d = Marking.unique(o.diagram), list = elementList(d);
-    const r = { status: 'done', error: null, d: d, list: list, calls: [], raw: { reading: [], wording: null },
+    // what each AI call was sent (besides its system prompt) and what it answered, word for word
+    const r = { status: 'done', error: null, d: d, list: list, calls: [], raw: { reading: [], wording: null }, requests: { reading: [], wording: null },
       settings: { reading_temperature: SETTINGS.reading.temperature, wording_temperature: 'default', reading_max_tokens: SETTINGS.reading.maxTokens, wording_max_tokens: SETTINGS.wording.maxTokens } };
     const note = function (step, res) { const m = res[2] || {}; r.calls.push({ step: step, provider: m.provider, model: m.model, temperature: m.temperature, ms: m.ms, usage: m.usage, error: res[1] || null }); return m.text; };
     // layer 1: notation (rules)
@@ -2228,15 +2229,16 @@ const Evaluate = (function () {
     const ask1 = 'HOW THE GAME WORKS\n' + o.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + o.key.task +
       '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
     const rOpts = { temperature: SETTINGS.reading.temperature };
-    const r1 = await LLM.completeJson(o.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', SETTINGS.reading.maxTokens, rOpts);
+    r.requests.reading.push(ask1 + '\n\nMap every element now.');
+    const r1 = await LLM.completeJson(o.cfg, MAP_SYSTEM, r.requests.reading[0], SETTINGS.reading.maxTokens, rOpts);
     r.raw.reading.push(note('reading', r1));
     if (r1[1]) { r.status = 'error'; r.error = r1[1]; r.ms = Date.now() - t0; return r; }
     const raws = [r1[0]];
     let mp = cleanMap(raws, list);
     if (mp.missing.length) {     // an element got no reading: ask once more for those
       say('Reading the rest of your diagram…');
-      const r1b = await LLM.completeJson(o.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
-        '. Answer again for every element, by number.', SETTINGS.reading.maxTokens, rOpts);
+      r.requests.reading.push(ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') + '. Answer again for every element, by number.');
+      const r1b = await LLM.completeJson(o.cfg, MAP_SYSTEM, r.requests.reading[1], SETTINGS.reading.maxTokens, rOpts);
       r.raw.reading.push(note('reading again', r1b));
       if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
     }
@@ -2254,8 +2256,8 @@ const Evaluate = (function () {
     r.kinds = Marking.kindNotes(d, mp.map);
     // the words (AI); the rules' own words if this fails
     say('Writing your feedback…');
-    const r2 = await LLM.completeJson(o.cfg, WORD_SYSTEM, Marking.base(factsText(r, prev)) + '\n\n' + (o.gameText || '') + '\n\nWrite the slides now.',
-      SETTINGS.wording.maxTokens, { temperature: SETTINGS.wording.temperature });
+    r.requests.wording = Marking.base(factsText(r, prev)) + '\n\n' + (o.gameText || '') + '\n\nWrite the slides now.';
+    const r2 = await LLM.completeJson(o.cfg, WORD_SYSTEM, r.requests.wording, SETTINGS.wording.maxTokens, { temperature: SETTINGS.wording.temperature });
     r.raw.wording = note('wording', r2);
     r.words = r2[1] ? null : r2[0];
     r.ms = Date.now() - t0;

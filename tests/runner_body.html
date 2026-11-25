@@ -31,7 +31,9 @@
       <button id="clearBtn" class="btn ghost">Clear results</button>
       <input type="file" id="resFile" accept=".json" hidden><input type="file" id="keyFile" accept=".json" hidden>
     </div>
+    <p id="startWhy" class="why" aria-live="polite"></p>
     <p id="status" class="status" aria-live="polite"></p>
+    <p id="saveWarn" class="why" aria-live="polite"></p>
     <div class="bar"><i id="barFill"></i></div>
     <details><summary>Runs so far</summary><div class="scroll"><table class="log"><thead><tr><th>Diagram</th><th>Model</th><th>Run</th><th>Result</th><th>TP / FN</th><th>FP</th><th>Classification</th><th>Time</th></tr></thead><tbody id="log"></tbody></table></div></details>
   </section>
@@ -44,7 +46,8 @@
       <button id="dlRes" class="btn" disabled>Download results (JSON)</button>
       <button id="dlRep" class="btn ghost" disabled>Download report (Markdown)</button>
       <button id="dlSlides" class="btn ghost" disabled>Download the explanations to rate (CSV)</button>
+      <button id="dlTr" class="btn ghost" disabled>Download the transcripts (Markdown)</button>
     </div>
-    <p class="muted">The results file holds every run in full: the AI's classification of the elements, what was flagged, the feedback's texts, each AI call's raw answer, time and tokens, and the settings. Keep it: anyone can mark it again with <code>node score.js results.json</code>, against this or a changed answer sheet, even after the models change.</p>
+    <p class="muted">The transcripts show every run so that each count in the report can be checked: what the AI was sent and answered, word for word, and how the run was marked. The results file holds every run in full: what each AI call was sent and answered, the AI's classification of the elements, what was flagged, the feedback's texts, each AI call's raw answer, time and tokens, and the settings. Keep it: anyone can mark it again with <code>node score.js results.json</code>, against this or a changed answer sheet, even after the models change.</p>
   </section>
 </div>

@@ -35,6 +35,7 @@ details summary{cursor:pointer;margin-top:12px;font-weight:600}
 .log td.bad{color:var(--bad)}.log td.good{color:var(--good)}
 #summary table{margin-top:8px}
 #groups p{margin:10px 0 4px}#groups p:first-child{margin-top:0}
+.why{margin:8px 0 0;color:var(--bad);min-height:0}.why:empty{display:none}
 </style>
 </head>
 <body>
@@ -71,7 +72,9 @@ details summary{cursor:pointer;margin-top:12px;font-weight:600}
       <button id="clearBtn" class="btn ghost">Clear results</button>
       <input type="file" id="resFile" accept=".json" hidden><input type="file" id="keyFile" accept=".json" hidden>
     </div>
+    <p id="startWhy" class="why" aria-live="polite"></p>
     <p id="status" class="status" aria-live="polite"></p>
+    <p id="saveWarn" class="why" aria-live="polite"></p>
     <div class="bar"><i id="barFill"></i></div>
     <details><summary>Runs so far</summary><div class="scroll"><table class="log"><thead><tr><th>Diagram</th><th>Model</th><th>Run</th><th>Result</th><th>TP / FN</th><th>FP</th><th>Classification</th><th>Time</th></tr></thead><tbody id="log"></tbody></table></div></details>
   </section>
@@ -84,8 +87,9 @@ details summary{cursor:pointer;margin-top:12px;font-weight:600}
       <button id="dlRes" class="btn" disabled>Download results (JSON)</button>
       <button id="dlRep" class="btn ghost" disabled>Download report (Markdown)</button>
       <button id="dlSlides" class="btn ghost" disabled>Download the explanations to rate (CSV)</button>
+      <button id="dlTr" class="btn ghost" disabled>Download the transcripts (Markdown)</button>
     </div>
-    <p class="muted">The results file holds every run in full: the AI's classification of the elements, what was flagged, the feedback's texts, each AI call's raw answer, time and tokens, and the settings. Keep it: anyone can mark it again with <code>node score.js results.json</code>, against this or a changed answer sheet, even after the models change.</p>
+    <p class="muted">The transcripts show every run so that each count in the report can be checked: what the AI was sent and answered, word for word, and how the run was marked. The results file holds every run in full: what each AI call was sent and answered, the AI's classification of the elements, what was flagged, the feedback's texts, each AI call's raw answer, time and tokens, and the settings. Keep it: anyone can mark it again with <code>node score.js results.json</code>, against this or a changed answer sheet, even after the models change.</p>
   </section>
 </div>
 <script>
@@ -1028,7 +1032,8 @@ const Evaluate = (function () {
   async function run(o) {
     const t0 = Date.now(), say = o.progress || function () {};
     const d = Marking.unique(o.diagram), list = elementList(d);
-    const r = { status: 'done', error: null, d: d, list: list, calls: [], raw: { reading: [], wording: null },
+    // what each AI call was sent (besides its system prompt) and what it answered, word for word
+    const r = { status: 'done', error: null, d: d, list: list, calls: [], raw: { reading: [], wording: null }, requests: { reading: [], wording: null },
       settings: { reading_temperature: SETTINGS.reading.temperature, wording_temperature: 'default', reading_max_tokens: SETTINGS.reading.maxTokens, wording_max_tokens: SETTINGS.wording.maxTokens } };
     const note = function (step, res) { const m = res[2] || {}; r.calls.push({ step: step, provider: m.provider, model: m.model, temperature: m.temperature, ms: m.ms, usage: m.usage, error: res[1] || null }); return m.text; };
     // layer 1: notation (rules)
@@ -1038,15 +1043,16 @@ const Evaluate = (function () {
     const ask1 = 'HOW THE GAME WORKS\n' + o.key.game + '\n\nTHE TASK GIVEN TO THE LEARNER\n' + o.key.task +
       '\n\nCONCEPTS OF THE GAME\n' + conceptText() + '\n\nTHE LEARNER\'S DIAGRAM\n' + list.text;
     const rOpts = { temperature: SETTINGS.reading.temperature };
-    const r1 = await LLM.completeJson(o.cfg, MAP_SYSTEM, ask1 + '\n\nMap every element now.', SETTINGS.reading.maxTokens, rOpts);
+    r.requests.reading.push(ask1 + '\n\nMap every element now.');
+    const r1 = await LLM.completeJson(o.cfg, MAP_SYSTEM, r.requests.reading[0], SETTINGS.reading.maxTokens, rOpts);
     r.raw.reading.push(note('reading', r1));
     if (r1[1]) { r.status = 'error'; r.error = r1[1]; r.ms = Date.now() - t0; return r; }
     const raws = [r1[0]];
     let mp = cleanMap(raws, list);
     if (mp.missing.length) {     // an element got no reading: ask once more for those
       say('Reading the rest of your diagram…');
-      const r1b = await LLM.completeJson(o.cfg, MAP_SYSTEM, ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') +
-        '. Answer again for every element, by number.', SETTINGS.reading.maxTokens, rOpts);
+      r.requests.reading.push(ask1 + '\n\nYour first answer gave nothing for ' + mp.missing.join(', ') + '. Answer again for every element, by number.');
+      const r1b = await LLM.completeJson(o.cfg, MAP_SYSTEM, r.requests.reading[1], SETTINGS.reading.maxTokens, rOpts);
       r.raw.reading.push(note('reading again', r1b));
       if (!r1b[1]) { raws.push(r1b[0]); mp = cleanMap(raws, list); }
     }
@@ -1064,8 +1070,8 @@ const Evaluate = (function () {
     r.kinds = Marking.kindNotes(d, mp.map);
     // the words (AI); the rules' own words if this fails
     say('Writing your feedback…');
-    const r2 = await LLM.completeJson(o.cfg, WORD_SYSTEM, Marking.base(factsText(r, prev)) + '\n\n' + (o.gameText || '') + '\n\nWrite the slides now.',
-      SETTINGS.wording.maxTokens, { temperature: SETTINGS.wording.temperature });
+    r.requests.wording = Marking.base(factsText(r, prev)) + '\n\n' + (o.gameText || '') + '\n\nWrite the slides now.';
+    const r2 = await LLM.completeJson(o.cfg, WORD_SYSTEM, r.requests.wording, SETTINGS.wording.maxTokens, { temperature: SETTINGS.wording.temperature });
     r.raw.wording = note('wording', r2);
     r.words = r2[1] ? null : r2[0];
     r.ms = Date.now() - t0;
@@ -1079,6 +1085,7 @@ if (typeof module !== 'undefined') module.exports = Evaluate;
 
 /* Marks the results of Beer Game Lab's tests against the answer sheet, for the performance assessment.
    Used by the test page, and on its own: node score.js results.json [answer_sheet.json] > report.md
+   and, for every run word for word:     node score.js results.json [answer_sheet.json] --transcripts > transcripts.md
 
    The answer sheet lists each test diagram's flaws. For each run of each diagram:
      TP  a flaw on the answer sheet that the feedback flags
@@ -1105,6 +1112,7 @@ const Score = (function () {
   function index(sheet) { const K = {}; sheet.forEach(function (k) { K[k.id] = k; if (k.old_label) K[k.old_label] = k; }); return K; }
   const typeOf = function (k) { const sy = k.flaws.some(function (f) { return f.type === 'syntactic'; }), co = k.flaws.some(function (f) { return f.type === 'conceptual'; }); return sy && co ? 'SyCo' : sy ? 'Sy' : co ? 'Co' : 'NA'; };
   const title = function (k) { return k.label + ' ' + k.name; };
+  const runsText = function (rs) { rs = rs.slice().sort(function (a, b) { return a - b; }); return (rs.length === 1 ? 'run ' : 'runs ') + rs.join(', '); };
   const pct = function (a, b) { return b ? Math.round(1000 * a / b) / 10 + '%' : '–'; };
   const median = function (xs) { xs = xs.filter(function (x) { return typeof x === 'number'; }).sort(function (a, b) { return a - b; }); if (!xs.length) return null; const m = xs.length >> 1; return xs.length % 2 ? xs[m] : (xs[m - 1] + xs[m]) / 2; };
   const same = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
@@ -1198,11 +1206,11 @@ const Score = (function () {
         const k = K[r.id], flags = runFlags(r, diagrams[k.id]), m = mark(k, flags);
         s.perRun[k.id + '|' + r.run] = { flags: flags, mark: m };
         s.tp += m.caught.length; s.fn += m.missed.length; s.tn += m.silences;
-        m.falseAlarms.forEach(function (fl) { if (isRule(fl)) s.fp++; else s.fpAI++; const t = title(k) + ' · ' + describe(fl); s.falseAlarms[t] = (s.falseAlarms[t] || 0) + 1; });
+        m.falseAlarms.forEach(function (fl) { if (isRule(fl)) s.fp++; else s.fpAI++; const t = title(k) + ' · ' + describe(fl); (s.falseAlarms[t] = s.falseAlarms[t] || []).push(r.run); });
         const tally = function (c, hit) { const T = s.byType[c.flaw.type], Kd = s.byKind[c.flaw.kind] = s.byKind[c.flaw.kind] || [0, 0, c.flaw.type]; T[1]++; Kd[1]++; if (hit) { T[0]++; Kd[0]++; } };
         m.caught.forEach(function (c) { tally(c, true);
           const ru = c.by.some(isRule), ai = c.by.some(function (fl) { return !isRule(fl); }); s.byChannel[ru && ai ? 'both' : ru ? 'rules' : 'ai']++; });
-        m.missed.forEach(function (c) { tally(c, false); const t = title(k) + ' · ' + c.flaw.flaw; s.missed[t] = (s.missed[t] || 0) + 1; });
+        m.missed.forEach(function (c) { tally(c, false); const t = title(k) + ' · ' + c.flaw.flaw; (s.missed[t] = s.missed[t] || []).push(r.run); });
         if (m.flaws) { if (m.caught.length) s.diag.tp++; else s.diag.fn++; }
         else { if (m.falseAlarms.length) s.diag.fp++; else s.diag.tn++; }
       });
@@ -1219,7 +1227,7 @@ const Score = (function () {
         Object.keys(want).forEach(function (n) {
           const w = want[n] === 'extra' ? 'extra' : sorted(want[n]), a = got[n] || 'unread';
           el++; if (same(w, a)) elOk++;
-          else { const t = title(k) + ' · ' + n + ' · answer sheet: ' + (w === 'extra' ? 'not part of the game' : w.join('+')) + ' · AI: ' + (a === 'extra' ? 'not part of the game' : a === 'unread' ? 'unclassified' : a.join('+')); misreads[t] = (misreads[t] || 0) + 1; }
+          else { const t = title(k) + ' · ' + n + ' · answer sheet: ' + (w === 'extra' ? 'not part of the game' : w.join('+')) + ' · AI: ' + (a === 'extra' ? 'not part of the game' : a === 'unread' ? 'unclassified' : a.join('+')); (misreads[t] = misreads[t] || []).push(r.run); }
         });
       });
       s.interpretation = { elements: el, right: elOk, share: pct(elOk, el), misreads: misreads };
@@ -1300,9 +1308,9 @@ const Score = (function () {
       L.push('');
       L.push('**TPs by what flagged them:** the rules only ' + x.byChannel.rules + ', the AI only ' + x.byChannel.ai + ', both ' + x.byChannel.both + '.', '');
       const mi = Object.keys(x.missed).sort();
-      if (mi.length) { L.push('**FNs** (test · flaw, with the number of runs):', ''); mi.forEach(function (t) { L.push('- ' + t + ' (' + x.missed[t] + ')'); }); L.push(''); }
+      if (mi.length) { L.push('**FNs** (test · flaw, and the runs: see them in the transcripts):', ''); mi.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.missed[t]) + ')'); }); L.push(''); }
       const fa = Object.keys(x.falseAlarms).sort();
-      if (fa.length) { L.push('**FPs** (test · what was flagged, with the number of runs):', ''); fa.forEach(function (t) { L.push('- ' + t + ' (' + x.falseAlarms[t] + ')'); }); L.push(''); }
+      if (fa.length) { L.push('**FPs** (test · what was flagged, and the runs):', ''); fa.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.falseAlarms[t]) + ')'); }); L.push(''); }
       L.push('**Supporting measures**', '');
       L.push('- The AI\'s classification of the elements (each element to a part of the game, or to none): ' + x.interpretation.right + ' of ' + x.interpretation.elements + ' as the answer sheet says; accuracy ' + x.interpretation.share + '.');
       L.push('- Repeats: the same flags in every run for ' + x.consistency.sameFlags + ' of ' + x.consistency.diagrams + ' diagrams (' + x.consistency.share + '); the same classification for ' + x.consistency.sameInterpretation + ' (' + x.consistency.interpretationShare + ').' +
@@ -1314,7 +1322,7 @@ const Score = (function () {
       L.push('- Time and tokens: median ' + round(x.cost.medianSeconds, 1) + ' s, ' + round(x.cost.medianInput) + ' input and ' + round(x.cost.medianOutput) + ' output tokens per evaluation; ' +
         x.cost.totalInput + ' and ' + x.cost.totalOutput + ' in all.', '');
       const mis = Object.keys(x.interpretation.misreads).sort();
-      if (mis.length) { L.push('**Elements the AI classified differently from the answer sheet** (test · element · answer sheet · AI, with the number of runs):', ''); mis.forEach(function (t) { L.push('- ' + t + ' (' + x.interpretation.misreads[t] + ')'); }); L.push(''); }
+      if (mis.length) { L.push('**Elements the AI classified differently from the answer sheet** (test · element · answer sheet · AI, and the runs):', ''); mis.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.interpretation.misreads[t]) + ')'); }); L.push(''); }
     });
     return L.join('\n');
   }
@@ -1361,18 +1369,95 @@ const Score = (function () {
     return out;
   }
 
-  return { score: score, report: report, ratingCsv: ratingCsv, rulesAlone: rulesAlone, runFlags: runFlags, mark: mark, describe: describe, index: index, typeOf: typeOf,
+  /* The transcripts: every run, as Markdown, so each count in the report can be checked against what the
+     AI was sent and what it answered, word for word. Runs are in the order of the tests, then model, then run. */
+  function transcripts(results, sheet, diagrams) {
+    const K = index(sheet), L = [], CN = {}; MK.CONCEPTS.forEach(function (c) { CN[c.id] = c.name; });
+    const fence = function (t) { return ['````', t == null || t === '' ? '(nothing)' : String(t), '````']; };
+    const concepts = function (v) { return v === 'extra' ? 'not part of the game' : v === 'unread' ? 'nothing' : v.map(function (c) { return CN[c] || c; }).join(' + '); };
+    const runs = (results.runs || []).filter(function (r) { return K[r.id] && diagrams[K[r.id].id]; }).slice()
+      .sort(function (a, b) { return K[a.id].id - K[b.id].id || (modelName(a) < modelName(b) ? -1 : modelName(a) > modelName(b) ? 1 : 0) || a.run - b.run; });
+    L.push('# Beer Game Lab: transcripts', '');
+    L.push('App version ' + (results.app_version || '?') + '. Runs started ' + (results.created || '?') + '. ' + runs.length + ' runs, in the order of the tests, then model, then run. ' +
+      'Each shows what the AI was sent and what it answered, word for word, and how the run was marked against the answer sheet.', '');
+    L.push('Settings: the classification at temperature ' + ((results.settings || {}).reading_temperature) + ' (where the model accepts one), the wording at the model\'s default.', '');
+    L.push('## The system prompts, sent with every call', '', '**Classification**', '');
+    fence((results.prompts || {}).reading).forEach(function (x) { L.push(x); });
+    L.push('', '**Wording**', ''); fence((results.prompts || {}).wording).forEach(function (x) { L.push(x); });
+    L.push('', '## The game given to the wording', '', 'The same for every run, except where a run says otherwise (its wording request below shows what was sent).', '');
+    fence(results.game_text).forEach(function (x) { L.push(x); });
+    L.push('');
+    runs.forEach(function (r) {
+      const k = K[r.id], d = diagrams[k.id], u = MK.unique(d), map = toInternal(u, r.reading || {}), q = r.requests || null, w = r.words || {};
+      const cs = (r.calls || []), tok = function (key) { return cs.reduce(function (t, c) { return t + ((c.usage && c.usage[key]) || 0); }, 0); };
+      L.push('---', '', '## ' + title(k) + ' · ' + modelName(r) + ' · run ' + r.run, '');
+      L.push('**Diagram:** ' + k.diagram + '  ', '**Run:** ' + (r.status === 'done' ? 'evaluated' : r.status === 'unread' ? 'stopped: the AI left elements unclassified' : 'failed: ' + r.error) +
+        (typeof r.ms === 'number' ? ', ' + (r.ms / 1000).toFixed(1) + ' s' : '') + '; ' + cs.length + ' AI call' + (cs.length === 1 ? '' : 's') + ' (' +
+        cs.map(function (c) { return c.step + ': ' + c.model + ', temperature ' + c.temperature + (c.error ? ', error ' + c.error : ''); }).join('; ') + '); ' + tok('input') + ' input and ' + tok('output') + ' output tokens.', '');
+      // the marks
+      if (r.status === 'done') {
+        const m = mark(k, runFlags(r, d));
+        L.push('### Marked against the answer sheet', '');
+        if (!k.flaws.length) L.push('A correct diagram: nothing should be flagged.');
+        m.caught.forEach(function (c) { L.push('- **TP** ' + c.flaw.flaw + ' (' + c.flaw.type + ', ' + c.flaw.kind + '). Flagged by: ' + c.by.map(describe).join('; ') + '.'); });
+        m.missed.forEach(function (c) { L.push('- **FN** ' + c.flaw.flaw + ' (' + c.flaw.type + ', ' + c.flaw.kind + ').'); });
+        m.falseAlarms.forEach(function (fl) { L.push('- **FP** ' + describe(fl) + (isRule(fl) ? ' (rules)' : ' (AI)') + '.'); });
+        if (k.flaws.length || m.falseAlarms.length) L.push('');
+        else L.push('Nothing was flagged.', '');
+      }
+      // the classification
+      L.push('### 1. Classification', '', '**Sent**' + (q ? '' : ' (not stored: this run was made before requests were kept; it can be rebuilt from the diagram with app version ' + (results.app_version || '?') + ')'), '');
+      if (q) { const first = q.classification && q.classification.indexOf('as classification_requests') === 0 ? (results.classification_requests || {})[k.id] || (results.classification_requests || {})[r.id] : q.classification;
+        fence(first).forEach(function (x) { L.push(x); }); }
+      L.push('', '**Answered**', ''); fence(((r.raw || {}).reading || [])[0]).forEach(function (x) { L.push(x); });
+      if (((r.raw || {}).reading || []).length > 1) {
+        L.push('', '**Sent again** (elements were missing from the first answer)', ''); fence(q ? q.classification_again : '(not stored)').forEach(function (x) { L.push(x); });
+        L.push('', '**Answered again**', ''); fence(r.raw.reading[1]).forEach(function (x) { L.push(x); });
+      }
+      const want = sheetInterp(k), got = {};
+      Object.keys(r.reading || {}).forEach(function (n) { got[n] = sorted(r.reading[n]); });
+      (r.extras || []).forEach(function (n) { if (!got[n]) got[n] = 'extra'; });
+      L.push('', '| Element | Answer sheet | AI | Same |', '| --- | --- | --- | --- |');
+      Object.keys(want).forEach(function (n) { const a = want[n] === 'extra' ? 'extra' : sorted(want[n]), b = got[n] || 'unread';
+        L.push('| ' + n.replace(/\|/g, '/') + ' | ' + concepts(a) + ' | ' + concepts(b) + ' | ' + (same(a, b) ? 'yes' : '**no**') + ' |'); });
+      L.push('');
+      if (r.status !== 'done') return;
+      // what was flagged, and the feedback
+      const notes = MK.notation(u), kinds = MK.kindNotes(u, map), mech = MK.mechanisms(u, map).mechanisms, comments = extraComments(r, u);
+      L.push('### 2. Flagged', '');
+      const flags = runFlags(r, d);
+      if (!flags.length) L.push('Nothing.');
+      flags.forEach(function (fl) { L.push('- ' + describe(fl)); });
+      L.push('', '### 3. Wording', '', '**Sent**', ''); fence(q ? q.wording : '(not stored: rebuild it from the run\'s flags with the same app version)').forEach(function (x) { L.push(x); });
+      L.push('', '**Answered**', ''); fence((r.raw || {}).wording).forEach(function (x) { L.push(x); });
+      L.push('', '### 4. The feedback the learner would see', '');
+      if (r.worded_by !== 'ai') L.push('_The AI\'s wording was not available: the app shows the rules\' own texts._', '');
+      if (w.headline) L.push('**' + w.headline + '**', '');
+      if (w.overall) L.push(w.overall, '');
+      if (r.extras && r.extras.length) L.push('Not part of the game: ' + r.extras.map(function (n) { return n + (comments[n] ? ' (' + comments[n] + ')' : ''); }).join('; ') + '.', '');
+      kinds.forEach(function (n) { L.push('- ' + n.text); });
+      (r.failing || []).forEach(function (id) { const x = mech.find(function (y) { return y.id === id; });
+        L.push('- **' + (x ? x.title : id) + ':** ' + ((w.slides && w.slides[id]) || (x ? x.hint : ''))); });
+      notes.filter(function (n) { return (r.notation || []).indexOf(n.id) >= 0; }).forEach(function (n) { L.push('- ' + (/^W/.test(n.id) ? 'To check: ' : 'To fix: ') + n.text); });
+      if (w.wrap) L.push('', w.wrap);
+      L.push('');
+    });
+    return L.join('\n');
+  }
+
+  return { score: score, report: report, ratingCsv: ratingCsv, transcripts: transcripts, rulesAlone: rulesAlone, runFlags: runFlags, mark: mark, describe: describe, index: index, typeOf: typeOf,
     MECHS: MECHS, CHECKS: CHECKS, TYPES: TYPES, SOURCES: SOURCES };
 })();
 if (typeof module !== 'undefined') {
   module.exports = Score;
   if (require.main === module) {
     const fs = require('fs'), path = require('path');
-    const results = JSON.parse(fs.readFileSync(process.argv[2]));
-    const sheetPath = process.argv[3] || path.join(__dirname, 'answer_sheet.json');
+    const args = process.argv.slice(2).filter(function (a) { return a.indexOf('--') !== 0; });
+    const results = JSON.parse(fs.readFileSync(args[0]));
+    const sheetPath = args[1] || path.join(__dirname, 'answer_sheet.json');
     const sheet = JSON.parse(fs.readFileSync(sheetPath)), diagrams = {};
     sheet.forEach(function (k) { diagrams[k.id] = JSON.parse(fs.readFileSync(path.join(path.dirname(sheetPath), k.file))); });
-    process.stdout.write(Score.report(results, sheet, diagrams) + '\n');
+    process.stdout.write((process.argv.indexOf('--transcripts') > 0 ? Score.transcripts(results, sheet, diagrams) : Score.report(results, sheet, diagrams)) + '\n');
   }
 }
 
@@ -1447,12 +1532,19 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
       return { provider: p, model: p === 'rehearsal' ? 'the answer sheet' : ($('model' + i).value.trim() || LLM.DEFAULT_MODELS[p]), key: key, runs: runs };
     }).filter(Boolean);
   }
+  /* The two rows of boxes narrow the tests down: a row with nothing ticked does not narrow at all.
+     Each box's count is how many tests it would give, with the other row as it stands. */
+  const ticked = function (pre, keys) { return keys.filter(function (x) { const b = $(pre + x); return b && b.checked; }); };
+  const fits = function (k, types, sources) { return (!types.length || types.indexOf(Score.typeOf(k)) >= 0) && (!sources.length || sources.indexOf(k.source) >= 0); };
   function chosenIds() {
     const only = $('only').value.replace(/id/gi, ' ').split(/[\s,;]+/).map(function (s) { return parseInt(s, 10); }).filter(function (n) { return n > 0; });
-    return KEY.filter(function (k) {
-      if (only.length) return only.indexOf(k.id) >= 0;
-      const t = $('type' + Score.typeOf(k)), s = $('source' + k.source); return t && t.checked && s && s.checked;
-    }).map(function (k) { return k.id; });
+    const types = ticked('type', Object.keys(Score.TYPES)), sources = ticked('source', Object.keys(Score.SOURCES));
+    return KEY.filter(function (k) { return only.length ? only.indexOf(k.id) >= 0 : fits(k, types, sources); }).map(function (k) { return k.id; });
+  }
+  function drawCounts() {
+    const types = ticked('type', Object.keys(Score.TYPES)), sources = ticked('source', Object.keys(Score.SOURCES));
+    Object.keys(Score.TYPES).forEach(function (t) { $('ntype' + t).textContent = KEY.filter(function (k) { return fits(k, [t], sources); }).length; });
+    Object.keys(Score.SOURCES).forEach(function (x) { $('nsource' + x).textContent = KEY.filter(function (k) { return fits(k, types, [x]); }).length; });
   }
   const runKey = function (id, m, run) { return id + '|' + m.provider + '/' + m.model + '|' + run; };
   function tasks() {
@@ -1469,15 +1561,23 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
     $('plan').textContent = ids.length + ' diagrams × ' + (ms.map(function (m) { return m.runs + ' run' + (m.runs === 1 ? '' : 's') + ' with ' + m.model; }).join(', ') || 'no model yet') +
       ': ' + T.length + ' evaluations to do' + (results.runs.length ? ' (' + results.runs.length + ' already in the results)' : '') + '.';
     $('startBtn').disabled = running || !T.length;
+    // why Start is grey, said where it is
+    const keyless = ROW_DEFAULTS.some(function (d, i) { return $('prov' + i).value && $('prov' + i).value !== 'rehearsal' && !$('key' + i).value.trim(); });
+    $('startWhy').textContent = running || T.length ? '' : !ids.length ? 'No tests are chosen: untick a box in section 2, or empty "Only these".'
+      : !ms.length ? (keyless ? 'Paste an API key into a model row (or choose Rehearsal) to start.' : 'Choose a model, with at least one run, in section 1.')
+      : 'Every run asked for is already in the results: raise Runs, add a model, or download and clear the results.';
+    if ($('ntypeNA')) drawCounts();
   }
 
   /* ---------- running ---------- */
   let results = newResults(), running = false, stopping = false;
   function newResults() {
-    return { format: 'beer-game-lab-test-results', version: 1, app_version: APP_VERSION, created: new Date().toISOString(),
+    return { format: 'beer-game-lab-test-results', version: 2, app_version: APP_VERSION, created: new Date().toISOString(),
       settings: { reading_temperature: Evaluate.SETTINGS.reading.temperature, wording_temperature: 'default',
         reading_max_tokens: Evaluate.SETTINGS.reading.maxTokens, wording_max_tokens: Evaluate.SETTINGS.wording.maxTokens },
-      game_text: GAME_TEXT, prompts: { reading: Evaluate.MAP_SYSTEM, wording: Evaluate.WORD_SYSTEM }, runs: [] };
+      game_text: GAME_TEXT, prompts: { reading: Evaluate.MAP_SYSTEM, wording: Evaluate.WORD_SYSTEM },
+      classification_requests: {},   // by test: what the classification call is sent, the same in every run of that test
+      runs: [] };
   }
   async function runOne(t) {
     const cfg = { provider: t.m.provider, key: t.m.key, model: t.m.model, testId: t.id };
@@ -1493,6 +1593,11 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
       extras: map ? map.extras.map(function (x) { return sh(x.element); }) : null,
       missing: map ? map.missing.map(function (id) { return sh(ev.list.ids[id]); }) : null,
       notation: (ev.notation || []).map(function (n) { return n.id; }) };
+    // what each AI call was sent besides its system prompt: the classification request once per test, the rest per run
+    const q = ev.requests || { reading: [], wording: null }, cr = results.classification_requests = results.classification_requests || {};
+    if (q.reading[0] && !(t.id in cr)) cr[t.id] = q.reading[0];
+    rec.requests = { classification: q.reading[0] && q.reading[0] === cr[t.id] ? 'as classification_requests[' + t.id + ']' : (q.reading[0] || null),
+      classification_again: q.reading[1] || null, wording: q.wording || null };
     if (ev.status === 'done') {
       rec.failing = ev.fails.map(function (m) { return m.id; });
       rec.optional_passed = ev.mech.mechanisms.filter(function (m) { return m.weight === 'optional' && m.pass; }).map(function (m) { return m.id; });
@@ -1539,7 +1644,7 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
   }
   function drawResults() {
     const has = results.runs.length > 0;
-    ['dlRes', 'dlRep', 'dlSlides'].forEach(function (id) { $(id).disabled = !has; });
+    ['dlRes', 'dlRep', 'dlSlides', 'dlTr'].forEach(function (id) { $(id).disabled = !has; });
     const s = Score.score(results, KEY, DIAGRAMS), ra = s.rulesAlone;
     $('q3').innerHTML = '<b>The rules alone</b>, given the answer sheet\'s classification of the elements (no AI): TP ' + ra.caught + ', FN ' + (ra.flaws - ra.caught) + ', FP ' + ra.falseAlarms.length + '.' +
       (ra.missed.length ? ' The FNs: ' + esc(ra.missed.join('; ')) + '.' : '');
@@ -1555,15 +1660,22 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
   }
   const stamp = function () { return new Date().toISOString().slice(0, 16).replace(/[-:T]/g, ''); };
   /* a copy in this browser, in case the page is closed before the results are downloaded */
-  function save() { try { localStorage.setItem('bgl.testResults', JSON.stringify(results)); } catch (e) {} }
+  let warned = false;
+  function save() {
+    try { localStorage.setItem('bgl.testResults', JSON.stringify(results)); if (warned) { warned = false; $('saveWarn').textContent = ''; } }
+    catch (e) {   // the browser's copy is full: say so, the runs are still in the page
+      if (!warned) { warned = true; $('saveWarn').textContent = 'The browser\'s copy of the results is full, so a closed page could no longer carry on. The runs are safe while this page is open: download the results (section 4) now and then.'; }
+    }
+  }
 
   /* ---------- wiring ---------- */
   function init() {
     $('ver').textContent = APP_VERSION; $('nTests').textContent = KEY.length;
     drawRows();
-    const box = function (pre, key, label, n) { return '<label><input type="checkbox" id="' + pre + key + '" checked> ' + esc(label) + ' (' + n + ')</label>'; };
-    $('groups').innerHTML = '<p class="muted">Type of flaw</p><div class="checks">' + Object.keys(Score.TYPES).map(function (t) { return box('type', t, Score.TYPES[t], KEY.filter(function (k) { return Score.typeOf(k) === t; }).length); }).join('') + '</div>' +
-      '<p class="muted">Designed by</p><div class="checks">' + Object.keys(Score.SOURCES).map(function (s) { return box('source', s, Score.SOURCES[s], KEY.filter(function (k) { return k.source === s; }).length); }).join('') + '</div>';
+    const box = function (pre, key, label) { return '<label><input type="checkbox" id="' + pre + key + '"><span>' + esc(label) + ' (<span id="n' + pre + key + '"></span>)</span></label>'; };
+    $('groups').innerHTML = '<p class="muted">All tests run unless you tick boxes to narrow them down. Ticking in both rows gives the tests that fit both.</p>' +
+      '<p class="muted">Type of flaw</p><div class="checks">' + Object.keys(Score.TYPES).map(function (t) { return box('type', t, Score.TYPES[t]); }).join('') + '</div>' +
+      '<p class="muted">Designed by</p><div class="checks">' + Object.keys(Score.SOURCES).map(function (x) { return box('source', x, Score.SOURCES[x]); }).join('') + '</div>';
     Object.keys(Score.TYPES).forEach(function (t) { $('type' + t).addEventListener('change', drawPlan); });
     Object.keys(Score.SOURCES).forEach(function (s) { $('source' + s).addEventListener('change', drawPlan); });
     $('only').addEventListener('input', drawPlan);
@@ -1571,7 +1683,8 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
     $('stopBtn').addEventListener('click', function () { stopping = true; $('stopBtn').disabled = true; });
     $('dlRes').addEventListener('click', function () { download('beer-game-lab-test-results-' + stamp() + '.json', JSON.stringify(results, null, 1), 'application/json'); });
     $('dlRep').addEventListener('click', function () { download('beer-game-lab-test-report-' + stamp() + '.md', Score.report(results, KEY, DIAGRAMS), 'text/markdown'); });
-    $('dlSlides').addEventListener('click', function () { download('beer-game-lab-explanations-to-rate-' + stamp() + '.csv', Score.ratingCsv(results, KEY, DIAGRAMS), 'text/csv'); });
+    $('dlTr').addEventListener('click', function () { download('beer-game-lab-transcripts-' + stamp() + '.md', Score.transcripts(results, KEY, DIAGRAMS), 'text/markdown'); });
+  $('dlSlides').addEventListener('click', function () { download('beer-game-lab-explanations-to-rate-' + stamp() + '.csv', Score.ratingCsv(results, KEY, DIAGRAMS), 'text/csv'); });
     $('clearBtn').addEventListener('click', function () {
       if (running || (results.runs.length && !window.confirm('Clear all ' + results.runs.length + ' runs from this page? Download the results first if you want to keep them.'))) return;
       results = newResults(); $('log').innerHTML = ''; save(); drawResults(); drawPlan(); $('status').textContent = 'Results cleared.';
@@ -1582,6 +1695,8 @@ const TEST_DATA = {"sheet": [{"id": 1, "label": "id 1", "file": "diagrams/id01_N
       if (!o || o.format !== 'beer-game-lab-test-results') { $('status').textContent = 'That is not a results file from this page.'; return; }
       const have = {}; results.runs.forEach(function (r) { have[runKey(r.id, r.model, r.run)] = 1; });
       normalise(o.runs).forEach(function (r) { if (!have[runKey(r.id, r.model, r.run)]) results.runs.push(r); });
+      const cr = results.classification_requests = results.classification_requests || {};
+      Object.keys(o.classification_requests || {}).forEach(function (id) { const k = byId(id); if (k && !(k.id in cr)) cr[k.id] = o.classification_requests[id]; });
       if (o.created < results.created) results.created = o.created;
       $('log').innerHTML = ''; results.runs.forEach(addLog); save(); drawResults(); drawPlan();
       $('status').textContent = 'Loaded ' + o.runs.length + ' runs. Start continues with the runs not yet done' + (o.app_version !== APP_VERSION ? '. Note: they were made with app version ' + o.app_version + ', not ' + APP_VERSION + '.' : '.');
