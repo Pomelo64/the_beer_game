@@ -1,0 +1,69 @@
+{
+ "stocks": [
+  {
+   "label": "rabbits",
+   "x": 287,
+   "y": 370
+  }
+ ],
+ "auxiliaries": [],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 28,
+   "y": 369
+  },
+  {
+   "label": "cloud",
+   "x": 552,
+   "y": 370
+  }
+ ],
+ "flows": [
+  {
+   "label": "birth rate",
+   "from": "cloud",
+   "to": "rabbits",
+   "from_xy": [
+    28,
+    369
+   ],
+   "to_xy": [
+    287,
+    370
+   ],
+   "valve_xy": [
+    144,
+    370
+   ]
+  },
+  {
+   "label": "death rate",
+   "from": "rabbits",
+   "to": "cloud",
+   "from_xy": [
+    287,
+    370
+   ],
+   "to_xy": [
+    552,
+    370
+   ],
+   "valve_xy": [
+    406,
+    371
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "rabbits",
+   "to": "birth rate"
+  },
+  {
+   "from": "rabbits",
+   "to": "death rate"
+  }
+ ],
+ "junctions": []
+}

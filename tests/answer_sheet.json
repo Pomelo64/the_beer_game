@@ -1,0 +1,4156 @@
+[
+ {
+  "id": 1,
+  "label": "id 1",
+  "file": "diagrams/id01_NA-0-author.json",
+  "name": "NA-0-author",
+  "source": "author",
+  "diagram": "A correct model [the author's own model of the game, drawn by hand, with a stock of served customers]",
+  "flaws": [],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F1"
+ },
+ {
+  "id": 2,
+  "label": "id 2",
+  "file": "diagrams/id02_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "The reference, as the author drew it",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "A1"
+ },
+ {
+  "id": 3,
+  "label": "id 3",
+  "file": "diagrams/id03_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "A1 with every name replaced by a synonym",
+  "flaws": [],
+  "expected_classification": {
+   "guests this week": [
+    "C5"
+   ],
+   "backlog": [
+    "C3"
+   ],
+   "kegs at the pub": [
+    "C1"
+   ],
+   "running cost": [
+    "C4"
+   ],
+   "kegs in transit": [
+    "C2"
+   ],
+   "guests arriving [flow cloud -> guests this week]": [
+    "C8"
+   ],
+   "served on the spot [flow guests this week -> cloud]": [
+    "C9"
+   ],
+   "added to backlog [flow guests this week -> backlog]": [
+    "C10"
+   ],
+   "cost per week [flow cloud -> running cost]": [
+    "C13"
+   ],
+   "kegs poured [flow kegs at the pub -> cloud]": [
+    "C12"
+   ],
+   "backlog served [flow backlog -> cloud]": [
+    "C11"
+   ],
+   "deliveries [flow kegs in transit -> kegs at the pub]": [
+    "C7"
+   ],
+   "ordering [flow cloud -> kegs in transit]": [
+    "C6"
+   ],
+   "demand pattern": [
+    "C14"
+   ],
+   "supplier capacity": [
+    "C15"
+   ],
+   "my order": [
+    "C16"
+   ]
+  },
+  "same_flags_as": 2,
+  "old_label": "A2"
+ },
+ {
+  "id": 4,
+  "label": "id 4",
+  "file": "diagrams/id04_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "A1 with a different layout, same structure",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "same_flags_as": 2,
+  "old_label": "A3"
+ },
+ {
+  "id": 5,
+  "label": "id 5",
+  "file": "diagrams/id05_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "Kegs on order split into \"on back order\" and \"on the road\"",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "on back order": [
+    "C2"
+   ],
+   "on the road": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow on the road -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> on back order]": [
+    "C6"
+   ],
+   "shipping rate [flow on back order -> on the road]": [
+    "C7"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "A4"
+ },
+ {
+  "id": 6,
+  "label": "id 6",
+  "file": "diagrams/id06_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "No customers-this-week stock: arrivals flow straight into the waiting customers",
+  "flaws": [],
+  "expected_classification": {
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> waiting to serve]": [
+    "C8"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "A5"
+ },
+ {
+  "id": 7,
+  "label": "id 7",
+  "file": "diagrams/id07_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "Cellar drained by two flows, one per kind of serving",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "kegs served on arrival [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "kegs served late [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "A6"
+ },
+ {
+  "id": 8,
+  "label": "id 8",
+  "file": "diagrams/id08_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "Order decision modelled, informed by the cellar and the waiting customers",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "A7"
+ },
+ {
+  "id": 9,
+  "label": "id 9",
+  "file": "diagrams/id09_NA-0-claude.json",
+  "name": "NA-0-claude",
+  "source": "claude",
+  "diagram": "A1 plus a delivery time and the two cost rates",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "delivery time": [
+    "C17"
+   ],
+   "holding cost per keg": [
+    "C18"
+   ],
+   "cost per keg owed": [
+    "C18"
+   ]
+  },
+  "old_label": "A8"
+ },
+ {
+  "id": 10,
+  "label": "id 10",
+  "file": "diagrams/id10_NA-0-lit.json",
+  "name": "NA-0-lit",
+  "source": "lit",
+  "diagram": "The reference, with a confident but wrong explanation from the learner: tests the wording only [Akhavan & Jalali 2024, the model agreed readily with the user]",
+  "flaws": [],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "said": "My diagram shows that the three-week delivery does not matter. My costs were all the wholesaler's fault, and ordering more every week would have fixed them.",
+  "old_label": "G10"
+ },
+ {
+  "id": 11,
+  "label": "id 11",
+  "file": "diagrams/id11_Sy-1-loose_cloud-author.json",
+  "name": "Sy-1-loose_cloud-author",
+  "source": "author",
+  "diagram": "A correct model with an extra element (cloud) [F1 with a cloud attached to nothing]",
+  "flaws": [
+   {
+    "flaw": "An extra element (cloud)",
+    "type": "syntactic",
+    "kind": "loose_cloud",
+    "caught_by": []
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F3"
+ },
+ {
+  "id": 12,
+  "label": "id 12",
+  "file": "diagrams/id12_Sy-1-link_into_stock-author.json",
+  "name": "Sy-1-link_into_stock-author",
+  "source": "author",
+  "diagram": "A correct model with a semantically and logically wrong link [the player decision linked into the orders stock]",
+  "flaws": [
+   {
+    "flaw": "The player decision linked into the orders stock",
+    "type": "syntactic",
+    "kind": "link_into_stock",
+    "caught_by": [
+     "N2",
+     "W1"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F7"
+ },
+ {
+  "id": 13,
+  "label": "id 13",
+  "file": "diagrams/id13_Sy-1-same_name-claude.json",
+  "name": "Sy-1-same_name-claude",
+  "source": "claude",
+  "diagram": "Two flows called \"coming in rate\" (the deliveries renamed)",
+  "flaws": [
+   {
+    "flaw": "Two flows with the same name",
+    "type": "syntactic",
+    "kind": "same_name",
+    "caught_by": [
+     "N1"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "coming in rate (2) [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "C1"
+ },
+ {
+  "id": 14,
+  "label": "id 14",
+  "file": "diagrams/id14_Sy-1-link_into_stock-claude.json",
+  "name": "Sy-1-link_into_stock-claude",
+  "source": "claude",
+  "diagram": "A link from serving into the cellar",
+  "flaws": [
+   {
+    "flaw": "A link from serving into the cellar",
+    "type": "syntactic",
+    "kind": "link_into_stock",
+    "caught_by": [
+     "N2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "C2"
+ },
+ {
+  "id": 15,
+  "label": "id 15",
+  "file": "diagrams/id15_Sy-1-link_from_cloud-claude.json",
+  "name": "Sy-1-link_from_cloud-claude",
+  "source": "claude",
+  "diagram": "A link from a cloud to the customers arriving",
+  "flaws": [
+   {
+    "flaw": "A link from a cloud",
+    "type": "syntactic",
+    "kind": "link_from_cloud",
+    "caught_by": [
+     "N3"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "C3"
+ },
+ {
+  "id": 16,
+  "label": "id 16",
+  "file": "diagrams/id16_Sy-1-flow_from_variable-claude.json",
+  "name": "Sy-1-flow_from_variable-claude",
+  "source": "claude",
+  "diagram": "The cost per week flows from an auxiliary into the cost",
+  "flaws": [
+   {
+    "flaw": "The cost per week flows from an auxiliary",
+    "type": "syntactic",
+    "kind": "flow_from_variable",
+    "caught_by": [
+     "N4"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow weekly costs -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "weekly costs": [
+    "C18"
+   ]
+  },
+  "old_label": "C4"
+ },
+ {
+  "id": 17,
+  "label": "id 17",
+  "file": "diagrams/id17_Sy-1-flow_between_clouds-claude.json",
+  "name": "Sy-1-flow_between_clouds-claude",
+  "source": "claude",
+  "diagram": "A flow between two clouds (\"spillage\")",
+  "flaws": [
+   {
+    "flaw": "A flow between two clouds (\"spillage\")",
+    "type": "syntactic",
+    "kind": "flow_between_clouds",
+    "caught_by": [
+     "N6",
+     "extra:spillage"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "spillage [flow cloud -> cloud]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "C6"
+ },
+ {
+  "id": 18,
+  "label": "id 18",
+  "file": "diagrams/id18_Sy-1-flow_into_itself-claude.json",
+  "name": "Sy-1-flow_into_itself-claude",
+  "source": "claude",
+  "diagram": "A flow from the cellar back into the cellar (\"restocking\")",
+  "flaws": [
+   {
+    "flaw": "A flow from the cellar back into the cellar (\"restocking\")",
+    "type": "syntactic",
+    "kind": "flow_into_itself",
+    "caught_by": [
+     "N7",
+     "extra:restocking"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "restocking [flow pub cellar -> pub cellar]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "C7"
+ },
+ {
+  "id": 19,
+  "label": "id 19",
+  "file": "diagrams/id19_Co-3-mixed-author.json",
+  "name": "Co-3-mixed-author",
+  "source": "author",
+  "diagram": "The author's first draft of the reference",
+  "flaws": [
+   {
+    "flaw": "No kegs on order: orders flow straight into the cellar",
+    "type": "conceptual",
+    "kind": "missing_stock",
+    "caught_by": [
+     "M1",
+     "M2"
+    ]
+   },
+   {
+    "flaw": "The wholesaler's limit holds back the orders, not the deliveries",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M3"
+    ]
+   },
+   {
+    "flaw": "Catching up is not informed by the waiting customers",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M7"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "order rate [flow cloud -> pub cellar]": [
+    "C6"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "D2"
+ },
+ {
+  "id": 20,
+  "label": "id 20",
+  "file": "diagrams/id20_Co-1-extra_variable-author.json",
+  "name": "Co-1-extra_variable-author",
+  "source": "author",
+  "diagram": "A correct model with an extra element (variable) [F1 with an auxiliary \"pub hours\" linked to nothing]",
+  "flaws": [
+   {
+    "flaw": "An extra element (variable) \"pub hours\"",
+    "type": "conceptual",
+    "kind": "extra_variable",
+    "caught_by": [
+     "W2",
+     "extra:pub hours"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ],
+   "pub hours": "extra"
+  },
+  "old_label": "F2"
+ },
+ {
+  "id": 21,
+  "label": "id 21",
+  "file": "diagrams/id21_Co-1-extra_stock-author.json",
+  "name": "Co-1-extra_stock-author",
+  "source": "author",
+  "diagram": "A correct model with an extra element (stock) [F1 with a stock \"a\" attached to nothing]",
+  "flaws": [
+   {
+    "flaw": "An extra element (stock) \"a\"",
+    "type": "conceptual",
+    "kind": "extra_stock",
+    "caught_by": [
+     "N8",
+     "extra:a"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "a": "extra",
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F4"
+ },
+ {
+  "id": 22,
+  "label": "id 22",
+  "file": "diagrams/id22_Co-1-misleading_name-author.json",
+  "name": "Co-1-misleading_name-author",
+  "source": "author",
+  "diagram": "A correct model with an incorrect name (calling a rate a stock) [the order flow named \"keg order stock\"]",
+  "flaws": [
+   {
+    "flaw": "An incorrect name: the order rate called \"keg order stock\"",
+    "type": "conceptual",
+    "kind": "misleading_name",
+    "caught_by": []
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order stock [flow cloud -> orders]": [
+    "C6"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F5"
+ },
+ {
+  "id": 23,
+  "label": "id 23",
+  "file": "diagrams/id23_Co-1-wrong_link-author.json",
+  "name": "Co-1-wrong_link-author",
+  "source": "author",
+  "diagram": "A correct model with a reversed link: correct as notation, conceptually wrong [failing to serve informs serving, not the other way round]",
+  "flaws": [
+   {
+    "flaw": "A conceptually wrong link: failing to serve informs serving",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": []
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F6"
+ },
+ {
+  "id": 24,
+  "label": "id 24",
+  "file": "diagrams/id24_Co-1-misjudged_variable-author.json",
+  "name": "Co-1-misjudged_variable-author",
+  "source": "author",
+  "diagram": "A correct model with a misjudged element (variable as stock) [the player decision drawn as a stock]",
+  "flaws": [
+   {
+    "flaw": "A misjudged element: the player decision drawn as a stock",
+    "type": "conceptual",
+    "kind": "misjudged_variable",
+    "caught_by": [
+     "N8"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "keg order rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F8"
+ },
+ {
+  "id": 25,
+  "label": "id 25",
+  "file": "diagrams/id25_Co-1-broad_boundary-author.json",
+  "name": "Co-1-broad_boundary-author",
+  "source": "author",
+  "diagram": "Too broad boundary [a stock \"wholesaler\", filled from a cloud, that the orders flow out of]",
+  "flaws": [
+   {
+    "flaw": "Too broad boundary: the wholesaler's stock is outside the pub",
+    "type": "conceptual",
+    "kind": "broad_boundary",
+    "caught_by": [
+     "extras",
+     "W1"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "wholesaler": "extra",
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "distributor provision rrate [flow cloud -> wholesaler]": "extra",
+   "keg order rate [flow wholesaler -> orders]": [
+    "C6"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "F9"
+ },
+ {
+  "id": 26,
+  "label": "id 26",
+  "file": "diagrams/id26_Co-1-narrow_boundary-author.json",
+  "name": "Co-1-narrow_boundary-author",
+  "source": "author",
+  "diagram": "Too limited boundary [no player decision and no order flow: nothing fills the orders]",
+  "flaws": [
+   {
+    "flaw": "Too limited boundary: no player decision and no order flow",
+    "type": "conceptual",
+    "kind": "narrow_boundary",
+    "caught_by": [
+     "M2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F10"
+ },
+ {
+  "id": 27,
+  "label": "id 27",
+  "file": "diagrams/id27_Co-1-misjudged_rate-author.json",
+  "name": "Co-1-misjudged_rate-author",
+  "source": "author",
+  "diagram": "A correct model with a misjudged element (defining a rate as a stock) [the order rate drawn as a stock \"keg order rate\", which a flow \"kegs\" empties into the orders]",
+  "flaws": [
+   {
+    "flaw": "A misjudged element: the order rate drawn as a stock",
+    "type": "conceptual",
+    "kind": "misjudged_rate",
+    "caught_by": [
+     "K2:keg order rate"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "keg order rate": [
+    "C6"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "kegs [flow keg order rate -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F11"
+ },
+ {
+  "id": 28,
+  "label": "id 28",
+  "file": "diagrams/id28_Co-1-missing_link-author.json",
+  "name": "Co-1-missing_link-author",
+  "source": "author",
+  "diagram": "A correct model with a missing link [no link from the player decision to the order flow]",
+  "flaws": [
+   {
+    "flaw": "A missing link: the player decision does not inform the orders",
+    "type": "conceptual",
+    "kind": "missing_link",
+    "caught_by": [
+     "W1",
+     "W2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "arrived customers": [
+    "C5"
+   ],
+   "served customers": "extra",
+   "waiting customers": [
+    "C3"
+   ],
+   "orders": [
+    "C2"
+   ],
+   "deliverables": [
+    "C2"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "total cost": [
+    "C4"
+   ],
+   "serving rate [flow arrived customers -> served customers]": [
+    "C9"
+   ],
+   "failurre rate [flow arrived customers -> waiting customers]": [
+    "C10"
+   ],
+   "catchup rate [flow waiting customers -> served customers]": [
+    "C11"
+   ],
+   "customer arrival rrate [flow cloud -> arrived customers]": [
+    "C8"
+   ],
+   "keg orrder rate [flow cloud -> orders]": [
+    "C6"
+   ],
+   "orderr fulfill rate [flow orders -> deliverables]": [
+    "C7"
+   ],
+   "delivery rate [flow deliverables -> pub cellar]": [
+    "C7"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "cost rate [flow cloud -> total cost]": [
+    "C13"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "exogenous game setup": [
+    "C14"
+   ],
+   "wholesaler capacity of provsion": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "F12"
+ },
+ {
+  "id": 29,
+  "label": "id 29",
+  "file": "diagrams/id29_Co-1-irrelevant-author.json",
+  "name": "Co-1-irrelevant-author",
+  "source": "author",
+  "diagram": "A correct model but irrelevant [rabbits, with births and deaths]",
+  "flaws": [
+   {
+    "flaw": "Irrelevant to the game",
+    "type": "conceptual",
+    "kind": "irrelevant",
+    "caught_by": [
+     "few",
+     "extras",
+     "M1",
+     "M2",
+     "M3",
+     "M4",
+     "M5",
+     "M6",
+     "M7",
+     "M8",
+     "M9",
+     "M10"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "rabbits": "extra",
+   "birth rate [flow cloud -> rabbits]": "extra",
+   "death rate [flow rabbits -> cloud]": "extra"
+  },
+  "old_label": "F13"
+ },
+ {
+  "id": 30,
+  "label": "id 30",
+  "file": "diagrams/id30_Co-1-wrong_flow-claude.json",
+  "name": "Co-1-wrong_flow-claude",
+  "source": "claude",
+  "diagram": "Deliveries never reach the cellar: they fill a separate stock \"kegs at the door\"",
+  "flaws": [
+   {
+    "flaw": "Deliveries never reach the cellar: they fill a separate stock \"kegs at the door\"",
+    "type": "conceptual",
+    "kind": "wrong_flow",
+    "caught_by": [
+     "M1",
+     "extra:kegs at the door"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "kegs at the door": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> kegs at the door]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B1"
+ },
+ {
+  "id": 31,
+  "label": "id 31",
+  "file": "diagrams/id31_Co-1-wrong_flow-claude.json",
+  "name": "Co-1-wrong_flow-claude",
+  "source": "claude",
+  "diagram": "Orders flow into the cellar; the kegs on order have no inflow",
+  "flaws": [
+   {
+    "flaw": "Orders flow straight into the cellar; nothing fills the kegs on order",
+    "type": "conceptual",
+    "kind": "wrong_flow",
+    "caught_by": [
+     "M2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> pub cellar]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B2"
+ },
+ {
+  "id": 32,
+  "label": "id 32",
+  "file": "diagrams/id32_Co-1-wrong_link-claude.json",
+  "name": "Co-1-wrong_link-claude",
+  "source": "claude",
+  "diagram": "The wholesaler's limit informs the orders, not the deliveries",
+  "flaws": [
+   {
+    "flaw": "The wholesaler's limit holds back the orders, not the deliveries",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M3"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B3"
+ },
+ {
+  "id": 33,
+  "label": "id 33",
+  "file": "diagrams/id33_Co-1-missing_link-claude.json",
+  "name": "Co-1-missing_link-claude",
+  "source": "claude",
+  "diagram": "The link from the cellar to serving removed",
+  "flaws": [
+   {
+    "flaw": "The cellar does not limit serving",
+    "type": "conceptual",
+    "kind": "missing_link",
+    "caught_by": [
+     "M4"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B4"
+ },
+ {
+  "id": 34,
+  "label": "id 34",
+  "file": "diagrams/id34_Co-1-missing_link-claude.json",
+  "name": "Co-1-missing_link-claude",
+  "source": "claude",
+  "diagram": "Kegs leaving the cellar not tied to serving on arrival",
+  "flaws": [
+   {
+    "flaw": "The kegs leaving the cellar are not tied to the customers served on arrival",
+    "type": "conceptual",
+    "kind": "missing_link",
+    "caught_by": [
+     "M5"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B5"
+ },
+ {
+  "id": 35,
+  "label": "id 35",
+  "file": "diagrams/id35_Co-1-wrong_flow-claude.json",
+  "name": "Co-1-wrong_flow-claude",
+  "source": "claude",
+  "diagram": "Waiting customers can leave to a cloud (\"giving up rate\")",
+  "flaws": [
+   {
+    "flaw": "Waiting customers can leave (\"giving up rate\")",
+    "type": "conceptual",
+    "kind": "wrong_flow",
+    "caught_by": [
+     "M6",
+     "extra:giving up rate"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "giving up rate [flow waiting to serve -> cloud]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B6"
+ },
+ {
+  "id": 36,
+  "label": "id 36",
+  "file": "diagrams/id36_Co-1-wrong_link-claude.json",
+  "name": "Co-1-wrong_link-claude",
+  "source": "claude",
+  "diagram": "Catching up informed by the customers of the week, not the waiting ones (the author's second draft)",
+  "flaws": [
+   {
+    "flaw": "Catching up is informed by this week's customers, not the waiting ones",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M7"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B7"
+ },
+ {
+  "id": 37,
+  "label": "id 37",
+  "file": "diagrams/id37_Co-1-missing_link-claude.json",
+  "name": "Co-1-missing_link-claude",
+  "source": "claude",
+  "diagram": "The customer arrivals input not linked",
+  "flaws": [
+   {
+    "flaw": "The customer arrivals are not driven by the input",
+    "type": "conceptual",
+    "kind": "missing_link",
+    "caught_by": [
+     "M8",
+     "W1",
+     "W2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B8"
+ },
+ {
+  "id": 38,
+  "label": "id 38",
+  "file": "diagrams/id38_Co-1-missing_link-claude.json",
+  "name": "Co-1-missing_link-claude",
+  "source": "claude",
+  "diagram": "Cost per week not informed by the waiting customers",
+  "flaws": [
+   {
+    "flaw": "The cost is not informed by the waiting customers",
+    "type": "conceptual",
+    "kind": "missing_link",
+    "caught_by": [
+     "M9"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B9"
+ },
+ {
+  "id": 39,
+  "label": "id 39",
+  "file": "diagrams/id39_Co-1-invented_link-claude.json",
+  "name": "Co-1-invented_link-claude",
+  "source": "claude",
+  "diagram": "The orders inform the cost",
+  "flaws": [
+   {
+    "flaw": "The orders inform the cost",
+    "type": "conceptual",
+    "kind": "invented_link",
+    "caught_by": [
+     "M10"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "B10"
+ },
+ {
+  "id": 40,
+  "label": "id 40",
+  "file": "diagrams/id40_Co-1-extra_stock-claude.json",
+  "name": "Co-1-extra_stock-claude",
+  "source": "claude",
+  "diagram": "An extra stock \"reputation\" with no flows",
+  "flaws": [
+   {
+    "flaw": "An extra stock \"reputation\" with no flows",
+    "type": "conceptual",
+    "kind": "extra_stock",
+    "caught_by": [
+     "N8",
+     "extra:reputation"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "reputation": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "C8"
+ },
+ {
+  "id": 41,
+  "label": "id 41",
+  "file": "diagrams/id41_Co-1-missing_link-claude.json",
+  "name": "Co-1-missing_link-claude",
+  "source": "claude",
+  "diagram": "The order decision left out: nothing informs the orders",
+  "flaws": [
+   {
+    "flaw": "Nothing informs the orders (the order decision left out, which the task allows)",
+    "type": "conceptual",
+    "kind": "missing_link",
+    "caught_by": [
+     "W1"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ]
+  },
+  "old_label": "C9"
+ },
+ {
+  "id": 42,
+  "label": "id 42",
+  "file": "diagrams/id42_Co-1-extra_variable-claude.json",
+  "name": "Co-1-extra_variable-claude",
+  "source": "claude",
+  "diagram": "An auxiliary \"weather\" that affects nothing",
+  "flaws": [
+   {
+    "flaw": "An extra auxiliary \"weather\" that affects nothing",
+    "type": "conceptual",
+    "kind": "extra_variable",
+    "caught_by": [
+     "W2",
+     "extra:weather"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "weather": "extra"
+  },
+  "old_label": "C10"
+ },
+ {
+  "id": 43,
+  "label": "id 43",
+  "file": "diagrams/id43_Co-1-irrelevant-claude.json",
+  "name": "Co-1-irrelevant-claude",
+  "source": "claude",
+  "diagram": "An unrelated diagram: happiness, fun and music",
+  "flaws": [
+   {
+    "flaw": "Unrelated to the game",
+    "type": "conceptual",
+    "kind": "irrelevant",
+    "caught_by": [
+     "few",
+     "extras",
+     "M1",
+     "M2",
+     "M3",
+     "M4",
+     "M5",
+     "M6",
+     "M7",
+     "M8",
+     "M9",
+     "M10"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "Happiness": "extra",
+   "fun [flow cloud -> Happiness]": "extra",
+   "Music": "extra"
+  },
+  "old_label": "E1"
+ },
+ {
+  "id": 44,
+  "label": "id 44",
+  "file": "diagrams/id44_Co-1-too_little-claude.json",
+  "name": "Co-1-too_little-claude",
+  "source": "claude",
+  "diagram": "One stock \"beer\" with one inflow and one outflow",
+  "flaws": [
+   {
+    "flaw": "Far too little of the game: one stock of beer",
+    "type": "conceptual",
+    "kind": "too_little",
+    "caught_by": [
+     "few",
+     "M1",
+     "M2",
+     "M3",
+     "M4",
+     "M5",
+     "M6",
+     "M7",
+     "M8",
+     "M9",
+     "M10"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "beer": [
+    "C1"
+   ],
+   "brewing [flow cloud -> beer]": [
+    "C7"
+   ],
+   "drinking [flow beer -> cloud]": [
+    "C12"
+   ],
+   "supply": [
+    "C15"
+   ],
+   "thirst": [
+    "C14"
+   ]
+  },
+  "old_label": "E2"
+ },
+ {
+  "id": 45,
+  "label": "id 45",
+  "file": "diagrams/id45_Co-1-misleading_name-claude.json",
+  "name": "Co-1-misleading_name-claude",
+  "source": "claude",
+  "diagram": "The reference with the names of the cellar and the waiting customers swapped",
+  "flaws": [
+   {
+    "flaw": "Misleading names: the cellar and the waiting customers swapped",
+    "type": "conceptual",
+    "kind": "misleading_name",
+    "caught_by": []
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "pub cellar": [
+    "C3"
+   ],
+   "waiting to serve": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> pub cellar]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow waiting to serve -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow pub cellar -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> waiting to serve]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "same_flags_as": 2,
+  "old_label": "E3"
+ },
+ {
+  "id": 46,
+  "label": "id 46",
+  "file": "diagrams/id46_Co-1-misleading_name-claude.json",
+  "name": "Co-1-misleading_name-claude",
+  "source": "claude",
+  "diagram": "A flow named \"catch up rate\" that drains the cellar to a cloud",
+  "flaws": [
+   {
+    "flaw": "A misleading name: the flow that empties the cellar is called \"catch up rate\"",
+    "type": "conceptual",
+    "kind": "misleading_name",
+    "caught_by": []
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "catch up rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "orders filled late [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "same_flags_as": 2,
+  "old_label": "E4"
+ },
+ {
+  "id": 47,
+  "label": "id 47",
+  "file": "diagrams/id47_Co-1-double_count-lit.json",
+  "name": "Co-1-double_count-lit",
+  "source": "lit",
+  "diagram": "Double count: the kegs for customers served on arrival leave the cellar twice, by \"kegs served\" and by \"consumption rate\" [Akhavan & Jalali 2024, net exports counted twice]",
+  "flaws": [
+   {
+    "flaw": "Double count: the kegs for customers served on arrival leave the cellar twice",
+    "type": "conceptual",
+    "kind": "double_count",
+    "caught_by": [
+     "M5"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "kegs served [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G1"
+ },
+ {
+  "id": 48,
+  "label": "id 48",
+  "file": "diagrams/id48_Co-1-double_count-lit.json",
+  "name": "Co-1-double_count-lit",
+  "source": "lit",
+  "diagram": "Double count: every arriving customer also joins the waiting customers, by a second inflow \"customers joining the queue\" [Akhavan & Jalali 2024]",
+  "flaws": [
+   {
+    "flaw": "Double count: every arriving customer also joins the waiting customers",
+    "type": "conceptual",
+    "kind": "double_count",
+    "caught_by": [
+     "M6"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "customers joining the queue [flow cloud -> waiting to serve]": [
+    "C8"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G2"
+ },
+ {
+  "id": 49,
+  "label": "id 49",
+  "file": "diagrams/id49_Co-1-invented_link-lit.json",
+  "name": "Co-1-invented_link-lit",
+  "source": "lit",
+  "diagram": "Invented link: the cellar informs the customers coming in, as if a full cellar drew customers (true only of the word-of-mouth version) [Schoenberg et al. 2025, fake relationships; Leitch 2026, extra links]",
+  "flaws": [
+   {
+    "flaw": "An invented link: the cellar informs the customers coming in",
+    "type": "conceptual",
+    "kind": "invented_link",
+    "caught_by": [
+     "M8"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G3"
+ },
+ {
+  "id": 50,
+  "label": "id 50",
+  "file": "diagrams/id50_Co-1-invented_link-lit.json",
+  "name": "Co-1-invented_link-lit",
+  "source": "lit",
+  "diagram": "Invented link: the order rate informs the beer arrival rate, as if ordering sped up deliveries [Schoenberg et al. 2025; Leitch 2026]",
+  "flaws": [
+   {
+    "flaw": "An invented link: the orders inform the deliveries",
+    "type": "conceptual",
+    "kind": "invented_link",
+    "caught_by": [
+     "M1"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G4"
+ },
+ {
+  "id": 51,
+  "label": "id 51",
+  "file": "diagrams/id51_Co-1-wrong_flow-lit.json",
+  "name": "Co-1-wrong_flow-lit",
+  "source": "lit",
+  "diagram": "Reversed flow: the deliveries run from the cellar back to the kegs on order [Schoenberg et al. 2025, link ends reversed]",
+  "flaws": [
+   {
+    "flaw": "A reversed flow: the deliveries run from the cellar back to the kegs on order",
+    "type": "conceptual",
+    "kind": "wrong_flow",
+    "caught_by": [
+     "M1"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow pub cellar -> registered order]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G5"
+ },
+ {
+  "id": 52,
+  "label": "id 52",
+  "file": "diagrams/id52_Co-1-wrong_link-lit.json",
+  "name": "Co-1-wrong_link-lit",
+  "source": "lit",
+  "diagram": "Reversed link: the order rate informs the player decision, not the other way round [Schoenberg et al. 2025]",
+  "flaws": [
+   {
+    "flaw": "A reversed link: the orders inform the player decision",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "W1",
+     "W2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G6"
+ },
+ {
+  "id": 53,
+  "label": "id 53",
+  "file": "diagrams/id53_Co-1-broad_boundary-lit.json",
+  "name": "Co-1-broad_boundary-lit",
+  "source": "lit",
+  "diagram": "Larger and correct: the learner also models the wholesaler's cellar, its kegs on order and the brewery (8 stocks) [Campuzano-Bolarin et al. 2026, larger models need major fixes; Park et al. 2026, performance falls with complexity]",
+  "flaws": [
+   {
+    "flaw": "Too broad boundary: the wholesaler's cellar, its kegs on order and the brewery",
+    "type": "conceptual",
+    "kind": "broad_boundary",
+    "caught_by": [
+     "extras"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "wholesaler kegs on order": "extra",
+   "wholesaler cellar": "extra",
+   "brewery kegs brewing": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "wholesaler order rate [flow cloud -> wholesaler kegs on order]": "extra",
+   "wholesaler arrival rate [flow wholesaler kegs on order -> wholesaler cellar]": "extra",
+   "wholesaler shipping rate [flow wholesaler cellar -> cloud]": "extra",
+   "brewing start rate [flow cloud -> brewery kegs brewing]": "extra",
+   "brewing finish rate [flow brewery kegs brewing -> cloud]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "G7"
+ },
+ {
+  "id": 54,
+  "label": "id 54",
+  "file": "diagrams/id54_Co-1-misjudged_stock-lit.json",
+  "name": "Co-1-misjudged_stock-lit",
+  "source": "lit",
+  "diagram": "Element type confused: the total cost drawn as an auxiliary, so it does not add up [Bravo et al. 2009, learners mix up element types]",
+  "flaws": [
+   {
+    "flaw": "A misjudged element: the total cost drawn as an auxiliary",
+    "type": "conceptual",
+    "kind": "misjudged_stock",
+    "caught_by": [
+     "K1:total cost",
+     "M9",
+     "M10",
+     "W2"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "total cost": [
+    "C4"
+   ]
+  },
+  "old_label": "G8"
+ },
+ {
+  "id": 55,
+  "label": "id 55",
+  "file": "diagrams/id55_Co-1-misjudged_stock-lit.json",
+  "name": "Co-1-misjudged_stock-lit",
+  "source": "lit",
+  "diagram": "Element type confused: the waiting customers drawn as an auxiliary; the unserved go to a cloud and catching up comes from a cloud [Bravo et al. 2009]",
+  "flaws": [
+   {
+    "flaw": "A misjudged element: the waiting customers drawn as an auxiliary",
+    "type": "conceptual",
+    "kind": "misjudged_stock",
+    "caught_by": [
+     "K1:waiting to serve",
+     "N6",
+     "M6",
+     "M7",
+     "M9"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> cloud]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow cloud -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ],
+   "waiting to serve": [
+    "C3"
+   ]
+  },
+  "old_label": "G9"
+ },
+ {
+  "id": 56,
+  "label": "id 56",
+  "file": "diagrams/id56_SyCo-5-mixed-author.json",
+  "name": "SyCo-5-mixed-author",
+  "source": "author",
+  "diagram": "The author's test of the app, drawn as a learner might, with no cost part (rebuilt from screenshots)",
+  "flaws": [
+   {
+    "flaw": "Two flows with the same name (\"arrival rate\")",
+    "type": "syntactic",
+    "kind": "same_name",
+    "caught_by": [
+     "N1"
+    ]
+   },
+   {
+    "flaw": "The customer arrivals are not driven by the input table (it informs failing to serve instead)",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M8",
+     "W1"
+    ]
+   },
+   {
+    "flaw": "The wholesaler's limit holds back the orders, not the deliveries",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M3"
+    ]
+   },
+   {
+    "flaw": "No cost part",
+    "type": "conceptual",
+    "kind": "missing_stock",
+    "caught_by": [
+     "M9",
+     "M10"
+    ]
+   },
+   {
+    "flaw": "The deliveries are informed by serving, which has no basis in the game",
+    "type": "conceptual",
+    "kind": "invented_link",
+    "caught_by": []
+   }
+  ],
+  "expected_classification": {
+   "customers arrived": [
+    "C5"
+   ],
+   "customers waiting": [
+    "C3"
+   ],
+   "customers served": "extra",
+   "ordered kegs": [
+    "C2"
+   ],
+   "kegs at the pub": [
+    "C1"
+   ],
+   "arrival rate [flow cloud -> customers arrived]": [
+    "C8"
+   ],
+   "serving rate [flow customers arrived -> customers served]": [
+    "C9"
+   ],
+   "fail to serve rate [flow customers arrived -> customers waiting]": [
+    "C10"
+   ],
+   "catch up rate [flow customers waiting -> customers served]": [
+    "C11"
+   ],
+   "order rate [flow cloud -> ordered kegs]": [
+    "C6"
+   ],
+   "arrival rate (2) [flow ordered kegs -> kegs at the pub]": [
+    "C7"
+   ],
+   "consumption rate [flow kegs at the pub -> cloud]": [
+    "C12"
+   ],
+   "exogenous table": [
+    "C14"
+   ],
+   "player's decision": [
+    "C16"
+   ],
+   "wholesaler provision capability": [
+    "C15"
+   ],
+   "delay factor": [
+    "C17"
+   ]
+  },
+  "old_label": "D3"
+ },
+ {
+  "id": 57,
+  "label": "id 57",
+  "file": "diagrams/id57_SyCo-2-same_name+wrong_link-claude.json",
+  "name": "SyCo-2-same_name+wrong_link-claude",
+  "source": "claude",
+  "diagram": "B7 plus two flows of the same name",
+  "flaws": [
+   {
+    "flaw": "Two flows with the same name",
+    "type": "syntactic",
+    "kind": "same_name",
+    "caught_by": [
+     "N1"
+    ]
+   },
+   {
+    "flaw": "Catching up is informed by this week's customers, not the waiting ones",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M7"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "coming in rate (2) [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "D1"
+ },
+ {
+  "id": 58,
+  "label": "id 58",
+  "file": "diagrams/id58_SyCo-5-mixed-claude.json",
+  "name": "SyCo-5-mixed-claude",
+  "source": "claude",
+  "diagram": "Notation slips throughout, game structure right",
+  "flaws": [
+   {
+    "flaw": "A link from serving into the cellar",
+    "type": "syntactic",
+    "kind": "link_into_stock",
+    "caught_by": [
+     "N2"
+    ]
+   },
+   {
+    "flaw": "A link from a cloud",
+    "type": "syntactic",
+    "kind": "link_from_cloud",
+    "caught_by": [
+     "N3"
+    ]
+   },
+   {
+    "flaw": "A flow between two clouds (\"spillage\")",
+    "type": "syntactic",
+    "kind": "flow_between_clouds",
+    "caught_by": [
+     "N6",
+     "extra:spillage"
+    ]
+   },
+   {
+    "flaw": "A flow from the cellar back into the cellar (\"restocking\")",
+    "type": "syntactic",
+    "kind": "flow_into_itself",
+    "caught_by": [
+     "N7",
+     "extra:restocking"
+    ]
+   },
+   {
+    "flaw": "An extra stock \"reputation\" with no flows",
+    "type": "conceptual",
+    "kind": "extra_stock",
+    "caught_by": [
+     "N8",
+     "extra:reputation"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "waiting to serve": [
+    "C3"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "cost": [
+    "C4"
+   ],
+   "registered order": [
+    "C2"
+   ],
+   "reputation": "extra",
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "failed-to-serve rate [flow pub customers -> waiting to serve]": [
+    "C10"
+   ],
+   "cost rate [flow cloud -> cost]": [
+    "C13"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "catch up rate [flow waiting to serve -> cloud]": [
+    "C11"
+   ],
+   "beer arrival rate [flow registered order -> pub cellar]": [
+    "C7"
+   ],
+   "order rate [flow cloud -> registered order]": [
+    "C6"
+   ],
+   "spillage [flow cloud -> cloud]": "extra",
+   "restocking [flow pub cellar -> pub cellar]": "extra",
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "D4"
+ },
+ {
+  "id": 59,
+  "label": "id 59",
+  "file": "diagrams/id59_SyCo-5-mixed-claude.json",
+  "name": "SyCo-5-mixed-claude",
+  "source": "claude",
+  "diagram": "No cost, no waiting customers, orders straight to the cellar, a link into a stock",
+  "flaws": [
+   {
+    "flaw": "A link from serving into the cellar",
+    "type": "syntactic",
+    "kind": "link_into_stock",
+    "caught_by": [
+     "N2"
+    ]
+   },
+   {
+    "flaw": "No cost part",
+    "type": "conceptual",
+    "kind": "missing_stock",
+    "caught_by": [
+     "M9",
+     "M10"
+    ]
+   },
+   {
+    "flaw": "No waiting customers",
+    "type": "conceptual",
+    "kind": "missing_stock",
+    "caught_by": [
+     "M6",
+     "M7"
+    ]
+   },
+   {
+    "flaw": "No kegs on order: orders flow straight into the cellar",
+    "type": "conceptual",
+    "kind": "missing_stock",
+    "caught_by": [
+     "M1",
+     "M2"
+    ]
+   },
+   {
+    "flaw": "The wholesaler's limit holds back the orders",
+    "type": "conceptual",
+    "kind": "wrong_link",
+    "caught_by": [
+     "M3"
+    ]
+   }
+  ],
+  "expected_classification": {
+   "pub customers": [
+    "C5"
+   ],
+   "pub cellar": [
+    "C1"
+   ],
+   "coming in rate [flow cloud -> pub customers]": [
+    "C8"
+   ],
+   "serving rate [flow pub customers -> cloud]": [
+    "C9"
+   ],
+   "consumption rate [flow pub cellar -> cloud]": [
+    "C12"
+   ],
+   "order rate [flow cloud -> pub cellar]": [
+    "C6"
+   ],
+   "arrival plan by week": [
+    "C14"
+   ],
+   "wholesaler provision capacity": [
+    "C15"
+   ],
+   "player decision": [
+    "C16"
+   ]
+  },
+  "old_label": "D5"
+ }
+]

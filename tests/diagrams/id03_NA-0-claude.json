@@ -1,0 +1,275 @@
+{
+ "stocks": [
+  {
+   "label": "guests this week",
+   "x": 364,
+   "y": 38
+  },
+  {
+   "label": "backlog",
+   "x": 569,
+   "y": 227
+  },
+  {
+   "label": "kegs at the pub",
+   "x": 647,
+   "y": 344
+  },
+  {
+   "label": "running cost",
+   "x": 981,
+   "y": 489
+  },
+  {
+   "label": "kegs in transit",
+   "x": 364,
+   "y": 344
+  }
+ ],
+ "auxiliaries": [
+  {
+   "label": "demand pattern",
+   "x": -10,
+   "y": 340
+  },
+  {
+   "label": "supplier capacity",
+   "x": 364,
+   "y": 596
+  },
+  {
+   "label": "my order",
+   "x": 151,
+   "y": 435
+  }
+ ],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 36,
+   "y": 38
+  },
+  {
+   "label": "cloud",
+   "x": 876,
+   "y": 31
+  },
+  {
+   "label": "cloud",
+   "x": 602,
+   "y": 484
+  },
+  {
+   "label": "cloud",
+   "x": 993,
+   "y": 342
+  },
+  {
+   "label": "cloud",
+   "x": 967,
+   "y": 219
+  },
+  {
+   "label": "cloud",
+   "x": 107,
+   "y": 348
+  }
+ ],
+ "flows": [
+  {
+   "label": "guests arriving",
+   "from": "cloud",
+   "to": "guests this week",
+   "from_xy": [
+    36,
+    38
+   ],
+   "to_xy": [
+    364,
+    38
+   ],
+   "valve_xy": [
+    207,
+    42
+   ]
+  },
+  {
+   "label": "served on the spot",
+   "from": "guests this week",
+   "to": "cloud",
+   "from_xy": [
+    364,
+    38
+   ],
+   "to_xy": [
+    876,
+    31
+   ],
+   "valve_xy": [
+    623,
+    39
+   ]
+  },
+  {
+   "label": "added to backlog",
+   "from": "guests this week",
+   "to": "backlog",
+   "from_xy": [
+    364,
+    38
+   ],
+   "to_xy": [
+    569,
+    227
+   ],
+   "valve_xy": [
+    364,
+    230
+   ]
+  },
+  {
+   "label": "cost per week",
+   "from": "cloud",
+   "to": "running cost",
+   "from_xy": [
+    602,
+    484
+   ],
+   "to_xy": [
+    981,
+    489
+   ],
+   "valve_xy": [
+    770,
+    486
+   ]
+  },
+  {
+   "label": "kegs poured",
+   "from": "kegs at the pub",
+   "to": "cloud",
+   "from_xy": [
+    647,
+    344
+   ],
+   "to_xy": [
+    993,
+    342
+   ],
+   "valve_xy": [
+    867,
+    341
+   ]
+  },
+  {
+   "label": "backlog served",
+   "from": "backlog",
+   "to": "cloud",
+   "from_xy": [
+    569,
+    227
+   ],
+   "to_xy": [
+    967,
+    219
+   ],
+   "valve_xy": [
+    807,
+    223
+   ]
+  },
+  {
+   "label": "deliveries",
+   "from": "kegs in transit",
+   "to": "kegs at the pub",
+   "from_xy": [
+    364,
+    344
+   ],
+   "to_xy": [
+    647,
+    344
+   ],
+   "valve_xy": [
+    506,
+    344
+   ]
+  },
+  {
+   "label": "ordering",
+   "from": "cloud",
+   "to": "kegs in transit",
+   "from_xy": [
+    107,
+    348
+   ],
+   "to_xy": [
+    364,
+    344
+   ],
+   "valve_xy": [
+    221,
+    346
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "demand pattern",
+   "to": "guests arriving"
+  },
+  {
+   "from": "kegs at the pub",
+   "to": "cost per week"
+  },
+  {
+   "from": "backlog",
+   "to": "cost per week"
+  },
+  {
+   "from": "guests this week",
+   "to": "served on the spot"
+  },
+  {
+   "from": "kegs at the pub",
+   "to": "served on the spot"
+  },
+  {
+   "from": "guests this week",
+   "to": "added to backlog"
+  },
+  {
+   "from": "served on the spot",
+   "to": "added to backlog"
+  },
+  {
+   "from": "served on the spot",
+   "to": "kegs poured"
+  },
+  {
+   "from": "backlog served",
+   "to": "kegs poured"
+  },
+  {
+   "from": "kegs at the pub",
+   "to": "backlog served"
+  },
+  {
+   "from": "my order",
+   "to": "ordering"
+  },
+  {
+   "from": "supplier capacity",
+   "to": "deliveries"
+  },
+  {
+   "from": "kegs in transit",
+   "to": "deliveries"
+  },
+  {
+   "from": "backlog",
+   "to": "backlog served"
+  }
+ ],
+ "junctions": []
+}

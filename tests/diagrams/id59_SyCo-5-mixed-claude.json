@@ -1,0 +1,154 @@
+{
+ "stocks": [
+  {
+   "label": "pub customers",
+   "x": 364,
+   "y": 38
+  },
+  {
+   "label": "pub cellar",
+   "x": 647,
+   "y": 344
+  }
+ ],
+ "auxiliaries": [
+  {
+   "label": "arrival plan by week",
+   "x": -10,
+   "y": 340
+  },
+  {
+   "label": "wholesaler provision capacity",
+   "x": 364,
+   "y": 596
+  },
+  {
+   "label": "player decision",
+   "x": 151,
+   "y": 435
+  }
+ ],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 36,
+   "y": 38
+  },
+  {
+   "label": "cloud",
+   "x": 876,
+   "y": 31
+  },
+  {
+   "label": "cloud",
+   "x": 993,
+   "y": 342
+  },
+  {
+   "label": "cloud",
+   "x": 107,
+   "y": 348
+  }
+ ],
+ "flows": [
+  {
+   "label": "coming in rate",
+   "from": "cloud",
+   "to": "pub customers",
+   "from_xy": [
+    36,
+    38
+   ],
+   "to_xy": [
+    364,
+    38
+   ],
+   "valve_xy": [
+    207,
+    42
+   ]
+  },
+  {
+   "label": "serving rate",
+   "from": "pub customers",
+   "to": "cloud",
+   "from_xy": [
+    364,
+    38
+   ],
+   "to_xy": [
+    876,
+    31
+   ],
+   "valve_xy": [
+    623,
+    39
+   ]
+  },
+  {
+   "label": "consumption rate",
+   "from": "pub cellar",
+   "to": "cloud",
+   "from_xy": [
+    647,
+    344
+   ],
+   "to_xy": [
+    993,
+    342
+   ],
+   "valve_xy": [
+    867,
+    341
+   ]
+  },
+  {
+   "label": "order rate",
+   "from": "cloud",
+   "to": "pub cellar",
+   "from_xy": [
+    107,
+    348
+   ],
+   "to_xy": [
+    647,
+    344
+   ],
+   "valve_xy": [
+    221,
+    346
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "arrival plan by week",
+   "to": "coming in rate"
+  },
+  {
+   "from": "pub customers",
+   "to": "serving rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "serving rate"
+  },
+  {
+   "from": "serving rate",
+   "to": "consumption rate"
+  },
+  {
+   "from": "player decision",
+   "to": "order rate"
+  },
+  {
+   "from": "wholesaler provision capacity",
+   "to": "order rate"
+  },
+  {
+   "from": "serving rate",
+   "to": "pub cellar"
+  }
+ ],
+ "junctions": []
+}

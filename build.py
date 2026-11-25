@@ -30,16 +30,16 @@ standalone = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">
 io.open(os.path.join(here, 'index.html'), 'w', encoding='utf-8').write(standalone)
 print(len(page), len(standalone))
 
-# ---------- the test runner: tests/runner.html, with the test diagrams and the key built in ----------
+# ---------- the test runner: tests/runner.html, with the test diagrams and the answer sheet built in ----------
 tests = os.path.join(here, 'tests')
-if os.path.exists(os.path.join(tests, 'key.json')):
+if os.path.exists(os.path.join(tests, 'answer_sheet.json')):
     trd = lambda n: io.open(os.path.join(tests, n), encoding='utf-8').read()
-    key = json.loads(trd('key.json'))
-    diagrams = {k['id']: json.loads(trd(k['file'])) for k in key}
-    data = 'const TEST_DATA = ' + json.dumps({'key': key, 'diagrams': diagrams}, ensure_ascii=False).replace('</', '<\\/') + ';'
+    sheet = json.loads(trd('answer_sheet.json'))
+    diagrams = {k['id']: json.loads(trd(k['file'])) for k in sheet}
+    data = 'const TEST_DATA = ' + json.dumps({'sheet': sheet, 'diagrams': diagrams}, ensure_ascii=False).replace('</', '<\\/') + ';'
     runner = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
               '<title>Beer Game Lab: test runner</title>\n<style>\n' + trd('runner.css') + '</style>\n</head>\n<body>\n' + trd('runner_body.html') +
               '<script>\n' + version_js + '\n' + rd('engine.js') + '\n' + rd('sfd/key.js') + '\n' + rd('sfd/marking.js') + '\n' + rd('sfd/llm_client.js') + '\n' +
               rd('sfd/evaluate.js') + '\n' + trd('score.js') + '\n' + data + '\n' + trd('runner.js') + '</script>\n</body>\n</html>\n')
     io.open(os.path.join(tests, 'runner.html'), 'w', encoding='utf-8').write(runner)
-    print('tests/runner.html', len(runner), 'with', len(key), 'diagrams')
+    print('tests/runner.html', len(runner), 'with', len(sheet), 'diagrams')

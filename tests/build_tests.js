@@ -1,7 +1,7 @@
-/* Builds the 59 test diagrams for Beer Game Lab's performance assessment, and the expected
-   result for each. Every diagram starts from the author's reference (the author's second draft
+/* Builds the 59 test diagrams for Beer Game Lab's performance assessment, and the answer sheet:
+   each diagram's flaws, and the classification of each element the AI should give. Every diagram starts from the author's reference (the author's second draft
    with its one link corrected) and changes only what its description says.
-   Run: node build_tests.js   (writes diagrams/*.json, key.json, key.csv; checks each against the rules)
+   Run: node build_tests.js   (writes diagrams/*.json, answer_sheet.json, answer_sheet.csv; checks each against the rules)
    CHECK_DIR=<folder> node build_tests.js checks diagrams saved from the app after import instead.
    There is no test of N5 (a flow attached at one end): the canvas cannot hold such a flow. */
 const fs = require('fs'), path = require('path');
@@ -45,7 +45,7 @@ function rename(d, map, a, b) {   // renames element a to b everywhere, and in t
 const setFlowEnd = (d, l, end, to, xy) => { const f = d.flows.find(x => x.label === l); f[end] = to; f[end + '_xy'] = xy || pos(d, to); };
 
 // ---------- the tests ----------
-// each: id, group, title (what the diagram is), errors (how many), build(d, map), notation / fail = what should be found
+// each: id, title (what the diagram is), errors (how many), build(d, map); its flaws are in FLAWS below
 const T = [];
 const t = (id, title, errors, build, notation, fail, base) => T.push({ id, title, errors, build, notation, fail, base });
 
@@ -105,8 +105,8 @@ t('C9', 'The order decision left out: nothing informs the orders', 1, (d, m) => 
 t('C10', 'An auxiliary "weather" that affects nothing', 1, d => addAux(d, 'weather', 150, 150), ['W2'], []);
 
 t('D1', 'B7 plus two flows of the same name', 2, (d, m) => { rename(d, m, 'beer arrival rate', 'coming in rate'); m['coming in rate'] = ['C8']; m['coming in rate​'] = ['C7']; }, ['N1'], ['M7'], 'author_v2.json');
-t('D2', 'The author\'s first draft', 4, null, [], ['M1', 'M2', 'M3', 'M7'], 'author_v1.json');
-t('D3', 'A learner\'s diagram with no cost part (rebuilt from screenshots)', 6, null, ['N1', 'W1'], ['M3', 'M8', 'M9', 'M10'], 'learner_lshape.json');
+t('D2', 'The author\'s first draft of the reference', 4, null, [], ['M1', 'M2', 'M3', 'M7'], 'author_v1.json');
+t('D3', 'The author\'s test of the app, drawn as a learner might, with no cost part (rebuilt from screenshots)', 6, null, ['N1', 'W1'], ['M3', 'M8', 'M9', 'M10'], 'learner_lshape.json');
 t('D4', 'Notation slips throughout, game structure right', 5, d => {
   link(d, 'serving rate', 'pub cellar'); link(d, 'cloud', 'coming in rate');
   addFlow(d, 'spillage', 'cloud', 'cloud', [760, 640], [960, 640]); link(d, 'pub cellar', 'spillage');
@@ -170,19 +170,19 @@ const MAP_F1 = { 'arrived customers': ['C5'], 'waiting customers': ['C3'], 'orde
   'orderr fulfill rate': ['C7'], 'delivery rate': ['C7'], 'consumption rate': ['C12'], 'cost rate': ['C13'] };
 const fmap = extra => Object.assign({}, MAP_F1, extra);
 const HAND = {
-  F1: ['The author\'s own model of the game, drawn by hand (with typos in the names, and a stock of served customers)', 0, fmap({}), [], []],
-  F2: ['F1 with an auxiliary "pub hours" that is linked to nothing', 1, fmap({}), null, null],
-  F3: ['F1 with a cloud attached to nothing', 1, fmap({}), null, null],
-  F4: ['F1 with a stock "a" attached to nothing', 1, fmap({}), null, null],
-  F5: ['F1 with the order flow named "keg order stock"', 1, fmap({ 'keg orrder rate': undefined, 'keg order stock': ['C6'] }), null, null],
-  F6: ['F1 with the link between serving and failing to serve reversed (failing to serve informs serving)', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
-  F7: ['F1 with the player decision linked to the orders stock instead of the order flow', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
-  F8: ['F1 with the player decision drawn as a stock', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
-  F9: ['F1 with a stock "wholesaler", filled from a cloud, that the orders flow out of', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'], 'wholesaler': ['C15'] }), null, null],
-  F10: ['F1 without the player decision and the order flow: nothing fills the orders', 2, fmap({ 'keg orrder rate': undefined }), null, null],
-  F11: ['F1 with the order flow drawn as a stock "keg order rate", which a flow "kegs" empties into the orders', 1, fmap({ 'keg orrder rate': undefined, 'kegs': ['C6'] }), null, null],
-  F12: ['F1 without the link from the player decision to the order flow', 1, fmap({}), null, null],
-  F13: ['An unrelated diagram: rabbits, with births and deaths', 1, {}, null, null]
+  F1: ['A correct model [the author\'s own model of the game, drawn by hand, with a stock of served customers]', 0, fmap({}), [], []],
+  F2: ['A correct model with an extra element (variable) [F1 with an auxiliary "pub hours" linked to nothing]', 1, fmap({}), null, null],
+  F3: ['A correct model with an extra element (cloud) [F1 with a cloud attached to nothing]', 1, fmap({}), null, null],
+  F4: ['A correct model with an extra element (stock) [F1 with a stock "a" attached to nothing]', 1, fmap({}), null, null],
+  F5: ['A correct model with an incorrect name (calling a rate a stock) [the order flow named "keg order stock"]', 1, fmap({ 'keg orrder rate': undefined, 'keg order stock': ['C6'] }), null, null],
+  F6: ['A correct model with a reversed link: correct as notation, conceptually wrong [failing to serve informs serving, not the other way round]', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
+  F7: ['A correct model with a semantically and logically wrong link [the player decision linked into the orders stock]', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
+  F8: ['A correct model with a misjudged element (variable as stock) [the player decision drawn as a stock]', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
+  F9: ['Too broad boundary [a stock "wholesaler", filled from a cloud, that the orders flow out of]', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'] }), null, null],
+  F10: ['Too limited boundary [no player decision and no order flow: nothing fills the orders]', 1, fmap({ 'keg orrder rate': undefined }), null, null],
+  F11: ['A correct model with a misjudged element (defining a rate as a stock) [the order rate drawn as a stock "keg order rate", which a flow "kegs" empties into the orders]', 1, fmap({ 'keg orrder rate': undefined, 'keg order rate': ['C6'], 'kegs': ['C6'] }), null, null],
+  F12: ['A correct model with a missing link [no link from the player decision to the order flow]', 1, fmap({}), null, null],
+  F13: ['A correct model but irrelevant [rabbits, with births and deaths]', 1, {}, null, null]
 };
 Object.keys(HAND).forEach(id => { const h = HAND[id]; T.push({ id, title: h[0], errors: h[1], build: null, notation: h[3], fail: h[4], hand: h[2] }); });
 
@@ -201,37 +201,151 @@ const MAPS = {
     'fail to serve rate': ['C10'], 'catch up rate': ['C11'], 'order rate': ['C6'], 'arrival rate​': ['C7'], 'consumption rate': ['C12'] } };
 const SPECIAL = { E1: [E1, {}], E2: [E2, { beer: ['C1'], drinking: ['C12'], brewing: ['C7'], supply: ['C15'], thirst: ['C14'] }] };
 
+// ---------- the answer sheet: each test's flaws ----------
+// Internally the tests keep the labels they were designed under (A1, B7, F11...): they appear nowhere else.
+// Each flaw is one correction the feedback should make. For each: what it is, its kind, and what in the
+// feedback counts as catching it:
+//   N1-N8, W1, W2   a notation error or warning          M1-M10       a mechanism shown as not working
+//   K1:<element>    a stock drawn as a flow or auxiliary  K2:<element> a rate drawn as a stock
+//   extra:<element> the AI lists that element as not part of the game
+//   extras          the AI lists any element the answer sheet itself reads as not part of the game
+//   few             the "only a few of the game's parts" message
+// A flaw nothing can catch has an empty list: it shows what the design cannot see.
+// Its type follows from its kind: syntactic (the drawing breaks the notation, whatever it models) or
+// conceptual (valid notation that does not represent the game correctly).
+const SYNTACTIC = ['same_name', 'link_into_stock', 'link_from_cloud', 'flow_from_variable', 'flow_between_clouds', 'flow_into_itself', 'loose_cloud'];
+const CONCEPTUAL = ['extra_stock', 'extra_variable', 'missing_stock', 'missing_link', 'wrong_link', 'invented_link', 'wrong_flow', 'double_count',
+  'misjudged_stock', 'misjudged_rate', 'misjudged_variable', 'misleading_name', 'broad_boundary', 'narrow_boundary', 'irrelevant', 'too_little'];
+const ALL_M = ['M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'M10'];
+const F = (flaw, kind, caught_by) => {
+  if (SYNTACTIC.indexOf(kind) < 0 && CONCEPTUAL.indexOf(kind) < 0) throw new Error('unknown kind ' + kind);
+  return { flaw, type: SYNTACTIC.indexOf(kind) >= 0 ? 'syntactic' : 'conceptual', kind, caught_by };
+};
+const FLAWS = {
+  A1: [], A2: [], A3: [], A4: [], A5: [], A6: [], A7: [], A8: [],
+  B1: [F('Deliveries never reach the cellar: they fill a separate stock "kegs at the door"', 'wrong_flow', ['M1', 'extra:kegs at the door'])],
+  B2: [F('Orders flow straight into the cellar; nothing fills the kegs on order', 'wrong_flow', ['M2'])],
+  B3: [F('The wholesaler\'s limit holds back the orders, not the deliveries', 'wrong_link', ['M3'])],
+  B4: [F('The cellar does not limit serving', 'missing_link', ['M4'])],
+  B5: [F('The kegs leaving the cellar are not tied to the customers served on arrival', 'missing_link', ['M5'])],
+  B6: [F('Waiting customers can leave ("giving up rate")', 'wrong_flow', ['M6', 'extra:giving up rate'])],
+  B7: [F('Catching up is informed by this week\'s customers, not the waiting ones', 'wrong_link', ['M7'])],
+  B8: [F('The customer arrivals are not driven by the input', 'missing_link', ['M8', 'W1', 'W2'])],
+  B9: [F('The cost is not informed by the waiting customers', 'missing_link', ['M9'])],
+  B10: [F('The orders inform the cost', 'invented_link', ['M10'])],
+  C1: [F('Two flows with the same name', 'same_name', ['N1'])],
+  C2: [F('A link from serving into the cellar', 'link_into_stock', ['N2'])],
+  C3: [F('A link from a cloud', 'link_from_cloud', ['N3'])],
+  C4: [F('The cost per week flows from an auxiliary', 'flow_from_variable', ['N4'])],
+  C6: [F('A flow between two clouds ("spillage")', 'flow_between_clouds', ['N6', 'extra:spillage'])],
+  C7: [F('A flow from the cellar back into the cellar ("restocking")', 'flow_into_itself', ['N7', 'extra:restocking'])],
+  C8: [F('An extra stock "reputation" with no flows', 'extra_stock', ['N8', 'extra:reputation'])],
+  C9: [F('Nothing informs the orders (the order decision left out, which the task allows)', 'missing_link', ['W1'])],
+  C10: [F('An extra auxiliary "weather" that affects nothing', 'extra_variable', ['W2', 'extra:weather'])],
+  D1: [F('Two flows with the same name', 'same_name', ['N1']), F('Catching up is informed by this week\'s customers, not the waiting ones', 'wrong_link', ['M7'])],
+  D2: [F('No kegs on order: orders flow straight into the cellar', 'missing_stock', ['M1', 'M2']), F('The wholesaler\'s limit holds back the orders, not the deliveries', 'wrong_link', ['M3']),
+       F('Catching up is not informed by the waiting customers', 'wrong_link', ['M7'])],
+  D3: [F('Two flows with the same name ("arrival rate")', 'same_name', ['N1']), F('The customer arrivals are not driven by the input table (it informs failing to serve instead)', 'wrong_link', ['M8', 'W1']),
+       F('The wholesaler\'s limit holds back the orders, not the deliveries', 'wrong_link', ['M3']), F('No cost part', 'missing_stock', ['M9', 'M10']),
+       F('The deliveries are informed by serving, which has no basis in the game', 'invented_link', [])],
+  D4: [F('A link from serving into the cellar', 'link_into_stock', ['N2']), F('A link from a cloud', 'link_from_cloud', ['N3']), F('A flow between two clouds ("spillage")', 'flow_between_clouds', ['N6', 'extra:spillage']),
+       F('A flow from the cellar back into the cellar ("restocking")', 'flow_into_itself', ['N7', 'extra:restocking']), F('An extra stock "reputation" with no flows', 'extra_stock', ['N8', 'extra:reputation'])],
+  D5: [F('A link from serving into the cellar', 'link_into_stock', ['N2']), F('No cost part', 'missing_stock', ['M9', 'M10']), F('No waiting customers', 'missing_stock', ['M6', 'M7']),
+       F('No kegs on order: orders flow straight into the cellar', 'missing_stock', ['M1', 'M2']), F('The wholesaler\'s limit holds back the orders', 'wrong_link', ['M3'])],
+  E1: [F('Unrelated to the game', 'irrelevant', ['few', 'extras'].concat(ALL_M))],
+  E2: [F('Far too little of the game: one stock of beer', 'too_little', ['few'].concat(ALL_M))],
+  E3: [F('Misleading names: the cellar and the waiting customers swapped', 'misleading_name', [])],
+  E4: [F('A misleading name: the flow that empties the cellar is called "catch up rate"', 'misleading_name', [])],
+  F1: [],
+  F2: [F('An extra element (variable) "pub hours"', 'extra_variable', ['W2', 'extra:pub hours'])],
+  F3: [F('An extra element (cloud)', 'loose_cloud', [])],
+  F4: [F('An extra element (stock) "a"', 'extra_stock', ['N8', 'extra:a'])],
+  F5: [F('An incorrect name: the order rate called "keg order stock"', 'misleading_name', [])],
+  F6: [F('A conceptually wrong link: failing to serve informs serving', 'wrong_link', [])],
+  F7: [F('The player decision linked into the orders stock', 'link_into_stock', ['N2', 'W1'])],
+  F8: [F('A misjudged element: the player decision drawn as a stock', 'misjudged_variable', ['N8'])],
+  F9: [F('Too broad boundary: the wholesaler\'s stock is outside the pub', 'broad_boundary', ['extras', 'W1'])],
+  F10: [F('Too limited boundary: no player decision and no order flow', 'narrow_boundary', ['M2'])],
+  F11: [F('A misjudged element: the order rate drawn as a stock', 'misjudged_rate', ['K2:keg order rate'])],
+  F12: [F('A missing link: the player decision does not inform the orders', 'missing_link', ['W1', 'W2'])],
+  F13: [F('Irrelevant to the game', 'irrelevant', ['few', 'extras'].concat(ALL_M))],
+  G1: [F('Double count: the kegs for customers served on arrival leave the cellar twice', 'double_count', ['M5'])],
+  G2: [F('Double count: every arriving customer also joins the waiting customers', 'double_count', ['M6'])],
+  G3: [F('An invented link: the cellar informs the customers coming in', 'invented_link', ['M8'])],
+  G4: [F('An invented link: the orders inform the deliveries', 'invented_link', ['M1'])],
+  G5: [F('A reversed flow: the deliveries run from the cellar back to the kegs on order', 'wrong_flow', ['M1'])],
+  G6: [F('A reversed link: the orders inform the player decision', 'wrong_link', ['W1', 'W2'])],
+  G7: [F('Too broad boundary: the wholesaler\'s cellar, its kegs on order and the brewery', 'broad_boundary', ['extras'])],
+  G8: [F('A misjudged element: the total cost drawn as an auxiliary', 'misjudged_stock', ['K1:total cost', 'M9', 'M10', 'W2'])],
+  G9: [F('A misjudged element: the waiting customers drawn as an auxiliary', 'misjudged_stock', ['K1:waiting to serve', 'N6', 'M6', 'M7', 'M9'])],
+  G10: []
+};
+// where each test came from: the author's own diagrams, the studies reviewed, or designed by Claude
+const SOURCE = id => /^F/.test(id) || id === 'D2' || id === 'D3' ? 'author' : /^G/.test(id) ? 'lit' : 'claude';
+// tests whose rule flags should equal another's: renamed or relaid versions of the reference
+const SAME_AS = { A2: 'A1', A3: 'A1', E3: 'A1', E4: 'A1' };
+
 // ---------- build, check, write ----------
-fs.mkdirSync(path.join(__dirname, 'diagrams'), { recursive: true });
-const key = [], rows = [['id', 'file', 'diagram', 'errors', 'expected notation', 'expected failing mechanisms', 'the rules agree']];
-let bad = 0;
-T.forEach(x => {
+const Score = require('./score.js');
+const TYPE_ORDER = ['NA', 'Sy', 'Co', 'SyCo'], SOURCE_ORDER = ['author', 'claude', 'lit'];
+const built = [];
+let unexpected = 0; const gaps = [];
+T.forEach((x, order) => {
   let d, m;
   if (SPECIAL[x.id]) { d = clone(SPECIAL[x.id][0]); m = clone(SPECIAL[x.id][1]); }
-  else if (x.hand) { d = JSON.parse(fs.readFileSync(path.join(__dirname, 'hand', x.id + '.json'))); m = clone(x.hand); Object.keys(m).forEach(k => m[k] === undefined && delete m[k]); }
+  else if (x.hand) { d = JSON.parse(fs.readFileSync(path.join(__dirname, 'hand', 'author_' + x.id.slice(1).padStart(2, '0') + '.json'))); m = clone(x.hand); Object.keys(m).forEach(k => m[k] === undefined && delete m[k]); }
   else if (x.base) { d = load(x.base); delete d.note; m = clone(MAPS[x.base] || MAP0); Object.keys(m).forEach(k => m[k] === undefined && delete m[k]); }
   else { d = clone(REF); m = clone(MAP0); }
   if (x.build) x.build(d, m);
   if (process.env.CHECK_DIR) d = JSON.parse(fs.readFileSync(path.join(process.env.CHECK_DIR, x.id + '.json')));   // the canvas's own version after import
-  const u = M.unique(d);
-  const notation = M.notation(u).map(n => n.id).sort();
-  const res = M.mechanisms(u, m), fails = res.mechanisms.filter(r => !r.pass && /^M/.test(r.id)).map(r => r.id);
-  if (x.notation === null) x.notation = notation;   // F2-F13: whatever the rules give is recorded, for the author to confirm
-  if (x.fail === null) x.fail = fails;   // E2: whatever the rules give is recorded, for the author to confirm
-  const ok = JSON.stringify(notation) === JSON.stringify(x.notation.slice().sort()) && JSON.stringify(fails) === JSON.stringify(x.fail);
-  if (!ok) { bad++; console.log('MISMATCH', x.id, 'notation', notation, 'want', x.notation, '| fails', fails, 'want', x.fail); }
-  const file = x.id + '.json';
-  if (!process.env.CHECK_DIR) fs.writeFileSync(path.join(__dirname, 'diagrams', file), JSON.stringify(d, null, 1));
-  // the expected reading, by element as the learner sees it (a second element of the same name gets "(2)")
-  const reading = {};
+  if (!FLAWS[x.id]) throw new Error('no flaws listed for ' + x.id);
+  const u = M.unique(d), flaws = FLAWS[x.id];
+  // the expected classification, by element as the learner sees it (a second element of the same name gets "(2)")
+  const interp = {};
   [].concat(u.stocks, u.flows, u.auxiliaries).forEach(e => {
     const f = u.flows.find(q => q === e);
-    reading[M.shown(e.label) + (f ? ' [flow ' + M.shown(f.from) + ' -> ' + M.shown(f.to) + ']' : '')] = m[e.label] || 'extra';
+    interp[M.shown(e.label) + (f ? ' [flow ' + M.shown(f.from) + ' -> ' + M.shown(f.to) + ']' : '')] = m[e.label] || 'extra';
   });
-  key.push(Object.assign({ id: x.id, file: 'diagrams/' + file, diagram: x.title, errors: x.errors, expected: { notation: x.notation, failing: x.fail, observation_on_decision: res.decisionNote }, expected_reading: reading },
-    SAID[x.id] ? { said: SAID[x.id] } : {}, ok ? {} : { rules_give: { notation: notation, failing: fails } }));
-  rows.push([x.id, 'diagrams/' + file, x.title, x.errors, x.notation.join(' '), x.fail.join(' '), ok ? 'yes' : 'NO']);
+  const sy = flaws.some(f => f.type === 'syntactic'), co = flaws.some(f => f.type === 'conceptual');
+  const type = sy && co ? 'SyCo' : sy ? 'Sy' : co ? 'Co' : 'NA', source = SOURCE(x.id);
+  const kinds = flaws.length > 2 ? 'mixed' : flaws.map(f => f.kind).join('+');
+  const name = type + '-' + flaws.length + (kinds ? '-' + kinds : '') + '-' + source;
+  built.push({ x, d, order, type, source, name, entry: Object.assign({ name, source, diagram: x.title, flaws, expected_classification: interp }, SAID[x.id] ? { said: SAID[x.id] } : {}) });
 });
-if (!process.env.CHECK_DIR) fs.writeFileSync(path.join(__dirname, 'key.json'), JSON.stringify(key, null, 1));
-if (!process.env.CHECK_DIR) fs.writeFileSync(path.join(__dirname, 'key.csv'), rows.map(r => r.map(v => /[",]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v).join(',')).join('\n') + '\n');
-console.log(T.length + ' diagrams written; ' + (bad ? bad + ' do not match their expected result' : 'every one gives its expected result under the rules'));
+// number them: correct diagrams first, then syntactic, conceptual, both; by source within each
+built.sort((a, b) => TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || SOURCE_ORDER.indexOf(a.source) - SOURCE_ORDER.indexOf(b.source) || a.order - b.order);
+const idOf = {}; built.forEach((b, i) => { idOf[b.x.id] = i + 1; });
+if (!process.env.CHECK_DIR) fs.readdirSync(path.join(__dirname, 'diagrams')).forEach(f => fs.unlinkSync(path.join(__dirname, 'diagrams', f)));
+const sheet = built.map((b, i) => {
+  const id = i + 1, file = 'diagrams/id' + String(id).padStart(2, '0') + '_' + b.name + '.json';
+  const e = Object.assign({ id, label: 'id ' + id, file }, b.entry, SAME_AS[b.x.id] ? { same_flags_as: idOf[SAME_AS[b.x.id]] } : {}, { old_label: b.x.id });
+  if (!process.env.CHECK_DIR) fs.writeFileSync(path.join(__dirname, file), JSON.stringify(b.d, null, 1));
+  // the rules alone, given the answer sheet's classification: anything they flag must belong to a listed flaw
+  const r = Score.rulesAlone(e, b.d);
+  if (r.falseAlarms.length) { unexpected++; console.log('FLAGGED BUT NOT A LISTED FLAW', e.label, e.name, r.falseAlarms); }
+  r.missed.forEach(f => gaps.push(e.label + ' ' + e.name + ': ' + f));
+  e.rules_alone_miss = r.missed;
+  return e;
+});
+const csv = v => /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v;
+const rows = [['id', 'name', 'diagram', 'flaw', 'type', 'kind', 'caught if the feedback shows', 'caught by the rules alone']];
+sheet.forEach(e => {
+  if (!e.flaws.length) rows.push([e.label, e.name, e.diagram, '(none: a correct diagram)', '', '', '', '']);
+  e.flaws.forEach(f => rows.push([e.label, e.name, e.diagram, f.flaw, f.type, f.kind, f.caught_by.map(Score.describe).join('; ') || '(nothing can catch it)', e.rules_alone_miss.indexOf(f.flaw) < 0 ? 'yes' : 'no']));
+});
+sheet.forEach(e => delete e.rules_alone_miss);
+if (!process.env.CHECK_DIR) {
+  fs.writeFileSync(path.join(__dirname, 'answer_sheet.json'), JSON.stringify(sheet, null, 1));
+  fs.writeFileSync(path.join(__dirname, 'answer_sheet.csv'), rows.map(r => r.map(csv).join(',')).join('\n') + '\n');
+  // the same, to read on GitHub
+  const md = ['# Beer Game Lab: the answer sheet', '', 'Generated by `build_tests.js`. Each flaw is one correction the feedback should make. A name reads: type of flaws (NA none, Sy syntactic, Co conceptual, SyCo both), number of flaws, their kind (or "mixed" for three or more), and who designed the test (author, claude, or lit: Claude, from errors reported in the literature).', '',
+    '| id | Name | Diagram | Flaws (kind) | Caught by the rules alone |', '| --- | --- | --- | --- | --- |'];
+  sheet.forEach(e => md.push('| ' + e.id + ' | `' + e.name + '` | ' + e.diagram.replace(/\|/g, '/') + ' | ' + (e.flaws.map(f => f.flaw + ' (' + f.kind + ')').join('<br>') || 'none') + ' | ' +
+    (e.flaws.map(f => rows.find(r => r[0] === e.label && r[3] === f.flaw)[7]).join('<br>') || '') + ' |'));
+  fs.writeFileSync(path.join(__dirname, 'answer_sheet.md'), md.join('\n') + '\n');
+}
+const nf = sheet.reduce((n, e) => n + e.flaws.length, 0), ns = sheet.reduce((n, e) => n + e.flaws.filter(f => f.type === 'syntactic').length, 0);
+console.log(sheet.length + ' diagrams, ' + sheet.filter(e => !e.flaws.length).length + ' correct; ' + nf + ' flaws: ' + ns + ' syntactic, ' + (nf - ns) + ' conceptual. ' +
+  (unexpected ? unexpected + ' diagrams flag something that is not a listed flaw.' : 'Everything the rules flag belongs to a listed flaw.'));
+console.log('Flaws the rules alone miss, even with the answer sheet\'s classification (' + gaps.length + '):\n  ' + gaps.join('\n  '));
+if (process.env.LIST) sheet.forEach(e => console.log(e.label.padEnd(6), e.name.padEnd(46), e.old_label));

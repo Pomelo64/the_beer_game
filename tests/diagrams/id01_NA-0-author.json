@@ -1,0 +1,301 @@
+{
+ "stocks": [
+  {
+   "label": "arrived customers",
+   "x": 329,
+   "y": 165
+  },
+  {
+   "label": "served customers",
+   "x": 619,
+   "y": 165
+  },
+  {
+   "label": "waiting customers",
+   "x": 478,
+   "y": 42
+  },
+  {
+   "label": "orders",
+   "x": 277,
+   "y": 323
+  },
+  {
+   "label": "deliverables",
+   "x": 494,
+   "y": 323
+  },
+  {
+   "label": "pub cellar",
+   "x": 708,
+   "y": 323
+  },
+  {
+   "label": "total cost",
+   "x": 349,
+   "y": 591
+  }
+ ],
+ "auxiliaries": [
+  {
+   "label": "player decision",
+   "x": 69,
+   "y": 467
+  },
+  {
+   "label": "exogenous game setup",
+   "x": 31,
+   "y": 236
+  },
+  {
+   "label": "wholesaler capacity of provsion",
+   "x": 338,
+   "y": 421
+  },
+  {
+   "label": "delay factor",
+   "x": 514,
+   "y": 543
+  }
+ ],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 106,
+   "y": 165
+  },
+  {
+   "label": "cloud",
+   "x": 73,
+   "y": 323
+  },
+  {
+   "label": "cloud",
+   "x": 938,
+   "y": 323
+  },
+  {
+   "label": "cloud",
+   "x": 10,
+   "y": 590
+  }
+ ],
+ "flows": [
+  {
+   "label": "serving rate",
+   "from": "arrived customers",
+   "to": "served customers",
+   "from_xy": [
+    329,
+    165
+   ],
+   "to_xy": [
+    619,
+    165
+   ],
+   "valve_xy": [
+    474,
+    165
+   ]
+  },
+  {
+   "label": "failurre rate",
+   "from": "arrived customers",
+   "to": "waiting customers",
+   "from_xy": [
+    329,
+    165
+   ],
+   "to_xy": [
+    478,
+    42
+   ],
+   "valve_xy": [
+    403,
+    103
+   ]
+  },
+  {
+   "label": "catchup rate",
+   "from": "waiting customers",
+   "to": "served customers",
+   "from_xy": [
+    478,
+    42
+   ],
+   "to_xy": [
+    619,
+    165
+   ],
+   "valve_xy": [
+    548,
+    104
+   ]
+  },
+  {
+   "label": "customer arrival rrate",
+   "from": "cloud",
+   "to": "arrived customers",
+   "from_xy": [
+    106,
+    165
+   ],
+   "to_xy": [
+    329,
+    165
+   ],
+   "valve_xy": [
+    217,
+    165
+   ]
+  },
+  {
+   "label": "keg orrder rate",
+   "from": "cloud",
+   "to": "orders",
+   "from_xy": [
+    73,
+    323
+   ],
+   "to_xy": [
+    277,
+    323
+   ],
+   "valve_xy": [
+    175,
+    323
+   ]
+  },
+  {
+   "label": "orderr fulfill rate",
+   "from": "orders",
+   "to": "deliverables",
+   "from_xy": [
+    277,
+    323
+   ],
+   "to_xy": [
+    494,
+    323
+   ],
+   "valve_xy": [
+    385,
+    323
+   ]
+  },
+  {
+   "label": "delivery rate",
+   "from": "deliverables",
+   "to": "pub cellar",
+   "from_xy": [
+    494,
+    323
+   ],
+   "to_xy": [
+    708,
+    323
+   ],
+   "valve_xy": [
+    601,
+    323
+   ]
+  },
+  {
+   "label": "consumption rate",
+   "from": "pub cellar",
+   "to": "cloud",
+   "from_xy": [
+    708,
+    323
+   ],
+   "to_xy": [
+    938,
+    323
+   ],
+   "valve_xy": [
+    823,
+    323
+   ]
+  },
+  {
+   "label": "cost rate",
+   "from": "cloud",
+   "to": "total cost",
+   "from_xy": [
+    10,
+    590
+   ],
+   "to_xy": [
+    349,
+    591
+   ],
+   "valve_xy": [
+    180,
+    590
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "player decision",
+   "to": "keg orrder rate"
+  },
+  {
+   "from": "exogenous game setup",
+   "to": "customer arrival rrate"
+  },
+  {
+   "from": "wholesaler capacity of provsion",
+   "to": "orderr fulfill rate"
+  },
+  {
+   "from": "delay factor",
+   "to": "delivery rate"
+  },
+  {
+   "from": "arrived customers",
+   "to": "serving rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "serving rate"
+  },
+  {
+   "from": "serving rate",
+   "to": "failurre rate"
+  },
+  {
+   "from": "arrived customers",
+   "to": "failurre rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "catchup rate"
+  },
+  {
+   "from": "waiting customers",
+   "to": "catchup rate"
+  },
+  {
+   "from": "catchup rate",
+   "to": "consumption rate"
+  },
+  {
+   "from": "serving rate",
+   "to": "consumption rate"
+  },
+  {
+   "from": "pub cellar",
+   "to": "cost rate"
+  },
+  {
+   "from": "consumption rate",
+   "to": "cost rate"
+  },
+  {
+   "from": "waiting customers",
+   "to": "cost rate"
+  }
+ ],
+ "junctions": []
+}

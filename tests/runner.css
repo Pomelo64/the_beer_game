@@ -27,3 +27,4 @@ th{font-weight:600;color:var(--muted)}
 details summary{cursor:pointer;margin-top:12px;font-weight:600}
 .log td.bad{color:var(--bad)}.log td.good{color:var(--good)}
 #summary table{margin-top:8px}
+#groups p{margin:10px 0 4px}#groups p:first-child{margin-top:0}

@@ -1,0 +1,84 @@
+{
+ "stocks": [
+  {
+   "label": "beer",
+   "x": 450,
+   "y": 250
+  }
+ ],
+ "auxiliaries": [
+  {
+   "label": "supply",
+   "x": 260,
+   "y": 400
+  },
+  {
+   "label": "thirst",
+   "x": 640,
+   "y": 400
+  }
+ ],
+ "clouds": [
+  {
+   "label": "cloud",
+   "x": 120,
+   "y": 250
+  },
+  {
+   "label": "cloud",
+   "x": 800,
+   "y": 250
+  }
+ ],
+ "flows": [
+  {
+   "label": "brewing",
+   "from": "cloud",
+   "to": "beer",
+   "from_xy": [
+    120,
+    250
+   ],
+   "to_xy": [
+    450,
+    250
+   ],
+   "valve_xy": [
+    285,
+    250
+   ]
+  },
+  {
+   "label": "drinking",
+   "from": "beer",
+   "to": "cloud",
+   "from_xy": [
+    450,
+    250
+   ],
+   "to_xy": [
+    800,
+    250
+   ],
+   "valve_xy": [
+    625,
+    250
+   ]
+  }
+ ],
+ "connectors": [
+  {
+   "from": "supply",
+   "to": "brewing"
+  },
+  {
+   "from": "thirst",
+   "to": "drinking"
+  },
+  {
+   "from": "beer",
+   "to": "drinking"
+  }
+ ],
+ "junctions": []
+}
