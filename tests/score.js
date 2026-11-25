@@ -167,10 +167,15 @@ const Score = (function () {
       const R = runs.filter(function (r) { return modelName(r) === mn; }), D = done.filter(function (r) { return modelName(r) === mn; });
       const s = { runs: R.length, done: D.length, tp: 0, fn: 0, fp: 0, fpAI: 0, tn: 0, 
         diag: { tp: 0, fn: 0, fp: 0, tn: 0 }, byType: { syntactic: [0, 0], conceptual: [0, 0] }, byKind: {}, byChannel: { rules: 0, ai: 0, both: 0 },
-        missed: {}, falseAlarms: {}, perRun: {} };
+        missed: {}, falseAlarms: {}, perRun: {}, byRun: {}, runsOf: {} };
       D.forEach(function (r) {
         const k = K[r.id], mr = markRun(k, r, diagrams[k.id], refClass), flags = mr.flags, m = mr.mark;
-        s.perRun[k.id + '|' + r.run] = { flags: flags, sig: mr.sig, mark: m, direct: r.mode === 'direct' };
+        // the false flags by what they say, so the same one can be recognised in another run (a reported flaw by its class and parts, not its words)
+        const fpKeys = m.falseAlarms.map(function (fl) { if (fl.indexOf('llm:') !== 0) return fl; const l = (mr.llm || []).find(function (y) { return y.token === fl; });
+          return l ? 'llm:' + l.f.class + ':' + sorted(l.anchors).join('+') : fl; });
+        s.perRun[k.id + '|' + r.run] = { flags: flags, sig: mr.sig, mark: m, direct: r.mode === 'direct', fpKeys: fpKeys, fpText: m.falseAlarms.map(describe) };
+        const B = s.byRun[r.run] = s.byRun[r.run] || { tp: 0, fn: 0, fp: 0 }; B.tp += m.caught.length; B.fn += m.missed.length; B.fp += m.falseAlarms.length;
+        s.runsOf[title(k)] = (s.runsOf[title(k)] || 0) + 1;
         s.tp += m.caught.length; s.fn += m.missed.length; s.tn += m.silences;
         m.falseAlarms.forEach(function (fl) { if (isRule(fl)) s.fp++; else s.fpAI++; const t = title(k) + ' · ' + describe(fl); (s.falseAlarms[t] = s.falseAlarms[t] || []).push(r.run); });
         const tally = function (c, hit) { const T = s.byType[c.flaw.type], Kd = s.byKind[c.flaw.kind] = s.byKind[c.flaw.kind] || [0, 0, c.flaw.type]; T[1]++; Kd[1]++; if (hit) { T[0]++; Kd[0]++; } };
@@ -223,6 +228,26 @@ const Score = (function () {
       s.cost = { medianSeconds: median(D.map(function (r) { return r.ms / 1000; })), medianInput: median(D.map(function (r) { return tok(r, 'input'); })),
         medianOutput: median(D.map(function (r) { return tok(r, 'output'); })), totalInput: D.reduce(function (t, r) { return t + tok(r, 'input'); }, 0),
         totalOutput: D.reduce(function (t, r) { return t + tok(r, 'output'); }, 0) };
+      // variation across repeats: the same result every time, or not
+      const V = { flaws: { every: 0, some: 0, none: 0 }, fps: { every: 0, some: 0 }, correct: { clean: 0, some: 0, every: 0 }, unstableFlaws: [], systematicFN: [], systematicFP: [], sporadicFP: [], byRun: {} };
+      Object.keys(ids).forEach(function (id) {
+        const rs = ids[id], k = K[id]; if (rs.length < 2) return;
+        const P = rs.map(function (r) { return s.perRun[id + '|' + r.run]; }), n = P.length;
+        k.flaws.forEach(function (f) {
+          const c = P.filter(function (p) { return p.mark.caught.some(function (x) { return x.flaw === f; }); }).length;
+          if (c === n) V.flaws.every++; else if (c) { V.flaws.some++; V.unstableFlaws.push(title(k) + ' · ' + f.flaw + ' (caught in ' + c + ' of ' + n + ')'); } else { V.flaws.none++; V.systematicFN.push(title(k) + ' · ' + f.flaw); }
+        });
+        const keys = {}; P.forEach(function (p) { p.fpKeys.forEach(function (key, i) { const e = keys[key] = keys[key] || { n: 0, text: p.fpText[i] }; e.n++; }); });
+        Object.keys(keys).forEach(function (key) { const e = keys[key];
+          if (e.n === n) { V.fps.every++; V.systematicFP.push(title(k) + ' · ' + e.text); } else { V.fps.some++; V.sporadicFP.push(title(k) + ' · ' + e.text + ' (in ' + e.n + ' of ' + n + ')'); } });
+        if (!k.flaws.length) { const f = P.filter(function (p) { return p.mark.falseAlarms.length; }).length; if (!f) V.correct.clean++; else if (f === n) V.correct.every++; else V.correct.some++; }
+      });
+      Object.keys(s.byRun).sort(function (a, b) { return a - b; }).forEach(function (run) { const b = s.byRun[run];
+        V.byRun[run] = { recall: b.tp + b.fn ? 100 * b.tp / (b.tp + b.fn) : null, precision: b.tp + b.fp ? 100 * b.tp / (b.tp + b.fp) : null }; });
+      const range = function (key) { const xs = Object.keys(V.byRun).map(function (r) { return V.byRun[r][key]; }).filter(function (x) { return x != null; });
+        if (!xs.length) return '–'; const lo = Math.min.apply(null, xs), hi = Math.max.apply(null, xs), f = function (x) { return Math.round(10 * x) / 10 + '%'; }; return lo === hi ? f(lo) : f(lo) + '–' + f(hi); };
+      V.recallRange = range('recall'); V.precisionRange = range('precision');
+      s.variation = V;
       out.byModel[mn] = s;
     });
     // the rules alone, with the answer sheet's interpretation
@@ -264,6 +289,14 @@ const Score = (function () {
     L.push('| Model | TP | FN | FP | TN | Recall | Specificity |', '| --- | --- | --- | --- | --- | --- | --- |');
     s.models.forEach(function (m) { const x = s.byModel[m].diag; L.push('| ' + m + ' | ' + x.tp + ' | ' + x.fn + ' | ' + x.fp + ' | ' + x.tn + ' | ' + x.recall + ' | ' + x.specificity + ' |'); });
     L.push('');
+    L.push('## Variation across repeats', '');
+    L.push('Each diagram was run several times with each model. A flaw caught in every run, or missed in every run, is a stable result; one caught in some runs only is unstable. ' +
+      'A false flag that appears in every run is systematic; one that appears in some runs only is sporadic. Only diagrams run at least twice are counted.', '');
+    L.push('| Model | Flaws caught in every run | in some runs | in no run | FPs in every run | in some runs | Correct diagrams clean in every run | flagged in some runs | flagged in every run | Recall by run | Precision by run |');
+    L.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    s.models.forEach(function (m) { const v = s.byModel[m].variation;
+      L.push('| ' + m + ' | ' + v.flaws.every + ' | ' + v.flaws.some + ' | ' + v.flaws.none + ' | ' + v.fps.every + ' | ' + v.fps.some + ' | ' + v.correct.clean + ' | ' + v.correct.some + ' | ' + v.correct.every + ' | ' + v.recallRange + ' | ' + v.precisionRange + ' |'); });
+    L.push('');
     L.push('## The rules alone', '');
     L.push('Given the answer sheet\'s own classification of the elements, so with no AI: TP ' + s.rulesAlone.caught + ', FN ' + (s.rulesAlone.flaws - s.rulesAlone.caught) + ', FP ' + s.rulesAlone.falseAlarms.length +
       '. This is the most the rules can do. The FNs:', '');
@@ -281,9 +314,15 @@ const Score = (function () {
       L.push('**TPs by what flagged them:** the rules only ' + x.byChannel.rules + ', the AI only ' + x.byChannel.ai + ', both ' + x.byChannel.both + '.' +
         (/ · direct$/.test(m) ? ' (Here the rules are the notation checks, and the AI is the flaws it reported.)' : ''), '');
       const mi = Object.keys(x.missed).sort();
-      if (mi.length) { L.push('**FNs** (test · flaw, and the runs: see them in the transcripts):', ''); mi.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.missed[t]) + ')'); }); L.push(''); }
+      const tag = function (t, rs) { const n = x.runsOf[t.split(' · ')[0]] || 0; return '(' + runsText(rs) + (n > 1 ? ' of ' + n + (rs.length === n ? ': every run' : ': some runs') : '') + ')'; };
+      if (mi.length) { L.push('**FNs** (test · flaw, and the runs: see them in the transcripts):', ''); mi.forEach(function (t) { L.push('- ' + t + ' ' + tag(t, x.missed[t])); }); L.push(''); }
       const fa = Object.keys(x.falseAlarms).sort();
-      if (fa.length) { L.push('**FPs** (test · what was flagged, and the runs):', ''); fa.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.falseAlarms[t]) + ')'); }); L.push(''); }
+      if (fa.length) { L.push('**FPs** (test · what was flagged, and the runs):', ''); fa.forEach(function (t) { L.push('- ' + t + ' ' + tag(t, x.falseAlarms[t])); }); L.push(''); }
+      const v = x.variation;
+      if (v.unstableFlaws.length) { L.push('**Unstable flaws** (caught in some runs only):', ''); v.unstableFlaws.forEach(function (t) { L.push('- ' + t); }); L.push(''); }
+      if (v.sporadicFP.length) { L.push('**Sporadic FPs** (in some runs only):', ''); v.sporadicFP.forEach(function (t) { L.push('- ' + t); }); L.push(''); }
+      if (Object.keys(v.byRun).length > 1) L.push('**By run:** ' + Object.keys(v.byRun).map(function (r) { const b = v.byRun[r];
+        return 'run ' + r + ': recall ' + (b.recall == null ? '–' : Math.round(10 * b.recall) / 10 + '%') + ', precision ' + (b.precision == null ? '–' : Math.round(10 * b.precision) / 10 + '%'); }).join('; ') + '.', '');
       L.push('**Supporting measures**', '');
       L.push(x.interpretation.elements ? '- The AI\'s classification of the elements (each element to a part of the game, or to none): ' + x.interpretation.right + ' of ' + x.interpretation.elements + ' as the answer sheet says; accuracy ' + x.interpretation.share + '.'
         : '- The AI\'s classification of the elements: not part of the direct mode.');
