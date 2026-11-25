@@ -28,6 +28,7 @@
   LLM.completeJson = async function (cfg, system, user, maxTokens, opts) {
     if (cfg.provider !== 'rehearsal') return realCompleteJson(cfg, system, user, maxTokens, opts);
     const meta = { provider: 'rehearsal', model: 'the answer sheet', temperature: 'none', ms: 0, usage: { input: 0, output: 0 }, text: null };
+    if (system === Direct.SYSTEM) { const out = rehearseDirect(cfg.testId); meta.text = JSON.stringify(out); return [out, null, meta]; }
     if (system !== Evaluate.MAP_SYSTEM) return [null, 'Rehearsal: no wording, so the rules word the slides.', meta];
     const k = KEY.find(function (x) { return x.id === cfg.testId; }), want = {};
     Object.keys(k.expected_classification).forEach(function (n) {   // "arrival rate (2) [flow a -> b]" -> name and ends, without "(2)"
@@ -45,6 +46,24 @@
     return [out, null, meta];
   };
 
+  /* the direct mode rehearsed: each flaw on the answer sheet reported once, under its first class, pointing at the
+     learner's elements its anchors name, and at the reference's for parts the learner left out */
+  function rehearseDirect(id) {
+    const k = KEY.find(function (x) { return x.id === id; }), u = Marking.unique(DIAGRAMS[id]), list = Evaluate.elementList(u);
+    const ref = Evaluate.elementList(Marking.unique(KEYS.plain.reference)), refK = KEY.find(function (x) { return x.is_reference; });
+    const cls = {}; Object.keys(k.expected_classification).forEach(function (n) { cls[n.replace(/ \[flow .*\]$/, '')] = k.expected_classification[n]; });
+    const rcls = {}; Object.keys(refK.expected_classification).forEach(function (n) { rcls[n.replace(/ \[flow .*\]$/, '')] = refK.expected_classification[n]; });
+    return { correct: !k.flaws.length, flaws: k.flaws.map(function (f) {
+      const a = f.match.anchors, els = [], refs = [];
+      Object.keys(list.ids).forEach(function (e) { const n = Marking.shown(list.ids[e]), v = cls[n];
+        if (Array.isArray(v) ? v.some(function (c) { return a.indexOf(c) >= 0; }) : v === 'extra' && (a.indexOf('el:' + n) >= 0 || a.indexOf('el:*') >= 0)) els.push(e); });
+      const present = {}; Object.keys(cls).forEach(function (n) { if (Array.isArray(cls[n])) cls[n].forEach(function (c) { present[c] = 1; }); });
+      Object.keys(ref.ids).forEach(function (e) { const v = rcls[Marking.shown(ref.ids[e])];
+        if (Array.isArray(v) && v.some(function (c) { return a.indexOf(c) >= 0 && !present[c]; })) refs.push(e.replace('E', 'R')); });
+      return { class: f.match.classes[0], elements: f.match.anchors.length ? els : [], reference: refs, flaw: f.flaw, advice: 'As the answer sheet says.' };
+    }) };
+  }
+
   /* ---------- the plan ---------- */
   const PROVIDERS = [['rehearsal', 'Rehearsal (the answer sheet, no AI)'], ['anthropic', LLM.PROVIDERS.anthropic], ['openai', LLM.PROVIDERS.openai], ['gemini', LLM.PROVIDERS.gemini]];
   const ROW_DEFAULTS = [['anthropic', 5], ['openai', 2], ['gemini', 2]];
@@ -53,11 +72,13 @@
       return '<tr><td><select id="prov' + i + '">' + '<option value="">(not used)</option>' + PROVIDERS.map(function (p) { return '<option value="' + p[0] + '"' + (p[0] === d[0] ? ' selected' : '') + '>' + esc(p[1]) + '</option>'; }).join('') + '</select></td>' +
         '<td><input id="model' + i + '" type="text" spellcheck="false" placeholder="' + esc(LLM.DEFAULT_MODELS[d[0]] || '') + '"></td>' +
         '<td><input id="key' + i + '" type="password" autocomplete="off" placeholder="' + esc(LLM.KEY_PLACEHOLDER[d[0]] || '') + '"></td>' +
-        '<td><input id="runs' + i + '" type="number" min="0" max="20" value="' + d[1] + '"></td></tr>';
+        '<td><input id="runs' + i + '" type="number" min="0" max="20" value="' + d[1] + '"></td>' +
+        '<td><select id="mode' + i + '"><option value="classification">Classification-first (as in the app)</option><option value="direct">Direct (the AI lists the flaws)</option></select></td></tr>';
     }).join('');
     ROW_DEFAULTS.forEach(function (d, i) {
       $('prov' + i).addEventListener('change', function () { const p = this.value; $('model' + i).placeholder = LLM.DEFAULT_MODELS[p] || (p === 'rehearsal' ? 'the answer sheet' : ''); $('key' + i).placeholder = LLM.KEY_PLACEHOLDER[p] || (p === 'rehearsal' ? 'no key needed' : ''); drawPlan(); });
       ['model', 'key', 'runs'].forEach(function (f) { $(f + i).addEventListener('input', drawPlan); });
+      $('mode' + i).addEventListener('change', drawPlan);
     });
   }
   function models() {
@@ -65,7 +86,7 @@
       const p = $('prov' + i).value, runs = Math.max(0, Math.min(20, parseInt($('runs' + i).value, 10) || 0));
       if (!p || !runs) return null;
       const key = $('key' + i).value.trim(); if (p !== 'rehearsal' && !key) return null;
-      return { provider: p, model: p === 'rehearsal' ? 'the answer sheet' : ($('model' + i).value.trim() || LLM.DEFAULT_MODELS[p]), key: key, runs: runs };
+      return { provider: p, model: p === 'rehearsal' ? 'the answer sheet' : ($('model' + i).value.trim() || LLM.DEFAULT_MODELS[p]), key: key, runs: runs, mode: $('mode' + i).value };
     }).filter(Boolean);
   }
   /* The two rows of boxes narrow the tests down: a row with nothing ticked does not narrow at all.
@@ -82,19 +103,19 @@
     Object.keys(Score.TYPES).forEach(function (t) { $('ntype' + t).textContent = KEY.filter(function (k) { return fits(k, [t], sources); }).length; });
     Object.keys(Score.SOURCES).forEach(function (x) { $('nsource' + x).textContent = KEY.filter(function (k) { return fits(k, types, [x]); }).length; });
   }
-  const runKey = function (id, m, run) { return id + '|' + m.provider + '/' + m.model + '|' + run; };
+  const runKey = function (id, m, run, mode) { return id + '|' + m.provider + '/' + m.model + '|' + run + '|' + (mode || m.mode || 'classification'); };
   function tasks() {
     const ms = models(), ids = chosenIds(), done = {}, T = [];
-    results.runs.forEach(function (r) { if (r.status !== 'error') done[runKey(r.id, r.model, r.run)] = 1; });
+    results.runs.forEach(function (r) { if (r.status !== 'error') done[runKey(r.id, r.model, r.run, r.mode || 'classification')] = 1; });
     const most = Math.max.apply(null, [0].concat(ms.map(function (m) { return m.runs; })));
     for (let run = 1; run <= most; run++) ids.forEach(function (id) { ms.forEach(function (m) {   // run by run, so stopping early leaves a balanced set
-      if (run <= m.runs && !done[runKey(id, m, run)]) T.push({ id: id, m: m, run: run });
+      if (run <= m.runs && !done[runKey(id, m, run, m.mode)]) T.push({ id: id, m: m, run: run });
     }); });
     return T;
   }
   function drawPlan() {
     const ms = models(), T = tasks(), ids = chosenIds();
-    $('plan').textContent = ids.length + ' diagrams × ' + (ms.map(function (m) { return m.runs + ' run' + (m.runs === 1 ? '' : 's') + ' with ' + m.model; }).join(', ') || 'no model yet') +
+    $('plan').textContent = ids.length + ' diagrams × ' + (ms.map(function (m) { return m.runs + ' run' + (m.runs === 1 ? '' : 's') + ' with ' + m.model + (m.mode === 'direct' ? ' (direct)' : ''); }).join(', ') || 'no model yet') +
       ': ' + T.length + ' evaluations to do' + (results.runs.length ? ' (' + results.runs.length + ' already in the results)' : '') + '.';
     $('startBtn').disabled = running || !T.length;
     // why Start is grey, said where it is
@@ -110,14 +131,23 @@
   function newResults() {
     return { format: 'beer-game-lab-test-results', version: 2, app_version: APP_VERSION, created: new Date().toISOString(),
       settings: { reading_temperature: Evaluate.SETTINGS.reading.temperature, wording_temperature: 'default',
-        reading_max_tokens: Evaluate.SETTINGS.reading.maxTokens, wording_max_tokens: Evaluate.SETTINGS.wording.maxTokens },
-      game_text: GAME_TEXT, prompts: { reading: Evaluate.MAP_SYSTEM, wording: Evaluate.WORD_SYSTEM },
+        reading_max_tokens: Evaluate.SETTINGS.reading.maxTokens, wording_max_tokens: Evaluate.SETTINGS.wording.maxTokens,
+        direct: { temperature: Direct.SETTINGS.temperature, max_tokens: Direct.SETTINGS.maxTokens } },
+      game_text: GAME_TEXT, prompts: { reading: Evaluate.MAP_SYSTEM, wording: Evaluate.WORD_SYSTEM, direct: Direct.SYSTEM },
       classification_requests: {},   // by test: what the classification call is sent, the same in every run of that test
       runs: [] };
   }
   async function runOne(t) {
     const cfg = { provider: t.m.provider, key: t.m.key, model: t.m.model, testId: t.id };
     const started = new Date().toISOString();
+    if (t.m.mode === 'direct') {   // the second mode: the AI lists the conceptual flaws itself
+      let ev;
+      try { ev = await Direct.run({ cfg: cfg, key: KEYS.plain, diagram: DIAGRAMS[t.id] }); }
+      catch (e) { ev = { status: 'error', error: String(e && e.message || e), calls: [], raw: {}, requests: {}, ms: 0 }; }
+      return { id: t.id, name: (byId(t.id) || {}).name, mode: 'direct', model: { provider: t.m.provider, model: t.m.model }, run: t.run, started: started,
+        status: ev.status, error: ev.error || null, ms: ev.ms, calls: ev.calls, raw: ev.raw, requests: ev.requests, notation: ev.notation || [],
+        correct: ev.correct, flaws: ev.flaws, dropped: ev.dropped || [], reference_elements: ev.reference_elements || null };
+    }
     let ev;
     try { ev = await Evaluate.run({ cfg: cfg, key: KEYS.plain, diagram: DIAGRAMS[t.id], gameText: gameTextFor(t.id), prev: null }); }
     catch (e) { ev = { status: 'error', error: String(e && e.message || e), calls: [], raw: {}, ms: 0 }; }
@@ -167,14 +197,14 @@
     const k = byId(r.id);
     let caught = '<td>–</td>', alarms = '<td>–</td>', interp = '<td>–</td>';   // TP of the flaws; the FPs; the classification
     if (r.status === 'done' && k && DIAGRAMS[k.id]) {
-      const m = Score.mark(k, Score.runFlags(r, DIAGRAMS[k.id]));
+      const m = Score.markRun(k, r, DIAGRAMS[k.id], Score.refClassOf(KEY)).mark;
       caught = '<td class="' + (m.missed.length ? 'bad' : 'good') + '">' + m.caught.length + ' / ' + m.missed.length + '</td>';
       alarms = '<td class="' + (m.falseAlarms.length ? 'bad' : 'good') + '">' + (m.falseAlarms.length ? m.falseAlarms.length + ': ' + esc(m.falseAlarms.map(Score.describe).join('; ')) : '0') + '</td>';
-      const s = Score.score({ runs: [r] }, [k], { [k.id]: DIAGRAMS[k.id] }).byModel[r.model.provider + ' / ' + r.model.model];
-      interp = '<td>' + esc(s.interpretation.right + ' of ' + s.interpretation.elements) + '</td>';
+      if (r.mode !== 'direct') { const s = Score.score({ runs: [r] }, [k], { [k.id]: DIAGRAMS[k.id] }).byModel[r.model.provider + ' / ' + r.model.model];
+        interp = '<td>' + esc(s.interpretation.right + ' of ' + s.interpretation.elements) + '</td>'; }
     }
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + esc(k ? k.label + ' ' + k.name : r.id) + '</td><td>' + esc(r.model.model) + '</td><td>' + r.run + '</td><td' + (r.status === 'done' ? '' : ' class="bad"') + '>' +
+    tr.innerHTML = '<td>' + esc(k ? k.label + ' ' + k.name : r.id) + '</td><td>' + esc(r.model.model + (r.mode === 'direct' ? ' · direct' : '')) + '</td><td>' + r.run + '</td><td' + (r.status === 'done' ? '' : ' class="bad"') + '>' +
       esc(r.status === 'done' ? 'evaluated' : r.status === 'unread' ? 'stopped: elements unclassified' : 'error: ' + r.error) + '</td>' + caught + alarms + interp + '<td>' + (r.ms / 1000).toFixed(1) + ' s</td>';
     $('log').appendChild(tr);
   }
@@ -229,8 +259,8 @@
     $('loadKeyBtn').addEventListener('click', function () { $('keyFile').value = ''; $('keyFile').click(); });
     $('resFile').addEventListener('change', function () { readFile(this.files[0], function (o) {
       if (!o || o.format !== 'beer-game-lab-test-results') { $('status').textContent = 'That is not a results file from this page.'; return; }
-      const have = {}; results.runs.forEach(function (r) { have[runKey(r.id, r.model, r.run)] = 1; });
-      normalise(o.runs).forEach(function (r) { if (!have[runKey(r.id, r.model, r.run)]) results.runs.push(r); });
+      const have = {}; results.runs.forEach(function (r) { have[runKey(r.id, r.model, r.run, r.mode || 'classification')] = 1; });
+      normalise(o.runs).forEach(function (r) { if (!have[runKey(r.id, r.model, r.run, r.mode || 'classification')]) results.runs.push(r); });
       const cr = results.classification_requests = results.classification_requests || {};
       Object.keys(o.classification_requests || {}).forEach(function (id) { const k = byId(id); if (k && !(k.id in cr)) cr[k.id] = o.classification_requests[id]; });
       if (o.created < results.created) results.created = o.created;

@@ -6,7 +6,7 @@ The tests measure how well Beer Game Lab's feedback catches the flaws in a learn
 
 Open `tests/runner.html` (on GitHub Pages: the app's address followed by `tests/runner.html`). The page is not linked from the app, and learners never see it.
 
-1. **Models.** One row per model: provider, model, API key and number of runs. API keys stay in the page's memory and go only to the provider. Leave the model blank for the provider's default in the app.
+1. **Models.** One row per model: provider, model, API key, number of runs, and the **assessment** (see below). API keys stay in the page's memory and go only to the provider. Leave the model blank for the provider's default in the app.
 2. **Diagrams.** All 59 run unless you narrow them down: tick a type of flaw, a designer, or both (a row with nothing ticked does not narrow), or type id numbers in **Only these**. Each box shows how many tests it would give. If Start is grey, the reason is shown under it.
 3. **Start.** Each diagram goes through `Evaluate.run`, the same evaluation a learner's submission gets, with the same prompts and rules. A typical panicky game and a typical first explanation from the learner are given to the wording, the same for every run, except id 10, which has its own explanation.
 4. **Results.** Download the results file (JSON), the report (Markdown), the transcripts (Markdown) and the explanations to rate (CSV). Nothing is downloaded on its own: press the buttons. They work as soon as one run has finished, so you can save the results so far at any time.
@@ -14,6 +14,15 @@ Open `tests/runner.html` (on GitHub Pages: the app's address followed by `tests/
 **Rehearsal** needs no API key: it classifies every element exactly as the answer sheet says. Run it first to see a whole run and its report for free. It shows the best this design can do: every flaw the rules can see is flagged (TP), and nothing else (no FP).
 
 The page keeps a copy of the results in the browser, so a closed page can carry on where it stopped. **Continue from a results file** does the same from a downloaded file; Start then runs only what is missing. **Clear results** starts again. The browser's copy holds only about 5 MB; if it fills, the page says so, and the runs stay safe while the page is open. On a long run, download the results now and then.
+
+## Two modes of assessment
+
+- **Classification-first**, as in the app: the AI classifies each element of the learner's diagram as a part of the game, or as none; fixed rules decide the flaws from that classification; the AI then words the feedback.
+- **Direct**, for testing only: the AI is given the game, the task, the teacher's reference diagram and the learner's diagram (`direct.js`), and lists the conceptual flaws itself. Each flaw comes with a class (missing, extra, wrong relation, wrong type, wrong name, unrelated), the learner's elements involved and, for a part the learner left out, the reference's element it corresponds to, and a short advice to the learner. It is asked at temperature 0 where the model accepts one.
+
+In both modes the notation is checked by the same rules: it needs no AI. A model can be run in both modes, in two rows; the report shows each mode as a model of its own ("· direct").
+
+**Marking a direct run.** Each flaw on the answer sheet has the classes it may be reported under and its *anchors*: the parts of the game it concerns, or the elements outside the game it names. A reported flaw matches it when its class is one of those and the parts it points to (its learner's elements, as the answer sheet classifies them, and the reference's elements it names) share at least two anchors with it, or one where the flaw is about a missing part, an extra element, a wrong type or a wrong name. A flaw the AI reports twice counts once; a reported flaw that matches nothing on the answer sheet is an FP. The transcripts show, for each run, every reported flaw and what it was matched to, so each match can be checked by hand.
 
 ## The tests and their names
 
@@ -74,6 +83,7 @@ Underneath, supporting measures: the AI's **classification accuracy** (the share
 - `hand/author_01.json` … `author_13.json`: the author's hand-drawn diagrams as he drew them (his tests 1 to 13); `build_tests.js` copies them into `diagrams/` under their new numbers.
 - `answer_sheet.json`, `answer_sheet.md`, `answer_sheet.csv`: the answer sheet.
 - `build_tests.js`: builds the diagrams and the answer sheet, and checks that everything the rules flag belongs to a listed flaw (`node tests/build_tests.js`). It also lists the flaws the rules miss even with the answer sheet's classification. `CHECK_DIR=<folder>` checks diagrams saved from the app after import instead.
+- `direct.js`: the direct assessment.
 - `score.js`: the marking, used by the page and from the command line.
 - `runner.js`, `runner_body.html`, `runner.css`: the test page's sources. `build.py` in the repository's root builds `runner.html` from them, with the diagrams and the answer sheet built in.
 

@@ -280,6 +280,44 @@ const FLAWS = {
   G9: [F('A misjudged element: the waiting customers drawn as an auxiliary', 'misjudged_stock', ['K1:waiting to serve', 'N6', 'M6', 'M7', 'M9'])],
   G10: []
 };
+// ---------- for the direct mode: how a flaw the AI reports itself is matched to the answer sheet ----------
+// The AI reports each flaw with a class and the elements involved (its own E-numbers, and R-numbers of the
+// reference for parts that are missing). A reported flaw matches a flaw here when its class is one this flaw
+// may be reported under, and the parts it points to share enough with this flaw's anchors:
+//   C1-C18      a part of the game (the learner's element classified as it, or the reference's element)
+//   el:<name>   a learner's element the answer sheet classifies as not part of the game
+//   el:*        any such element
+// Two anchors in common are needed when a flaw has two or more (one when the part is missing altogether).
+const CLASSES = {
+  same_name: ['wrong_name', 'wrong_relation', 'wrong_type', 'extra'], link_into_stock: ['wrong_relation', 'wrong_type', 'extra'], link_from_cloud: ['wrong_relation', 'extra', 'missing'],
+  flow_from_variable: ['wrong_relation', 'wrong_type'], flow_between_clouds: ['wrong_relation', 'extra'], flow_into_itself: ['wrong_relation', 'extra'], loose_cloud: ['extra'],
+  missing_stock: ['missing', 'wrong_relation'], missing_link: ['missing', 'wrong_relation'], narrow_boundary: ['missing', 'wrong_relation'],
+  extra_stock: ['extra'], extra_variable: ['extra'], broad_boundary: ['extra'],
+  wrong_link: ['wrong_relation', 'missing', 'extra'], wrong_flow: ['wrong_relation', 'missing', 'extra'], invented_link: ['wrong_relation', 'extra', 'missing'], double_count: ['wrong_relation', 'extra', 'missing'],
+  misjudged_stock: ['wrong_type', 'missing'], misjudged_rate: ['wrong_type'], misjudged_variable: ['wrong_type'],
+  misleading_name: ['wrong_name'], irrelevant: ['unrelated', 'missing'], too_little: ['unrelated', 'missing']
+};
+const ONE_ANCHOR = ['missing_stock', 'narrow_boundary', 'misjudged_stock', 'misjudged_rate', 'misjudged_variable', 'misleading_name', 'extra_stock', 'extra_variable', 'broad_boundary'];
+const ANCHORS = {   // per test, one list per flaw, in the order of FLAWS
+  B1: [['C7', 'C1', 'el:kegs at the door']], B2: [['C6', 'C2', 'C1']], B3: [['C15', 'C6', 'C7']], B4: [['C1', 'C9']], B5: [['C12', 'C9']],
+  B6: [['C3', 'el:giving up rate']], B7: [['C11', 'C3', 'C5']], B8: [['C8', 'C14']], B9: [['C13', 'C3', 'C4']], B10: [['C6', 'C13', 'C4']],
+  C1: [['C8', 'C7']], C2: [['C9', 'C1']], C3: [['C8']], C4: [['C13', 'C4']], C6: [['el:spillage']], C7: [['el:restocking', 'C1']], C8: [['el:reputation']],
+  C9: [['C6', 'C16']], C10: [['el:weather']],
+  D1: [['C8', 'C7'], ['C11', 'C3', 'C5']], D2: [['C2', 'C6', 'C7'], ['C15', 'C6', 'C7'], ['C11', 'C3']],
+  D3: [['C8', 'C7'], ['C8', 'C14'], ['C15', 'C6', 'C7'], ['C4', 'C13'], ['C7', 'C9']],
+  D4: [['C9', 'C1'], ['C8'], ['el:spillage'], ['el:restocking', 'C1'], ['el:reputation']],
+  D5: [['C9', 'C1'], ['C4', 'C13'], ['C3', 'C10', 'C11'], ['C2', 'C6', 'C7'], ['C15', 'C6']],
+  E1: [[]], E2: [[]], E3: [['C1', 'C3']], E4: [['C12']],
+  F2: [['el:pub hours']], F3: [[]], F4: [['el:a']], F5: [['C6']], F6: [['C10', 'C9']], F7: [['C16', 'C2']], F8: [['C16']], F9: [['el:*']],
+  F10: [['C6', 'C16']], F11: [['C6']], F12: [['C16', 'C6']], F13: [[]],
+  G1: [['C12', 'C1']], G2: [['C8', 'C3']], G3: [['C1', 'C8']], G4: [['C6', 'C7']], G5: [['C7', 'C1', 'C2']], G6: [['C6', 'C16']], G7: [['el:*']], G8: [['C4']], G9: [['C3']]
+};
+Object.keys(FLAWS).forEach(id => FLAWS[id].forEach((f, i) => {
+  const a = (ANCHORS[id] || [])[i];
+  if (!a) throw new Error('no anchors for ' + id + ' flaw ' + (i + 1));
+  f.match = { classes: CLASSES[f.kind], anchors: a, min_overlap: Math.min(ONE_ANCHOR.indexOf(f.kind) >= 0 ? 1 : 2, a.length) };
+}));
+
 // where each test came from: the author's own diagrams, the studies reviewed, or designed by Claude
 const SOURCE = id => /^F/.test(id) || id === 'D2' || id === 'D3' ? 'author' : /^G/.test(id) ? 'lit' : 'claude';
 // tests whose rule flags should equal another's: renamed or relaid versions of the reference
@@ -318,7 +356,7 @@ const idOf = {}; built.forEach((b, i) => { idOf[b.x.id] = i + 1; });
 if (!process.env.CHECK_DIR) fs.readdirSync(path.join(__dirname, 'diagrams')).forEach(f => fs.unlinkSync(path.join(__dirname, 'diagrams', f)));
 const sheet = built.map((b, i) => {
   const id = i + 1, file = 'diagrams/id' + String(id).padStart(2, '0') + '_' + b.name + '.json';
-  const e = Object.assign({ id, label: 'id ' + id, file }, b.entry, SAME_AS[b.x.id] ? { same_flags_as: idOf[SAME_AS[b.x.id]] } : {}, { old_label: b.x.id });
+  const e = Object.assign({ id, label: 'id ' + id, file }, b.entry, SAME_AS[b.x.id] ? { same_flags_as: idOf[SAME_AS[b.x.id]] } : {}, b.x.id === 'A1' ? { is_reference: true } : {}, { old_label: b.x.id });
   if (!process.env.CHECK_DIR) fs.writeFileSync(path.join(__dirname, file), JSON.stringify(b.d, null, 1));
   // the rules alone, given the answer sheet's classification: anything they flag must belong to a listed flaw
   const r = Score.rulesAlone(e, b.d);

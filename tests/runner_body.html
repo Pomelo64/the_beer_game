@@ -6,9 +6,9 @@
 
   <section class="panel">
     <h2>1. Models</h2>
-    <p class="muted">Each row is one model. API keys stay in this page's memory and are never saved or sent anywhere but to the provider. <b>Rehearsal</b> needs no API key: it classifies every element exactly as the answer sheet says, so you can see a whole run and its report for free.</p>
+    <p class="muted">Each row is one model. API keys stay in this page's memory and are never saved or sent anywhere but to the provider. <b>Rehearsal</b> needs no API key: it classifies every element exactly as the answer sheet says, so you can see a whole run and its report for free. <b>Assessment:</b> classification-first is the app's own (the AI classifies each element, the rules decide the flaws); direct is a second mode for testing, in which the AI is given the reference diagram and lists the conceptual flaws itself. The notation is checked by the same rules in both.</p>
     <table class="rows">
-      <thead><tr><th>Provider</th><th>Model</th><th>Key</th><th>Runs</th></tr></thead>
+      <thead><tr><th>Provider</th><th>Model</th><th>Key</th><th>Runs</th><th>Assessment</th></tr></thead>
       <tbody id="modelRows"></tbody>
     </table>
   </section>

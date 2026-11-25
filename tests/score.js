@@ -32,7 +32,7 @@ const Score = (function () {
   const median = function (xs) { xs = xs.filter(function (x) { return typeof x === 'number'; }).sort(function (a, b) { return a - b; }); if (!xs.length) return null; const m = xs.length >> 1; return xs.length % 2 ? xs[m] : (xs[m - 1] + xs[m]) / 2; };
   const same = function (a, b) { return JSON.stringify(a) === JSON.stringify(b); };
   const sorted = function (a) { return (a || []).slice().sort(); };
-  const modelName = function (r) { return r.model.provider + ' / ' + r.model.model; };
+  const modelName = function (r) { return r.model.provider + ' / ' + r.model.model + (r.mode === 'direct' ? ' · direct' : ''); };
   const MTITLE = {}; ['Deliveries take time', 'Orders pile up while you wait', 'Nothing you order is lost', 'You can serve only what you have', 'Kegs leave as customers are served',
     'Customers you cannot serve wait', 'Waiting customers are served later, from the cellar', 'Customers come from outside', 'Your cost adds up, and never falls', 'Ordering costs nothing']
     .forEach(function (t, i) { MTITLE['M' + (i + 1)] = t; });
@@ -42,6 +42,7 @@ const Score = (function () {
     few: 'the message that the diagram shows only a few of the game\'s parts', extras: 'the AI lists the parts outside the game as not part of it' };
   /* a flag or a flaw's "caught by" entry, in plain words */
   function describe(t) {
+    if (t.indexOf('llm:') === 0) { const p = t.split('|'); return 'the AI reports a flaw (' + p[1] + '): ' + p.slice(2).join('|'); }
     const c = t.split(':')[0], el = t.slice(c.length + 1);
     if (MTITLE[c]) return 'mechanism not working: ' + MTITLE[c];
     if (c === 'extra') return 'the AI lists "' + el + '" as not part of the game';
@@ -49,7 +50,7 @@ const Score = (function () {
     if (c === 'K2') return '"' + el + '" is a rate drawn as a stock';
     return PLAIN[c] || t;
   }
-  const isRule = function (t) { return t.indexOf('extra') !== 0; };   // the rules' flags, against the AI's list of extras
+  const isRule = function (t) { return t.indexOf('extra') !== 0 && t.indexOf('llm:') !== 0; };   // the rules' flags, against the AI's (its extras, or a flaw it reports in the direct mode)
 
   /* the answer sheet's interpretation, keyed by element as the learner sees it (flows without their ends) */
   function sheetInterp(k) {
@@ -100,6 +101,56 @@ const Score = (function () {
     const silences = CHECKS.filter(function (c) { return !fired[c] && !relevant[c]; }).length;
     return { caught: caught, missed: missed, falseAlarms: falseAlarms, silences: silences, flaws: flaws.length };
   }
+  /* ---------- the direct mode: the AI lists the conceptual flaws itself ----------
+     A flaw it reports matches a flaw on the answer sheet when its class is one that flaw may be reported under
+     and the parts it points to share enough with that flaw's anchors (see build_tests.js). The parts it points
+     to are its learner's elements, as the answer sheet classifies them (a part of the game, or "el:<name>" for
+     an element outside the game), and the reference's elements it names, as the reference is classified. */
+  const NOTATION_CHECKS = ['N1', 'N2', 'N3', 'N4', 'N5', 'N6', 'N7', 'N8', 'W1', 'W2'];
+  function refClassOf(sheet) { const k = sheet.find(function (x) { return x.is_reference; }); return k ? sheetInterp(k) : {}; }
+  function llmAnchors(k, f, r, refClass) {
+    const cls = sheetInterp(k), a = [];
+    (f.elements || []).forEach(function (n) { const v = cls[n]; if (Array.isArray(v)) v.forEach(function (c) { a.push(c); }); else if (v === 'extra') a.push('el:' + n); });
+    (f.reference || []).forEach(function (id) { const v = refClass[(r.reference_elements || {})[id]]; if (Array.isArray(v)) v.forEach(function (c) { a.push(c); }); });
+    return a.filter(function (x, i) { return a.indexOf(x) === i; });
+  }
+  function matchesFlaw(sf, lf, anchors) {
+    const m = sf.match; if (!m || m.classes.indexOf(lf.class) < 0) return false;
+    if (!m.anchors.length) return lf.class === 'unrelated' || !anchors.length;   // a flaw with no element to point at (a loose cloud, an unrelated diagram)
+    const hit = m.anchors.filter(function (x) { return x === 'el:*' ? anchors.some(function (y) { return y.indexOf('el:') === 0; }) : anchors.indexOf(x) >= 0; }).length;
+    return hit >= m.min_overlap;
+  }
+  function markDirect(k, r, refClass) {
+    const flaws = k.flaws || [], notation = r.notation || [];
+    const llm = (r.flaws || []).map(function (f, i) { const an = llmAnchors(k, f, r, refClass);
+      return { f: f, anchors: an, token: 'llm:' + (i + 1) + '|' + f.class + '|' + f.flaw, hits: flaws.map(function (sf, j) { return matchesFlaw(sf, f, an) ? j : -1; }).filter(function (j) { return j >= 0; }) }; });
+    // each flaw on the answer sheet takes one reported flaw, the fewest-choice first; further matches are repeats, not false
+    const taken = {}, owner = {};
+    flaws.map(function (sf, j) { return { j: j, c: llm.filter(function (l) { return l.hits.indexOf(j) >= 0; }) }; })
+      .sort(function (a, b) { return a.c.length - b.c.length; })
+      .forEach(function (x) { const l = x.c.find(function (y) { return !taken[y.token]; }) || x.c[0]; if (l) { taken[l.token] = 1; owner[x.j] = l; } });
+    const caught = [], missed = [], accounted = {};
+    flaws.forEach(function (sf, j) {
+      const by = notation.filter(function (n) { return sf.caught_by.indexOf(n) >= 0; });
+      llm.forEach(function (l) { if (l.hits.indexOf(j) >= 0) by.push(l.token); });
+      by.forEach(function (t) { accounted[t] = 1; });
+      (by.length ? caught : missed).push({ flaw: sf, by: by, reported: owner[j] ? owner[j].f : null });
+    });
+    const flags = notation.concat(llm.map(function (l) { return l.token; }));
+    const falseAlarms = flags.filter(function (t) { return !accounted[t]; });
+    const relevant = {}; flaws.forEach(function (f) { f.caught_by.forEach(function (w) { relevant[w.split(':')[0]] = 1; }); });
+    const silences = NOTATION_CHECKS.filter(function (c) { return notation.indexOf(c) < 0 && !relevant[c]; }).length;
+    // for comparing repeats: the notation, and each reported flaw by its class and the parts it points to, not its words
+    const sig = notation.concat(llm.map(function (l) { return l.f.class + ':' + sorted(l.anchors).join('+'); }));
+    return { flags: flags, sig: sig, llm: llm, mark: { caught: caught, missed: missed, falseAlarms: falseAlarms, silences: silences, flaws: flaws.length } };
+  }
+  /* one run marked against its test, in either mode */
+  function markRun(k, r, d, refClass) {
+    if (r.mode === 'direct') return markDirect(k, r, refClass);
+    const flags = runFlags(r, d);
+    return { flags: flags, sig: flags, mark: mark(k, flags) };
+  }
+
   /* the rules alone, given the answer sheet's own interpretation (no AI): what the design can catch at best */
   function rulesAlone(k, d) {
     const u = MK.unique(d), map = toInternal(u, sheetInterp(k));
@@ -110,7 +161,7 @@ const Score = (function () {
   function score(results, sheet, diagrams) {
     const K = index(sheet);
     const runs = results.runs || [], done = runs.filter(function (r) { return r.status === 'done' && K[r.id] && diagrams[K[r.id].id]; });
-    const models = []; runs.forEach(function (r) { const m = modelName(r); if (models.indexOf(m) < 0) models.push(m); });
+    const models = [], refClass = refClassOf(sheet); runs.forEach(function (r) { const m = modelName(r); if (models.indexOf(m) < 0) models.push(m); });
     const out = { models: models, runs: runs.length, done: done.length, byModel: {} };
     models.forEach(function (mn) {
       const R = runs.filter(function (r) { return modelName(r) === mn; }), D = done.filter(function (r) { return modelName(r) === mn; });
@@ -118,8 +169,8 @@ const Score = (function () {
         diag: { tp: 0, fn: 0, fp: 0, tn: 0 }, byType: { syntactic: [0, 0], conceptual: [0, 0] }, byKind: {}, byChannel: { rules: 0, ai: 0, both: 0 },
         missed: {}, falseAlarms: {}, perRun: {} };
       D.forEach(function (r) {
-        const k = K[r.id], flags = runFlags(r, diagrams[k.id]), m = mark(k, flags);
-        s.perRun[k.id + '|' + r.run] = { flags: flags, mark: m };
+        const k = K[r.id], mr = markRun(k, r, diagrams[k.id], refClass), flags = mr.flags, m = mr.mark;
+        s.perRun[k.id + '|' + r.run] = { flags: flags, sig: mr.sig, mark: m, direct: r.mode === 'direct' };
         s.tp += m.caught.length; s.fn += m.missed.length; s.tn += m.silences;
         m.falseAlarms.forEach(function (fl) { if (isRule(fl)) s.fp++; else s.fpAI++; const t = title(k) + ' · ' + describe(fl); (s.falseAlarms[t] = s.falseAlarms[t] || []).push(r.run); });
         const tally = function (c, hit) { const T = s.byType[c.flaw.type], Kd = s.byKind[c.flaw.kind] = s.byKind[c.flaw.kind] || [0, 0, c.flaw.type]; T[1]++; Kd[1]++; if (hit) { T[0]++; Kd[0]++; } };
@@ -135,7 +186,7 @@ const Score = (function () {
       s.diag.recall = pct(s.diag.tp, s.diag.tp + s.diag.fn); s.diag.specificity = pct(s.diag.tn, s.diag.tn + s.diag.fp);
       // supporting measures
       let el = 0, elOk = 0; const misreads = {};
-      D.forEach(function (r) {
+      D.filter(function (r) { return r.mode !== 'direct'; }).forEach(function (r) {   // the direct mode classifies nothing
         const k = K[r.id], want = sheetInterp(k), got = {};
         Object.keys(r.reading || {}).forEach(function (n) { got[n] = sorted(r.reading[n]); });
         (r.extras || []).forEach(function (n) { if (!got[n]) got[n] = 'extra'; });
@@ -150,7 +201,7 @@ const Score = (function () {
       let cv = 0, cvOk = 0, crOk = 0; const unstable = [];
       Object.keys(ids).forEach(function (id) {
         const rs = ids[id]; if (rs.length < 2) return;
-        const ff = rs.map(function (r) { return JSON.stringify(sorted(s.perRun[id + '|' + r.run].flags)); }), fr = rs.map(function (r) { return JSON.stringify(r.reading) + JSON.stringify(sorted(r.extras)); });
+        const ff = rs.map(function (r) { return JSON.stringify(sorted(s.perRun[id + '|' + r.run].sig)); }), fr = rs.map(function (r) { return JSON.stringify(r.reading) + JSON.stringify(sorted(r.extras)); });
         cv++; if (ff.every(function (x) { return x === ff[0]; })) cvOk++; else unstable.push(title(K[id]));
         if (fr.every(function (x) { return x === fr[0]; })) crOk++;
       });
@@ -159,7 +210,8 @@ const Score = (function () {
       sheet.filter(function (k) { return k.same_flags_as; }).forEach(function (k) {
         D.filter(function (r) { return K[r.id] === k; }).forEach(function (r) {
           const base = s.perRun[k.same_flags_as + '|' + r.run]; if (!base) return;
-          const fr = JSON.stringify(sorted(s.perRun[k.id + '|' + r.run].flags.filter(isRule))), fa = JSON.stringify(sorted(base.flags.filter(isRule)));
+          const pick = function (p) { return p.direct ? p.sig : p.flags.filter(isRule); };   // names differ between versions: compare what does not depend on them
+          const fr = JSON.stringify(sorted(pick(s.perRun[k.id + '|' + r.run]))), fa = JSON.stringify(sorted(pick(base)));
           q6++; if (fr === fa) q6Ok++; else q6Bad.push(title(k) + ' run ' + r.run);
         });
       });
@@ -191,10 +243,15 @@ const Score = (function () {
     L.push('App version ' + (results.app_version || '?') + '. Runs started ' + (results.created || '?') + '. ' + s.runs + ' runs, ' + s.done + ' of them evaluated in full. ' +
       'The answer sheet has ' + sheet.length + ' diagrams: ' + nCorrect + ' correct, and ' + (sheet.length - nCorrect) + ' with ' + nFlaws + ' flaws between them (' + nSy + ' syntactic, ' + (nFlaws - nSy) + ' conceptual). ' +
       'Each flaw is one correction the feedback should make.', '');
-    L.push('Settings: the AI\'s classification of the elements at temperature ' + results.settings.reading_temperature + ' (where the model accepts one), its wording at the model\'s default.', '');
+    L.push('Two modes of assessment. **Classification-first** (as in the app): the AI classifies each element of the learner\'s diagram as a part of the game, or as none, and fixed rules decide the flaws from that; the AI then words the feedback. ' +
+      '**Direct** (models marked "· direct"; testing only): the AI is given the game, the task, the teacher\'s reference diagram and the learner\'s diagram, and lists the conceptual flaws itself, each with a class and the elements involved; ' +
+      'a reported flaw is matched to the answer sheet by its class and those elements. In both modes the notation is checked by the same rules.', '');
+    L.push('Settings: the classification at temperature ' + results.settings.reading_temperature + ', the direct assessment at temperature ' + ((results.settings.direct || {}).temperature != null ? results.settings.direct.temperature : 0) +
+      ' (where the model accepts one), the wording at the model\'s default.', '');
     L.push('**TP** (true positive): a flaw on the answer sheet that the feedback flags. **FN** (false negative): a flaw it does not flag. ' +
       '**FP** (false positive): a flag that no flaw on the answer sheet explains, from the rules or from the AI (an element of the game that the AI classifies as not part of it). ' +
-      '**TN** (true negative): one of the 22 rule checks that stayed silent where nothing was wrong. One flaw often sets off several flags; they count as one TP.', '');
+      '**TN** (true negative): a rule check that stayed silent where nothing was wrong: 22 checks per run in the classification-first mode, the 10 notation checks in the direct mode. One flaw often sets off several flags; they count as one TP. ' +
+      'In the direct mode, a flaw the AI reports twice counts once; a reported flaw that matches no flaw on the answer sheet is an FP.', '');
     L.push('Recall = TP / (TP + FN). Precision = TP / (TP + FP). Specificity = TN / (TN + FP of the rules), since TN counts the rule checks. F1 = 2TP / (2TP + FP + FN).', '');
     L.push('## Flaws', '');
     L.push('| Model | Runs | TP | FN | FP (rules) | FP (AI) | TN | Recall | Precision | Specificity | F1 |');
@@ -221,14 +278,17 @@ const Score = (function () {
       Object.keys(x.byKind).sort(function (a, b) { return (x.byKind[a][2] > x.byKind[b][2] ? -1 : x.byKind[a][2] < x.byKind[b][2] ? 1 : 0) || (a < b ? -1 : 1); })
         .forEach(function (kd) { const a = x.byKind[kd]; L.push('| ' + kd + ' | ' + a[2] + ' | ' + a[0] + ' | ' + (a[1] - a[0]) + ' | ' + pct(a[0], a[1]) + ' |'); });
       L.push('');
-      L.push('**TPs by what flagged them:** the rules only ' + x.byChannel.rules + ', the AI only ' + x.byChannel.ai + ', both ' + x.byChannel.both + '.', '');
+      L.push('**TPs by what flagged them:** the rules only ' + x.byChannel.rules + ', the AI only ' + x.byChannel.ai + ', both ' + x.byChannel.both + '.' +
+        (/ · direct$/.test(m) ? ' (Here the rules are the notation checks, and the AI is the flaws it reported.)' : ''), '');
       const mi = Object.keys(x.missed).sort();
       if (mi.length) { L.push('**FNs** (test · flaw, and the runs: see them in the transcripts):', ''); mi.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.missed[t]) + ')'); }); L.push(''); }
       const fa = Object.keys(x.falseAlarms).sort();
       if (fa.length) { L.push('**FPs** (test · what was flagged, and the runs):', ''); fa.forEach(function (t) { L.push('- ' + t + ' (' + runsText(x.falseAlarms[t]) + ')'); }); L.push(''); }
       L.push('**Supporting measures**', '');
-      L.push('- The AI\'s classification of the elements (each element to a part of the game, or to none): ' + x.interpretation.right + ' of ' + x.interpretation.elements + ' as the answer sheet says; accuracy ' + x.interpretation.share + '.');
-      L.push('- Repeats: the same flags in every run for ' + x.consistency.sameFlags + ' of ' + x.consistency.diagrams + ' diagrams (' + x.consistency.share + '); the same classification for ' + x.consistency.sameInterpretation + ' (' + x.consistency.interpretationShare + ').' +
+      L.push(x.interpretation.elements ? '- The AI\'s classification of the elements (each element to a part of the game, or to none): ' + x.interpretation.right + ' of ' + x.interpretation.elements + ' as the answer sheet says; accuracy ' + x.interpretation.share + '.'
+        : '- The AI\'s classification of the elements: not part of the direct mode.');
+      L.push('- Repeats: the same flags in every run for ' + x.consistency.sameFlags + ' of ' + x.consistency.diagrams + ' diagrams (' + x.consistency.share + ')' +
+        (/ · direct$/.test(m) ? ', comparing each reported flaw by its class and the parts it points to, not its words.' : '; the same classification for ' + x.consistency.sameInterpretation + ' (' + x.consistency.interpretationShare + ').') +
         (x.consistency.unstable.length ? ' Flags changed between runs: ' + x.consistency.unstable.join(', ') + '.' : ''));
       L.push('- Names and layout: renamed and relaid versions of the reference (' + sheet.filter(function (k) { return k.same_flags_as; }).map(function (k) { return k.label; }).join(', ') + ') got the same rule flags as the reference in ' + x.namesLayout.same + ' of ' + x.namesLayout.compared + ' comparisons (' + x.namesLayout.share + ').' +
         (x.namesLayout.different.length ? ' Different: ' + x.namesLayout.different.join(', ') + '.' : ''));
@@ -247,13 +307,13 @@ const Score = (function () {
      what the feedback said about that */
   function ratingCsv(results, sheet, diagrams) {
     const q = function (v) { v = v == null ? '' : String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    const K = index(sheet);
+    const K = index(sheet), refClass = refClassOf(sheet);
     const rows = [['id', 'name', 'model', 'run', 'flaw', 'type', 'kind', 'caught by', 'what the learner was told', 'correct (y/n)', 'clear (y/n)', 'helps to fix it (y/n)', 'notes']];
     const seen = {};
     (results.runs || []).filter(function (r) { return r.status === 'done' && K[r.id] && diagrams[K[r.id].id]; }).forEach(function (r) {
       const k = K[r.id], id = k.id + '|' + modelName(r); if (seen[id]) return; seen[id] = 1;
       const d = diagrams[k.id], u = MK.unique(d), map = toInternal(u, r.reading || {}), w = r.words || {};
-      const m = mark(k, runFlags(r, d)), mech = MK.mechanisms(u, map).mechanisms, notes = MK.notation(u), kinds = MK.kindNotes(u, map), comments = extraComments(r, u);
+      const mr = markRun(k, r, d, refClass), m = mr.mark, mech = MK.mechanisms(u, map).mechanisms, notes = MK.notation(u), kinds = MK.kindNotes(u, map), comments = extraComments(r, u);
       const told = function (fl) {
         const c = fl.split(':')[0], el = fl.slice(c.length + 1);
         if (/^[NW]\d/.test(c)) return notes.filter(function (n) { return n.id === c; }).map(function (n) { return n.text; }).join(' ');
@@ -261,6 +321,7 @@ const Score = (function () {
         if (c === 'K1' || c === 'K2') return kinds.filter(function (n) { return MK.shown(n.element) === el; }).map(function (n) { return n.text; }).join(' ');
         if (c === 'extra') return '"' + el + '" tagged "extra" on the slide "How I read your diagram"' + (comments[el] ? ': ' + comments[el] : '');
         if (c === 'few') return w.overall || 'Your diagram shows only a few of the game\'s parts so far.';
+        if (fl.indexOf('llm:') === 0) { const l = (mr.llm || []).find(function (y) { return y.token === fl; }); return l ? l.f.flaw + (l.f.advice ? '\n' + l.f.advice : '') : fl; }
         return fl;
       };
       m.caught.forEach(function (c) {
@@ -299,6 +360,7 @@ const Score = (function () {
     L.push('## The system prompts, sent with every call', '', '**Classification**', '');
     fence((results.prompts || {}).reading).forEach(function (x) { L.push(x); });
     L.push('', '**Wording**', ''); fence((results.prompts || {}).wording).forEach(function (x) { L.push(x); });
+    if ((results.prompts || {}).direct) { L.push('', '**Direct assessment** (the second mode, for testing only)', ''); fence(results.prompts.direct).forEach(function (x) { L.push(x); }); }
     L.push('', '## The game given to the wording', '', 'The same for every run, except where a run says otherwise (its wording request below shows what was sent).', '');
     fence(results.game_text).forEach(function (x) { L.push(x); });
     L.push('');
@@ -310,8 +372,9 @@ const Score = (function () {
         (typeof r.ms === 'number' ? ', ' + (r.ms / 1000).toFixed(1) + ' s' : '') + '; ' + cs.length + ' AI call' + (cs.length === 1 ? '' : 's') + ' (' +
         cs.map(function (c) { return c.step + ': ' + c.model + ', temperature ' + c.temperature + (c.error ? ', error ' + c.error : ''); }).join('; ') + '); ' + tok('input') + ' input and ' + tok('output') + ' output tokens.', '');
       // the marks
+      const mr = r.status === 'done' ? markRun(k, r, d, refClassOf(sheet)) : null;
       if (r.status === 'done') {
-        const m = mark(k, runFlags(r, d));
+        const m = mr.mark;
         L.push('### Marked against the answer sheet', '');
         if (!k.flaws.length) L.push('A correct diagram: nothing should be flagged.');
         m.caught.forEach(function (c) { L.push('- **TP** ' + c.flaw.flaw + ' (' + c.flaw.type + ', ' + c.flaw.kind + '). Flagged by: ' + c.by.map(describe).join('; ') + '.'); });
@@ -319,6 +382,25 @@ const Score = (function () {
         m.falseAlarms.forEach(function (fl) { L.push('- **FP** ' + describe(fl) + (isRule(fl) ? ' (rules)' : ' (AI)') + '.'); });
         if (k.flaws.length || m.falseAlarms.length) L.push('');
         else L.push('Nothing was flagged.', '');
+      }
+      if (r.mode === 'direct') {   // the direct mode: one call, the AI's own list of flaws
+        L.push('### The direct assessment', '', '**Sent**', ''); fence(q ? q.direct : null).forEach(function (x) { L.push(x); });
+        L.push('', '**Answered**', ''); fence((r.raw || {}).direct).forEach(function (x) { L.push(x); });
+        if (r.reference_elements) L.push('', 'The reference\'s elements: ' + Object.keys(r.reference_elements).map(function (id) { return id + ' ' + r.reference_elements[id]; }).join('; ') + '.');
+        if (mr) {
+          L.push('', '| # | Class | Learner\'s elements | Reference\'s elements | The AI\'s flaw | Its advice | Marked |', '| --- | --- | --- | --- | --- | --- | --- |');
+          if (!mr.llm.length) L.push('| – | | | | (no flaw reported) | | |');
+          mr.llm.forEach(function (l, i) {
+            const to = l.hits.map(function (j) { return k.flaws[j].flaw; });
+            const cell = function (t) { return String(t || '').replace(/\|/g, '/').replace(/\n/g, ' '); };
+            L.push('| ' + (i + 1) + ' | ' + cell(l.f.class) + ' | ' + cell(l.f.elements.join(', ')) + ' | ' + cell(l.f.reference.map(function (id) { return id + ' ' + (r.reference_elements || {})[id]; }).join(', ')) + ' | ' +
+              cell(l.f.flaw) + ' | ' + cell(l.f.advice) + ' | ' + (to.length ? 'matches: ' + cell(to.join('; ')) : '**FP**') + ' |');
+          });
+          if ((r.dropped || []).length) L.push('', 'Numbers in the answer that name no element, ignored: ' + r.dropped.join(', ') + '.');
+          L.push('', '**Notation flagged by the rules:** ' + ((r.notation || []).map(describe).join('; ') || 'nothing') + '.');
+        }
+        L.push('');
+        return;
       }
       // the classification
       L.push('### 1. Classification', '', '**Sent**' + (q ? '' : ' (not stored: this run was made before requests were kept; it can be rebuilt from the diagram with app version ' + (results.app_version || '?') + ')'), '');
@@ -360,7 +442,7 @@ const Score = (function () {
     return L.join('\n');
   }
 
-  return { score: score, report: report, ratingCsv: ratingCsv, transcripts: transcripts, rulesAlone: rulesAlone, runFlags: runFlags, mark: mark, describe: describe, index: index, typeOf: typeOf,
+  return { score: score, report: report, ratingCsv: ratingCsv, transcripts: transcripts, markRun: markRun, refClassOf: refClassOf, rulesAlone: rulesAlone, runFlags: runFlags, mark: mark, describe: describe, index: index, typeOf: typeOf,
     MECHS: MECHS, CHECKS: CHECKS, TYPES: TYPES, SOURCES: SOURCES };
 })();
 if (typeof module !== 'undefined') {

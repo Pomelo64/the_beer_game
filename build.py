@@ -40,6 +40,6 @@ if os.path.exists(os.path.join(tests, 'answer_sheet.json')):
     runner = ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n'
               '<title>Beer Game Lab: test runner</title>\n<style>\n' + trd('runner.css') + '</style>\n</head>\n<body>\n' + trd('runner_body.html') +
               '<script>\n' + version_js + '\n' + rd('engine.js') + '\n' + rd('sfd/key.js') + '\n' + rd('sfd/marking.js') + '\n' + rd('sfd/llm_client.js') + '\n' +
-              rd('sfd/evaluate.js') + '\n' + trd('score.js') + '\n' + data + '\n' + trd('runner.js') + '</script>\n</body>\n</html>\n')
+              rd('sfd/evaluate.js') + '\n' + trd('direct.js') + '\n' + trd('score.js') + '\n' + data + '\n' + trd('runner.js') + '</script>\n</body>\n</html>\n')
     io.open(os.path.join(tests, 'runner.html'), 'w', encoding='utf-8').write(runner)
     print('tests/runner.html', len(runner), 'with', len(sheet), 'diagrams')
